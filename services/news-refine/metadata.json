@@ -1,0 +1,7 @@
+{
+  "name": "Copy of NewsRefine: مُعيد صياغة الأخبار الفوري",
+  "description": "تطبيق ويب لإعادة صياغة الأخبار من روابط متعددة، وإنتاج مقال احترافي ومحايد جاهز للنشر مع بيانات SEO وتكامل سهل. (A web application to rewrite news from multiple links, producing a professional and neutral article ready for publication with SEO data and easy integration.)",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

@@ -1,0 +1,59 @@
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+
+export default function AppDetails() {
+  const router = useRouter();
+  const { id } = router.query;
+  const [app, setApp] = useState(null);
+  const [error, setError] = useState('');
+
+
+  const services = {
+    '7': { url: 'http://localhost:3001', name: 'مزامنة الفيديو والترجمة' },
+    '8': { url: 'http://localhost:3002', name: 'تطبيق الأخبار وتحريرها' },
+    '9': { url: 'http://localhost:3003', name: 'مولد الأفاتار الديناميكي' },
+    '10': { url: 'http://localhost:3004', name: 'بوت النجاح الإخباري' },
+    '11': { url: 'http://localhost:3005', name: 'أتمتة أخبار الشرق' },
+    '12': { url: 'http://localhost:3006', name: 'مساعد أتمتة البودكاست' },
+  };
+
+  useEffect(() => {
+    if (!id) return;
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+  
+    const appDetails = services[id];
+    if (appDetails) {
+        setApp(appDetails);
+    } else {
+        setError('Application not found or configured.');
+    }
+
+  }, [id]);
+
+  if (error) return <p>Error: {error}</p>;
+  if (!app) return <p>Loading application...</p>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <header style={{ padding: '1rem 2rem', backgroundColor: '#1a1a1a', color: 'white', flexShrink: 0 }}>
+        <Link href="/dashboard" style={{ color: 'white' }}>&larr; Back to Dashboard</Link>
+        <h1 style={{ marginTop: '0.5rem' }}>{app.name}</h1>
+      </header>
+
+      <main style={{ flexGrow: 1, padding: 0 }}>
+        {}
+        <iframe
+          src={app.url}
+          style={{ width: '100%', height: '100%', border: 'none' }}
+          title={app.name}
+        />
+      </main>
+    </div>
+  );
+}

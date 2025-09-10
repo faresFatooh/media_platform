@@ -1,0 +1,5 @@
+{
+  "name": "NN.PS News Chatbot",
+  "description": "An interactive news chatbot that provides summaries and articles exclusively from the NN.PS website, powered by Gemini.",
+  "requestFramePermissions": []
+}

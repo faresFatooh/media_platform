@@ -1,0 +1,5 @@
+{
+  "name": "AI Video Subtitle Synchronizer",
+  "description": "An AI-powered tool for creating and synchronizing subtitles. Provide a video and an optional transcript to generate a perfectly timed SRT file. If no transcript is provided, the AI will transcribe the video and provide an Arabic translation, outputting two separate SRT files.",
+  "requestFramePermissions": []
+}

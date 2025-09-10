@@ -1,0 +1,5 @@
+{
+  "name": "Dynamic Avatar Generator",
+  "description": "Create a dynamic avatar from a single image. The avatar can be animated to lip-sync text input, with realistic facial expressions and movements, and engage in an interactive dialogue to gather the necessary data for animation.",
+  "requestFramePermissions": []
+}

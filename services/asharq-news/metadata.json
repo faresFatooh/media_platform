@@ -1,0 +1,7 @@
+{
+  "name": "أتمتة نشر الأخبار (Asharq News Automation)",
+  "description": "A dashboard to automate the process of parsing news, generating social media content with AI, and preparing it for publishing to multiple platforms from a single interface.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
