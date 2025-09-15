@@ -1,0 +1,5 @@
+{
+  "name": "مُحَوِّل النصوص إلى انفوجرافيك",
+  "description": "An AI-powered application that transforms long-form Arabic text into a series of professional infographic slides, complete with automated content segmentation, iconography, and background imagery.",
+  "requestFramePermissions": []
+}

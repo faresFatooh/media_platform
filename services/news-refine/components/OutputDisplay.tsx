@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import type { NewsRefineOutput, NewsRefineInput, SocialPlatform, AudioPrefs } from '../types';
 import { generatePodcastScript } from '../services/geminiService';
@@ -58,28 +56,22 @@ interface OutputDisplayProps {
 
 export const OutputDisplay: React.FC<OutputDisplayProps> = ({ output, options, audioPrefs, onSendEmail, showToast }) => {
     const [activeTab, setActiveTab] = useState<Tab>('article');
-    
     const [podcastStatus, setPodcastStatus] = useState<PodcastStatus>('idle');
     const [podcastAudioUrl, setPodcastAudioUrl] = useState<string | null>(null);
     const [podcastError, setPodcastError] = useState<string | null>(null);
     const [isPodcastModalOpen, setIsPodcastModalOpen] = useState(false);
-
     const [isPostingTo, setIsPostingTo] = useState<SocialPlatform | null>(null);
     const [isScheduling, setIsScheduling] = useState<SocialPlatform | null>(null);
-
     const isLoading = !!(isPostingTo || isScheduling);
 
     useEffect(() => {
         const generatePodcast = async () => {
             const articleTextForPodcast = `${output.article.title}\n\n${output.article.dek}\n\n${output.article.body_paragraphs.join('\n\n')}`;
-            
             try {
                 setPodcastStatus('scripting');
                 const script = await generatePodcastScript(output.article.title, articleTextForPodcast);
-                
                 setPodcastStatus('generating_audio');
                 const audioUrl = await generatePodcastAudio(script, audioPrefs);
-
                 setPodcastAudioUrl(audioUrl);
                 setPodcastStatus('ready');
             } catch (err) {
@@ -89,7 +81,6 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ output, options, a
                 setPodcastStatus('error');
             }
         };
-        
         if (output) {
             setPodcastAudioUrl(null);
             setPodcastError(null);
@@ -118,6 +109,38 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ output, options, a
     const englishArticleText = output.english_version.enabled ? `${output.english_version.title}\n\n${output.english_version.body_paragraphs?.join('\n\n')}` : '';
     
     const handleShare = async (platform: SocialPlatform) => {
+        if (platform === 'facebook') {
+            setIsPostingTo('facebook');
+            
+            const finalUrl = "https://asharq.com/"; // يمكنك وضع رابط موقعك هنا
+            const hashtags = output.seo.keywords.map(kw => `#${kw.replace(/\s/g, '')}`).join(' ');
+            const fullQuote = `
+${output.seo.meta_title}
+---
+${output.article.body_paragraphs.join('\n\n')}
+---
+ملخص: ${output.seo.ai_summary}
+
+${hashtags}
+            `;
+
+            try {
+                await navigator.clipboard.writeText(fullQuote);
+                showToast('تم نسخ محتوى المنشور! الصقه في نافذة فيسبوك.', 'success');
+
+                const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(finalUrl)}`;
+                window.open(shareUrl, '_blank');
+
+            } catch (err) {
+                showToast('فشل نسخ المحتوى.', 'error');
+                console.error('Failed to copy text: ', err);
+            } finally {
+                setIsPostingTo(null);
+            }
+            return;
+        }
+
+        // --- الكود الخاص بالمنصات الأخرى ---
         setIsPostingTo(platform);
         try {
             await postToSocialMedia(platform, output.article, output.seo, output.generated_image_b64);
@@ -134,7 +157,7 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ output, options, a
     const handleSchedule = async (platform: SocialPlatform) => {
         setIsScheduling(platform);
         try {
-            const scheduleTime = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+            const scheduleTime = new Date(Date.now() + 60 * 60 * 1000);
             await schedulePostToSocialMedia(platform, output.article, output.seo, scheduleTime, output.generated_image_b64);
             const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
             showToast(`تمت جدولة المنشور بنجاح على ${platformName}!`, 'success');
@@ -271,11 +294,11 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ output, options, a
                                 </div>
                                 {p.enabled ? (
                                     <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                                        <button onClick={() => handleSchedule(p.id)} disabled={isLoading} className="flex items-center justify-center gap-1.5 w-full text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-md disabled:opacity-50 transition-colors">
+                                        <button onClick={() => handleSchedule(p.id as SocialPlatform)} disabled={isLoading} className="flex items-center justify-center gap-1.5 w-full text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-md disabled:opacity-50 transition-colors">
                                             {isScheduling === p.id ? <div className="animate-spin h-4 w-4 border-2 border-slate-600 border-t-transparent rounded-full"></div> : <CalendarIcon />}
                                             <span>جدولة</span>
                                         </button>
-                                        <button onClick={() => handleShare(p.id)} disabled={isLoading} className={`flex items-center justify-center gap-2 w-full text-xs font-bold text-white px-3 py-1.5 rounded-md disabled:bg-slate-400 transition-colors ${p.color}`}>
+                                        <button onClick={() => handleShare(p.id as SocialPlatform)} disabled={isLoading} className={`flex items-center justify-center gap-2 w-full text-xs font-bold text-white px-3 py-1.5 rounded-md disabled:bg-slate-400 transition-colors ${p.color}`}>
                                             {isPostingTo === p.id ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div> : <span>نشر الآن</span>}
                                         </button>
                                     </div>
@@ -340,11 +363,11 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ output, options, a
                                     <span>بيانات SEO والمُحسّنات</span>
                                 </h2>
                                 <div className="space-y-6 text-sm" dir="rtl">
-                                     <div><h4 className="font-bold text-slate-700">Meta Title</h4><p className="p-2 bg-slate-100 rounded-md mt-1">{output.seo.meta_title}</p></div>
-                                     <div><h4 className="font-bold text-slate-700">Meta Description</h4><p className="p-2 bg-slate-100 rounded-md mt-1">{output.seo.meta_description}</p></div>
-                                     <div><h4 className="font-bold text-slate-700">Keywords</h4><div className="flex flex-wrap gap-2 mt-1">{output.seo.keywords.map(kw => <span key={kw} className="bg-sky-100 text-sky-800 px-2 py-1 rounded-full">{kw}</span>)}</div></div>
-                                     <div><h4 className="font-bold text-slate-700">AI Summary</h4><p className="p-2 bg-slate-100 rounded-md mt-1">{output.seo.ai_summary}</p></div>
-                                     <div>
+                                      <div><h4 className="font-bold text-slate-700">Meta Title</h4><p className="p-2 bg-slate-100 rounded-md mt-1">{output.seo.meta_title}</p></div>
+                                      <div><h4 className="font-bold text-slate-700">Meta Description</h4><p className="p-2 bg-slate-100 rounded-md mt-1">{output.seo.meta_description}</p></div>
+                                      <div><h4 className="font-bold text-slate-700">Keywords</h4><div className="flex flex-wrap gap-2 mt-1">{output.seo.keywords.map(kw => <span key={kw} className="bg-sky-100 text-sky-800 px-2 py-1 rounded-full">{kw}</span>)}</div></div>
+                                      <div><h4 className="font-bold text-slate-700">AI Summary</h4><p className="p-2 bg-slate-100 rounded-md mt-1">{output.seo.ai_summary}</p></div>
+                                      <div>
                                         <h4 className="font-bold text-slate-700">Generation Tags</h4>
                                         <div className="flex flex-wrap gap-2 mt-1">
                                             {options.output.include_aiseo && <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">AISEO</span>}

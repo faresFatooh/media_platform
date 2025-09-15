@@ -16,6 +16,8 @@ export default function AppDetails() {
     '10': { url: 'http://localhost:3004', name: 'بوت النجاح الإخباري' },
     '11': { url: 'http://localhost:3005', name: 'أتمتة أخبار الشرق' },
     '12': { url: 'http://localhost:3006', name: 'مساعد أتمتة البودكاست' },
+    '14': { url: 'http://localhost:3007', name: 'محرر-الأسلوب-الشخصي' },
+    '15': { url: 'http://localhost:3008', name: 'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
   };
 
   useEffect(() => {

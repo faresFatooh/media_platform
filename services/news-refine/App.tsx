@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Login } from './components/Login';
@@ -9,7 +9,6 @@ import { TranscriptionTool } from './components/TranscriptionTool';
 import { MediaTools } from './components/MediaTools';
 import { Community } from './components/Community';
 import { Management } from './components/Management';
-
 import type { User, View, NewsRefineOutput } from './types';
 
 const App: React.FC = () => {
@@ -43,11 +42,11 @@ const App: React.FC = () => {
         return <ContentPipeline />;
       case 'transcription':
         return <TranscriptionTool />;
-       case 'media_tools':
+      case 'media_tools':
         return <MediaTools latestArticle={latestArticle} />;
-       case 'community':
+      case 'community':
         return <Community />;
-       case 'management':
+      case 'management':
         return <Management />;
       default:
         return <Dashboard />;

@@ -42,7 +42,6 @@ services:
     volumes:
       - ./services/video-synchronizer:/app
       - /app/node_modules
-  
 
   news_refine_service:
     build: ./services/news-refine
@@ -55,43 +54,65 @@ services:
       - /app/node_modules
 
   avatar_service:
-        build: ./services/dynamic-avatar
-        ports:
-          - "3003:5173"
-        environment:
-          - GEMINI_API_KEY=${GEMINI_API_KEY}
-        volumes:
-          - ./services/dynamic-avatar:/app
-          - /app/node_modules
+    build: ./services/dynamic-avatar
+    ports:
+      - "3003:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/dynamic-avatar:/app
+      - /app/node_modules
+      
   chatbot_service:
-        build: ./services/news-chatbot
-        ports:
-          - "3004:5173"
-        environment:
-          - GEMINI_API_KEY=${GEMINI_API_KEY}
-        volumes:
-          - ./services/news-chatbot:/app
-          - /app/node_modules        
+    build: ./services/news-chatbot
+    ports:
+      - "3004:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/news-chatbot:/app
+      - /app/node_modules      
 
   asharq_service:
-        build: ./services/asharq-news
-        ports:
-          - "3005:5173"
-        environment:
-          - GEMINI_API_KEY=${GEMINI_API_KEY}
-        volumes:
-          - ./services/asharq-news:/app
-          - /app/node_modules             
+    build: ./services/asharq-news
+    ports:
+      - "3005:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/asharq-news:/app
+      - /app/node_modules        
 
   podcast_service:
-        build: ./services/podcast-helper
-        ports:
-          - "3006:5173"
-        environment:
-          - GEMINI_API_KEY=${GEMINI_API_KEY}
-        volumes:
-          - ./services/podcast-helper:/app
-          - /app/node_modules       
-        
+    build: ./services/podcast-helper
+    ports:
+      - "3006:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/podcast-helper:/app
+      - /app/node_modules      
+      
+  style_editor_service:
+    build: ./services/style-editor
+    ports:
+      - "3007:5173"
+    volumes:
+      - ./services/style-editor:/app
+      - /app/node_modules
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+
+
+  infographic_service:
+    build: ./services/infographic-converter
+    ports:
+      - "3008:5173"
+    volumes:
+      - ./services/infographic-converter:/app
+      - /app/node_modules
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      
 volumes:
   postgres_data:

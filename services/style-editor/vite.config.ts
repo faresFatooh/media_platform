@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-        plugins: [react()],
+        plugins: [react()], 
         define: {
             'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
             'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
@@ -17,13 +17,16 @@ export default defineConfig(({ mode }) => {
         },
         server: {
             host: true, 
-            strictPort: true, 
             watch: {
-                usePolling: true
+                usePolling: true 
             },
-            // --- هذا هو السطر الجديد والمهم ---
-            // يسمح بالاتصال من أي رابط ينتهي بـ .ngrok-free.app
-            allowedHosts: ['.ngrok-free.app'] 
+            proxy: {
+                '/api': {
+                    target: 'http://localhost:3001',
+                    changeOrigin: true,
+                    secure: false,
+                }
+            }
         }
     };
 });
