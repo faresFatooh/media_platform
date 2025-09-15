@@ -16,7 +16,7 @@ services:
         fromService:
           type: web
           name: frontend
-          property: url
+          property: host
 
   - type: web
     name: frontend
