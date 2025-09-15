@@ -1,6 +1,3 @@
-# -----------------
-# النسخة النظيفة والنهائية
-# -----------------
 databases:
   - name: media-platform-db
     databaseName: media_platform_db
