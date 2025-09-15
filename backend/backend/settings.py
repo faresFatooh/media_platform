@@ -14,13 +14,12 @@ from pathlib import Path
 import os
 import dj_database_url
 from dotenv import load_dotenv
-from datetime import timedelta # تأكد من وجود هذا السطر
+from datetime import timedelta
 
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -31,21 +30,23 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-j4hg23z^-rxdeawjju60v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('RENDER') != 'true'
 
-
-# --- هذا هو التعديل النهائي لمشكلة ALLOWED_HOSTS ---
+# --- تعديل ALLOWED_HOSTS ليشمل النطاقات الافتراضية والمخصصة ---
 ALLOWED_HOSTS = []
 
+# أضف النطاق الافتراضي لـ Render
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# أضف اسم نطاقك الرسمي هنا
-ALLOWED_HOSTS.append('ghazimortaja.com') 
+# أضف النطاق الافتراضي لخدمة Render (backend-9ihn.onrender.com)
+ALLOWED_HOSTS.append('backend-9ihn.onrender.com')
+
+# أضف النطاقات المخصصة الخاصة بك
+ALLOWED_HOSTS.append('ghazimortaja.com')
+ALLOWED_HOSTS.append('www.ghazimortaja.com')  # إضافة www لتغطية النسخة الكاملة
 # ---------------------------------------------------
 
-
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -59,12 +60,12 @@ INSTALLED_APPS = [
     'users',
     'applications',
     'tasks',
-    # 'proxy',  <-- تم حذف هذا السطر المسبب للمشكلة
+    # 'proxy' تم حذفه لأنه كان يسبب ModuleNotFoundError
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # تأكد من أنه في الأعلى
+    'corsheaders.middleware.CorsMiddleware',  # تأكد من أنه في الأعلى للأولوية
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -93,10 +94,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL'),
@@ -104,45 +103,44 @@ DATABASES = {
     )
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
-
 STATIC_URL = 'static/'
+# أضف الإعداد التالي لدعم ملفات الوسائط في الإنتاج
+if not DEBUG:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- إعدادات CORS للإنتاج ---
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    "http://localhost:3000",  # للتطوير المحلي
 ]
-# هذا سيضيف رابط الواجهة الأمامية على Render تلقائيًا
-RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
+RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL')
 if RENDER_FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
+# إضافة النطاقات المخصصة إذا لزم الأمر
+CORS_ALLOWED_ORIGINS.append('https://ghazimortaja.com')
+CORS_ALLOWED_ORIGINS.append('https://www.ghazimortaja.com')
 # -----------------------------
 
 REST_FRAMEWORK = {
