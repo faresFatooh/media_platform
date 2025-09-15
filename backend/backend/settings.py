@@ -38,7 +38,7 @@ RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# أضف النطاق الافتراضي لخدمة Render (backend-9ihn.onrender.com)
+# أضف النطاق الافتراضي لخدمة Render
 ALLOWED_HOSTS.append('backend-9ihn.onrender.com')
 
 # أضف النطاقات المخصصة الخاصة بك
@@ -122,7 +122,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 STATIC_URL = 'static/'
-# أضف الإعداد التالي لدعم ملفات الوسائط في الإنتاج
+# إعدادات الوسائط للإنتاج
 if not DEBUG:
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
@@ -138,18 +138,48 @@ CORS_ALLOWED_ORIGINS = [
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL')
 if RENDER_FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
-# إضافة النطاقات المخصصة إذا لزم الأمر
+# إضافة النطاقات المخصصة
 CORS_ALLOWED_ORIGINS.append('https://ghazimortaja.com')
 CORS_ALLOWED_ORIGINS.append('https://www.ghazimortaja.com')
 # -----------------------------
 
+# --- إعدادات REST Framework ---
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
 
+# --- إعدادات Simple JWT ---
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
+
+# --- إعدادات الكاش (اختياري، يتطلب Redis) ---
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.environ.get('REDIS_URL', 'redis://localhost:6379/1'),
+    }
+}
+
+# --- إعدادات السجلات للمراقبة ---
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
 }
