@@ -1,129 +1,118 @@
-# هذا الملف يخبر Render بكيفية بناء ونشر كل خدمة في مشروعك
-
-# أولاً: نُعرّف قاعدة البيانات
-databases:
-  - name: media-platform-db
-    databaseName: media_platform_db
-    user: db_user
-    # <-- تم حذف سطر "plan" بالكامل من هنا ليعتمد على خطة حسابك
-
-# ثانياً: نُعرّف جميع الخدمات والتطبيقات
 services:
-  # 1. الخادم الخلفي (Backend)
-  - type: web
-    name: backend
-    plan: starter
-    env: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    healthCheckPath: /api/token/
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: media-platform-db
-          property: connectionString
-      - key: GEMINI_API_KEY
-        sync: false
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=media_platform_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
 
-  # 2. الواجهة الأمامية (الرئيسية)
-  - type: web
-    name: frontend
-    plan: starter
-    env: docker
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
+  backend:
+    build: ./backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://user:password@db/media_platform_db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
 
-  # 3. خدمة مزامنة الفيديو
-  - type: web
-    name: video-sync-service
-    plan: starter
-    env: docker
-    dockerfilePath: ./services/video-synchronizer/Dockerfile
-    dockerContext: ./services/video-synchronizer
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    command: npm run dev
 
-  # 4. خدمة صياغة الأخبار
-  - type: web
-    name: news-refine-service
-    plan: starter
-    env: docker
-    dockerfilePath: ./services/news-refine/Dockerfile
-    dockerContext: ./services/news-refine
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false
-  
-  # 5. خدمة مولد الأفاتار
-  - type: web
-    name: avatar-service
-    plan: starter
-    env: docker
-    dockerfilePath: ./services/dynamic-avatar/Dockerfile
-    dockerContext: ./services/dynamic-avatar
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false
+  video_sync_service:
+    build: ./services/video-synchronizer
+    ports:
+      - "3001:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/video-synchronizer:/app
+      - /app/node_modules
 
-  # 6. خدمة بوت الأخبار
-  - type: web
-    name: chatbot-service
-    plan: starter
-    env: docker
-    dockerfilePath: ./services/news-chatbot/Dockerfile
-    dockerContext: ./services/news-chatbot
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false
+  news_refine_service:
+    build: ./services/news-refine
+    ports:
+      - "3002:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/news-refine:/app
+      - /app/node_modules
 
-  # 7. خدمة أتمتة أخبار الشرق
-  - type: web
-    name: asharq-service
-    plan: starter
-    env: docker
-    dockerfilePath: ./services/asharq-automation/Dockerfile
-    dockerContext: ./services/asharq-automation
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false
+  avatar_service:
+    build: ./services/dynamic-avatar
+    ports:
+      - "3003:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/dynamic-avatar:/app
+      - /app/node_modules
+      
+  chatbot_service:
+    build: ./services/news-chatbot
+    ports:
+      - "3004:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/news-chatbot:/app
+      - /app/node_modules      
 
-  # 8. خدمة مساعد البودكاست
-  - type: web
-    name: podcast-service
-    plan: starter
-    env: docker
-    dockerfilePath: ./services/podcast-helper/Dockerfile
-    dockerContext: ./services/podcast-helper
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false
-        
-  # 9. خدمة محرر الأسلوب
-  - type: web
-    name: style-editor-service
-    plan: starter
-    env: docker
-    dockerfilePath: ./services/style-editor/Dockerfile
-    dockerContext: ./services/style-editor
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false
+  asharq_service:
+    build: ./services/asharq-news
+    ports:
+      - "3005:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/asharq-news:/app
+      - /app/node_modules        
 
-  # 10. خدمة محول الانفوجرافيك
-  - type: web
-    name: infographic-service
-    plan: starter
-    env: docker
-    dockerfilePath: ./services/infographic-converter/Dockerfile
-    dockerContext: ./services/infographic-converter
-    envVars:
-      - key: GEMINI_API_KEY
-        sync: false
-```eof
+  podcast_service:
+    build: ./services/podcast-helper
+    ports:
+      - "3006:5173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./services/podcast-helper:/app
+      - /app/node_modules      
+      
+  style_editor_service:
+    build: ./services/style-editor
+    ports:
+      - "3007:5173"
+    volumes:
+      - ./services/style-editor:/app
+      - /app/node_modules
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
 
-### **الخطوات التالية**
-1.  **استبدل** محتوى ملف `render.yaml` بهذا الكود الجديد.
-2.  **ارفع التغييرات** إلى GitHub.
 
-هذه المرة، عند المزامنة، لن يجد Render خطة محددة لقاعدة البيانات، وبما أن حسابك احترافي، سيقوم تلقائيًا باختيار الخطة المدفوعة المناسبة. أنا واثق جدًا أن هذا التبسيط سيحل مشكلة المزامنة بشكل نهائي.
+  infographic_service:
+    build: ./services/infographic-converter
+    ports:
+      - "3008:5173"
+    volumes:
+      - ./services/infographic-converter:/app
+      - /app/node_modules
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      
+volumes:
+  postgres_data:
