@@ -13,20 +13,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-key-for-development')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# Render will set this to 'production' automatically.
 DEBUG = os.environ.get('RENDER') != 'true'
 
-# --- هذا هو التعديل الأول والمهم ---
 ALLOWED_HOSTS = []
 
-# هذا سيضيف رابط Render تلقائيًا عندما يكون المشروع على الخادم
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# أضف اسم نطاقك هنا بدون "https://"
-ALLOWED_HOSTS.append('ghazimortaja.com')
+ALLOWED_HOSTS.append('your-domain.com') 
 # ------------------------------------
 
 INSTALLED_APPS = [
@@ -41,14 +36,13 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework_simplejwt',
     'applications',
-    'tasks'
+    'tasks',
+    'proxy',
 ]
 
-# --- هذا هو التعديل الثاني والمهم ---
-# تم وضع corsheaders في الأعلى لضمان عملها بشكل صحيح
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # <-- تم نقله إلى هنا
+    'corsheaders.middleware.CorsMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -56,7 +50,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-# ------------------------------------
 
 ROOT_URLCONF = 'backend.urls'
 
@@ -80,7 +73,8 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL')
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600
     )
 }
 
@@ -99,18 +93,22 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- التعديل الثالث: إعدادات CORS للإنتاج ---
-# هذا سيسمح للواجهة الأمامية بالتحدث مع الخادم الخلفي
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
-RENDER_EXTERNAL_URL = os.environ.get('RENDER_EXTERNAL_URL')
-if RENDER_EXTERNAL_URL:
-    CORS_ALLOWED_ORIGINS.append(RENDER_EXTERNAL_URL)
-# -----------------------------------------------
+RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
+if RENDER_FRONTEND_URL:
+    CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
+}
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
