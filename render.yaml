@@ -1,8 +1,4 @@
-# هذا الملف يخبر Render بكيفية بناء ونشر كل خدمة في مشروعك
-# باستثناء قاعدة البيانات التي أنشأناها يدويًا
-
 services:
-  # 1. الخادم الخلفي (Backend)
   - type: web
     name: backend
     plan: starter
@@ -11,19 +7,17 @@ services:
     dockerContext: ./backend
     healthCheckPath: /api/token/
     envVars:
-      - key: DATABASE_URL # <-- سيتم توفيره من متغيرات البيئة في لوحة تحكم Render
+      - key: DATABASE_URL
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-      # Render will automatically add a RENDER_EXTERNAL_HOSTNAME variable
-      # We also need one for the frontend URL to allow CORS
+
       - key: RENDER_FRONTEND_URL
         fromService:
           type: web
           name: frontend
           property: url
 
-  # 2. الواجهة الأمامية (الرئيسية)
   - type: web
     name: frontend
     plan: starter
@@ -31,7 +25,6 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
 
-  # 3. خدمة مزامنة الفيديو
   - type: web
     name: video-sync-service
     plan: starter
@@ -42,7 +35,6 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  # 4. خدمة صياغة الأخبار
   - type: web
     name: news-refine-service
     plan: starter
@@ -53,7 +45,6 @@ services:
       - key: GEMINI_API_KEY
         sync: false
   
-  # 5. خدمة مولد الأفاتار
   - type: web
     name: avatar-service
     plan: starter
@@ -64,7 +55,6 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  # 6. خدمة بوت الأخبار
   - type: web
     name: chatbot-service
     plan: starter
@@ -75,7 +65,6 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  # 7. خدمة أتمتة أخبار الشرق
   - type: web
     name: asharq-service
     plan: starter
@@ -86,7 +75,6 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  # 8. خدمة مساعد البودكاست
   - type: web
     name: podcast-service
     plan: starter
@@ -97,7 +85,6 @@ services:
       - key: GEMINI_API_KEY
         sync: false
         
-  # 9. خدمة محرر الأسلوب
   - type: web
     name: style-editor-service
     plan: starter
@@ -108,7 +95,6 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  # 10. خدمة محول الانفوجرافيك
   - type: web
     name: infographic-service
     plan: starter
