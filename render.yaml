@@ -1,0 +1,122 @@
+# هذا الملف يخبر Render بكيفية بناء ونشر كل خدمة في مشروعك
+
+# أولاً: نُعرّف قاعدة البيانات
+databases:
+  - name: media-platform-db # اسم قاعدة البيانات
+    databaseName: media_platform_db # اسم قاعدة البيانات الداخلي
+    user: db_user
+    plan: free # يمكنك البدء بالخطة المجانية
+
+# ثانياً: نُعرّف جميع الخدمات والتطبيقات
+services:
+  # 1. الخادم الخلفي (Backend)
+  - type: web
+    name: backend
+    plan: free
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    # متغيرات البيئة
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: media-platform-db
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false # سنضيفه يدويًا من لوحة التحكم للأمان
+
+  # 2. الواجهة الأمامية (الرئيسية)
+  - type: web
+    name: frontend
+    plan: free
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+
+  # 3. خدمة مزامنة الفيديو
+  - type: web
+    name: video-sync-service
+    plan: free
+    env: docker
+    dockerfilePath: ./services/video-synchronizer/Dockerfile
+    dockerContext: ./services/video-synchronizer
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # 4. خدمة صياغة الأخبار
+  - type: web
+    name: news-refine-service
+    plan: free
+    env: docker
+    dockerfilePath: ./services/news-refine/Dockerfile
+    dockerContext: ./services/news-refine
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+  
+  # 5. خدمة مولد الأفاتار
+  - type: web
+    name: avatar-service
+    plan: free
+    env: docker
+    dockerfilePath: ./services/dynamic-avatar/Dockerfile
+    dockerContext: ./services/dynamic-avatar
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # 6. خدمة بوت الأخبار
+  - type: web
+    name: chatbot-service
+    plan: free
+    env: docker
+    dockerfilePath: ./services/news-chatbot/Dockerfile
+    dockerContext: ./services/news-chatbot
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # 7. خدمة أتمتة أخبار الشرق
+  - type: web
+    name: asharq-service
+    plan: free
+    env: docker
+    dockerfilePath: ./services/asharq-automation/Dockerfile
+    dockerContext: ./services/asharq-automation
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # 8. خدمة مساعد البودكاست
+  - type: web
+    name: podcast-service
+    plan: free
+    env: docker
+    dockerfilePath: ./services/podcast-helper/Dockerfile
+    dockerContext: ./services/podcast-helper
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+        
+  # 9. خدمة محرر الأسلوب
+  - type: web
+    name: style-editor-service
+    plan: free
+    env: docker
+    dockerfilePath: ./services/style-editor/Dockerfile
+    dockerContext: ./services/style-editor
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # 10. خدمة محول الانفوجرافيك
+  - type: web
+    name: infographic-service
+    plan: free
+    env: docker
+    dockerfilePath: ./services/infographic-converter/Dockerfile
+    dockerContext: ./services/infographic-converter
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
