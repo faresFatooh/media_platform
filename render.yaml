@@ -10,8 +10,6 @@ services:
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    # --- هذا هو التعديل الأهم ---
-    startCommand: "gunicorn backend.wsgi:application"
     healthCheckPath: /api/token/
     envVars:
       - key: DATABASE_URL
