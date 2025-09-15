@@ -4,7 +4,5 @@ djangorestframework
 python-dotenv
 django-cors-headers
 dj-database-url
-djangorestframework-simplejwt
 requests
 gunicorn
-
