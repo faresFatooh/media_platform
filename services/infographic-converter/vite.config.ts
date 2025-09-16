@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     
+    // إضافة هذا السطر لتحديد مسار index.html
+    root: path.resolve(__dirname),
+    
     server: {
       host: '0.0.0.0',
       port: port,
@@ -44,7 +47,13 @@ export default defineConfig(({ mode }) => {
     
     build: {
       outDir: 'dist',
-      sourcemap: false
+      sourcemap: false,
+      // إضافة هذا لتحديد نقطة الدخول بشكل صريح
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html')
+        }
+      }
     }
   };
 });
