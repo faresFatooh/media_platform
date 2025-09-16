@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
 
   return {
-    plugins: [react() as any],   // حل مشكلة TypeScript مع plugin
+    plugins: [react() as any],   
     server: {
       host: true,
       port: 5173,
@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
       },
       cors: true,
       strictPort: false,
-      allowedHosts: true       // ✅ السماح لأي host خارجي
+      allowedHosts: true       
     },
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
