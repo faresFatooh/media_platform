@@ -5,21 +5,24 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
-    plugins: [react()],
+    plugins: [react()], 
+    
+    server: {
+      host: true, 
+      watch: {
+        usePolling: true 
+      },
+      allowedHosts: ['.onrender.com']
+    },
+
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.')
+        '@': path.resolve(__dirname, '.'),
       }
-    },
-    server: {
-      host: true,
-      port: 5173,           // يمكن تغييره لكل خدمة إذا كانت على نفس الجهاز
-      watch: { usePolling: true },
-      allowedHosts: ["all"]   // <--- يسمح لأي host خارجي
     }
   };
 });
