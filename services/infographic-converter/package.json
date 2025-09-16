@@ -7,7 +7,6 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview"
-    
   },
   "dependencies": {
     "react-dom": "^19.1.1",
