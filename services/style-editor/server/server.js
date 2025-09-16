@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3001;
+const PORT = 'https://style-editor-service.onrender.com'
 
 // Middleware
 app.use(cors());
@@ -83,5 +83,5 @@ app.delete('/api/pairs/:id', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on ${PORT}`);
 });
