@@ -4,25 +4,31 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+
   return {
     plugins: [react()],
+    
+    // مخصص للإنتاج على Render
     server: {
       host: true,
-      watch: {
-        usePolling: true
-      },
-      allowedHosts: ["infographic-service.onrender.com"],
-      cors: true,
-      port: 5173
+      port: Number(process.env.PORT) || 5173,
+      strictPort: false
     },
+
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
+
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.')
       }
+    },
+
+    build: {
+      outDir: 'dist',      // مجلد البناء
+      sourcemap: false
     }
   };
 });
