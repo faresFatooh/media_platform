@@ -1,6 +1,6 @@
 import { StylePair } from '../types';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'https://style-editor-service.onrender.com'
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
