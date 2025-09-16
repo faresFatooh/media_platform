@@ -4,20 +4,19 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview --port $PORT",
-    "start": "vite preview --port $PORT --host 0.0.0.0"
-
+    "preview": "vite preview"
+    
   },
   "dependencies": {
-    "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react": "^19.1.1",
     "@google/genai": "^1.17.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.0.3",
     "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.3",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
