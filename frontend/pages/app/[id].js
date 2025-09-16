@@ -10,14 +10,14 @@ export default function AppDetails() {
 
 
   const services = {
-    '7': { url: 'http://localhost:3001', name: 'مزامنة الفيديو والترجمة' },
-    '8': { url: 'http://localhost:3002', name: 'تطبيق الأخبار وتحريرها' },
-    '9': { url: 'http://localhost:3003', name: 'مولد الأفاتار الديناميكي' },
-    '10': { url: 'http://localhost:3004', name: 'بوت النجاح الإخباري' },
-    '11': { url: 'http://localhost:3005', name: 'أتمتة أخبار الشرق' },
-    '12': { url: 'http://localhost:3006', name: 'مساعد أتمتة البودكاست' },
-    '14': { url: 'http://localhost:3007', name: 'محرر-الأسلوب-الشخصي' },
-    '15': { url: 'http://localhost:3008', name: 'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
+    '1': { url: 'http://localhost:3002', name: 'تطبيق الأخبار وتحريرها' },
+    '2': { url: 'http://localhost:3001', name: 'مزامنة الفيديو والترجمة' },
+    '3': { url: 'http://localhost:3003', name: 'مولد الأفاتار الديناميكي' },
+    '4': { url: 'https://chatbot-service-jjas.onrender.com', name: 'بوت النجاح الإخباري' },
+    '5': { url: 'http://localhost:3005', name: 'أتمتة أخبار الشرق' },
+    '6': { url: 'http://localhost:3006', name: 'مساعد أتمتة البودكاست' },
+    '7': { url: 'http://localhost:3007', name: 'محرر-الأسلوب-الشخصي' },
+    '8': { url: 'http://localhost:3008', name: 'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
   };
 
   useEffect(() => {
