@@ -4,31 +4,26 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+  const port = Number(process.env.PORT) || 5173;
 
   return {
     plugins: [react()],
-    
-    // مخصص للإنتاج على Render
     server: {
-      host: true,
-      port: Number(process.env.PORT) || 5173,
-      strictPort: false
+      host: '0.0.0.0',
+      port,
+      strictPort: true
     },
-
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
-
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.')
       }
     },
-
     build: {
-      outDir: 'dist',      // مجلد البناء
-      sourcemap: false
+      outDir: 'dist'
     }
   };
 });
