@@ -5,21 +5,22 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
-    plugins: [react()],   
+    plugins: [react()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
     resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      }
+      alias: { '@': path.resolve(__dirname, '.') }
     },
     server: {
       host: true,
-      port: 5173,          
+      port: 5173,
       watch: { usePolling: true },
-      allowedHosts: ['.onrender.com']
+      allowedHosts: [
+        'news-refine-service.onrender.com',  
+        '.onrender.com'                     
+      ]
     }
   };
 });
