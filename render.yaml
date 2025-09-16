@@ -1,7 +1,4 @@
-# هذا الملف يخبر Render بكيفية بناء ونشر كل خدمة في مشروعك
-
 services:
-  # 1. الخادم الخلفي (Backend)
   - type: web
     name: backend
     plan: starter
@@ -10,18 +7,16 @@ services:
     dockerContext: ./backend
     healthCheckPath: /api/token/
     envVars:
-      - key: DATABASE_URL
+      - key: DATABASE_URL 
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-      # --- هذا هو التعديل الوحيد والمهم ---
       - key: RENDER_FRONTEND_URL
         fromService:
           type: web
           name: frontend
-          property: host # <-- تم تغييرها من url إلى host
+          property: host
 
-  # 2. الواجهة الأمامية (الرئيسية)
   - type: web
     name: frontend
     plan: starter
@@ -29,7 +24,6 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
 
-  # ... (باقي الخدمات تبقى كما هي)
   - type: web
     name: video-sync-service
     plan: starter
