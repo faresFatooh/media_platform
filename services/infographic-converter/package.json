@@ -3,11 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite --host",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
+ "scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "start": "vite preview --port $PORT --host 0.0.0.0"
+},
   "dependencies": {
     "react-dom": "^19.1.1",
     "react": "^19.1.1",
