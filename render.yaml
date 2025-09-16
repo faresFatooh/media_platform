@@ -7,16 +7,15 @@ services:
     dockerContext: ./backend
     healthCheckPath: /api/token/
     envVars:
-      - key: DATABASE_URL
+      - key: DATABASE_URL 
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-
       - key: RENDER_FRONTEND_URL
         fromService:
           type: web
           name: frontend
-          property: host
+          property: url
 
   - type: web
     name: frontend
