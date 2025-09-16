@@ -83,5 +83,5 @@ app.delete('/api/pairs/:id', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+const API_URL = 'https://style-editor-service.onrender.com'
 });
