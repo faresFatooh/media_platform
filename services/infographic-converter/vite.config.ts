@@ -4,24 +4,28 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  const port = Number(process.env.PORT) || 5173;
-
   return {
-    plugins: [react()],
+    plugins: [react()], 
+    
     server: {
-      host: '0.0.0.0',   // مهم جداً على Render
-      port,
-      strictPort: true,
-      watch: { usePolling: true },
-      allowedHosts: ['.onrender.com'] // يسمح لأي subdomain من onrender.com
+      host: true, 
+      watch: {
+        usePolling: true 
+      },
+      allowedHosts: [
+        '.onrender.com',
+        'infographic-service.onrender.com' // أضف هذا السطر
+      ]
     },
+
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
     resolve: {
-      alias: { '@': path.resolve(__dirname, '.') }
-    },
-    build: { outDir: 'dist' }
+      alias: {
+        '@': path.resolve(__dirname, '.'),
+      }
+    }
   };
 });

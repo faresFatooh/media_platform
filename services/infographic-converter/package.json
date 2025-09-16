@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
  "scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "start": "vite preview --port $PORT --host 0.0.0.0"
-},
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite preview --host 0.0.0.0 --port $PORT"
+  },
   "dependencies": {
     "react-dom": "^19.1.1",
     "react": "^19.1.1",
