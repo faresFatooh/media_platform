@@ -4,10 +4,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true, 
-    watch: {
-      usePolling: true 
-    },
-    allowedHosts: ['.onrender.com']
-  }
+  host: true,
+  watch: {
+    usePolling: true
+  },
+  allowedHosts: ["infographic-service.onrender.com"],
+  port: 5173, 
+  cors: true 
+}
+
 })
