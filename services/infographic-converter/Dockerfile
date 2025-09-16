@@ -3,5 +3,9 @@ FROM node:18-alpine
 WORKDIR /app
 
 COPY package*.json ./
+RUN npm install
+COPY . .
 
-CMD ["sh", "-c", "npm install && npm run dev"]
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

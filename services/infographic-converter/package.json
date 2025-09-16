@@ -4,10 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "start": "vite preview --host 0.0.0.0 --port $PORT"
+    "preview": "vite preview"
   },
   "dependencies": {
     "react-dom": "^19.1.1",
@@ -19,8 +18,5 @@
     "@vitejs/plugin-react": "^5.0.3",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }
