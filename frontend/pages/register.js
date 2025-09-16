@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+// أضف هذا السطر لاستخدام متغير البيئة
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+
 export default function Register() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -12,7 +15,8 @@ export default function Register() {
     e.preventDefault();
     setMessage('');
 
-    const response = await fetch('http://localhost:8000/api/users/register/', {
+    // استخدم متغير البيئة بدلاً من العنوان المباشر
+    const response = await fetch(`${API_BASE}/api/users/register/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -31,7 +35,6 @@ export default function Register() {
     if (response.ok) {
       setMessage(`Success: ${data.message}`);
     } else {
-      // Format errors for display
       const errorText = Object.entries(data).map(([key, value]) => `${key}: ${value}`).join(', ');
       setMessage(`Error: ${errorText}`);
     }

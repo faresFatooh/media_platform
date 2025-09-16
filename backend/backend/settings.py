@@ -9,15 +9,16 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-key-for-loca
 
 DEBUG = os.environ.get('RENDER') != 'true'
 
-# --- هذا هو التعديل النهائي لمشكلة ALLOWED_HOSTS ---
+# --- التعديل النهائي على ALLOWED_HOSTS ---
 ALLOWED_HOSTS = []
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-# أضف اسم نطاقك الرسمي هنا
-ALLOWED_HOSTS.append('ghazimortaja.com') 
+# أضف هنا النطاق الفرعي للـ Backend
+# تأكد من أنه يتطابق مع النطاق الفرعي الذي أضفته في إعدادات Render
+ALLOWED_HOSTS.append('backend.ghazimortaja.com') 
 # ---------------------------------------------------
 
 INSTALLED_APPS = [
@@ -88,11 +89,16 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# --- التعديل على CORS_ALLOWED_ORIGINS ---
 CORS_ALLOWED_ORIGINS = []
-# This will be automatically set by the render.yaml file
+# هذا سيتم إعداده تلقائيًا من ملف render.yaml
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
+
+# أضف هنا نطاق الواجهة الأمامية للسماح بطلبات CORS
+CORS_ALLOWED_ORIGINS.append('https://ghazimortaja.com')
+# ---------------------------------------------------
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
