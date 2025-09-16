@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
+// هذا هو السطر الجديد والمهم
+// هو يقرأ عنوان الخادم الخلفي الصحيح من إعدادات Render
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Dashboard() {
@@ -17,7 +19,13 @@ export default function Dashboard() {
     }
 
     const fetchApplications = async () => {
+      // التأكد من أن الرابط موجود قبل إرسال الطلب
+      if (!API_BASE) {
+        setError('API URL is not configured. Please check environment variables.');
+        return;
+      }
       try {
+        // استخدمنا المتغير الجديد هنا بدلاً من "localhost"
         const response = await fetch(`${API_BASE}/api/applications/`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -71,3 +79,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
