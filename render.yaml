@@ -68,8 +68,8 @@ services:
     name: asharq-service
     plan: starter
     env: docker
-    dockerfilePath: ./services/asharq-automation/Dockerfile
-    dockerContext: ./services/asharq-automation
+    dockerfilePath: ./services/asharq-news/Dockerfile
+    dockerContext: ./services/asharq-news
     envVars:
       - key: GEMINI_API_KEY
         sync: false
