@@ -14,9 +14,9 @@ export default function AppDetails() {
     '2': { url: 'http://localhost:3001', name: 'مزامنة الفيديو والترجمة' },
     '3': { url: 'http://localhost:3003', name: 'مولد الأفاتار الديناميكي' },
     '4': { url: 'https://chatbot-service-jjas.onrender.com', name: 'بوت النجاح الإخباري' },
-    '5': { url: 'http://localhost:3005', name: 'أتمتة أخبار الشرق' },
-    '6': { url: 'http://localhost:3006', name: 'مساعد أتمتة البودكاست' },
-    '7': { url: 'http://localhost:3007', name: 'محرر-الأسلوب-الشخصي' },
+    '5': { url: 'https://news-refine-service.onrender.com', name: 'أتمتة أخبار الشرق' },
+    '6': { url: 'https://podcast-service.onrender.com', name: 'مساعد أتمتة البودكاست' },
+    '7': { url: 'https://style-editor-service.onrender.com', name: 'محرر-الأسلوب-الشخصي' },
     '8': { url: 'http://localhost:3008', name: 'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
   };
 
