@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
 export default function Dashboard() {
   const router = useRouter();
   const [apps, setApps] = useState([]);
@@ -16,18 +18,14 @@ export default function Dashboard() {
 
     const fetchApplications = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/applications/', {
+        const response = await fetch(`${API_BASE}/api/applications/`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-              router.push('/login');
-              return;
-          }
-          throw new Error('Could not fetch applications.');
+          throw new Error('Could not fetch applications. Please log in again.');
         }
 
         const data = await response.json();
@@ -63,11 +61,9 @@ export default function Dashboard() {
                 <h3 style={{ marginTop: 0 }}>{app.name}</h3>
                 <p>{app.description}</p>
               </div>
-
               <Link href={`/app/${app.id}`}>
                 <button style={{ width: '100%', padding: '0.75rem', cursor: 'pointer', marginTop: '1rem' }}>Launch App</button>
               </Link>
-
             </div>
           ))}
         </div>
