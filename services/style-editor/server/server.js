@@ -81,7 +81,4 @@ app.delete('/api/pairs/:id', (req, res) => {
 });
 
 
-// Start server
-app.listen(PORT, () => {
 const API_URL = 'https://style-editor-service.onrender.com'
-});
