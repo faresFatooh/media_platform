@@ -11,14 +11,15 @@ export default defineConfig(({ mode }) => {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
     resolve: {
-      alias: { '@': path.resolve(__dirname, '.') }
+      alias: {
+        '@': path.resolve(__dirname, '.')
+      }
     },
     server: {
       host: true,
-      port: 5173,
+      port: 5173,           // يمكن تغييره لكل خدمة إذا كانت على نفس الجهاز
       watch: { usePolling: true },
-      
-      allowedHosts: ["all"]
+      allowedHosts: ["all"]   // <--- يسمح لأي host خارجي
     }
   };
 });
