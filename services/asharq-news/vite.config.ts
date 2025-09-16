@@ -13,14 +13,12 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { '@': path.resolve(__dirname, '.') }
     },
-    server: {
-      host: true,
-      port: 5173,
-      watch: { usePolling: true },
-      allowedHosts: [
-        'news-refine-service.onrender.com',  
-        '.onrender.com'                     
-      ]
-    }
+  server: {
+      host: true, 
+      watch: {
+        usePolling: true 
+      },
+      allowedHosts: ['.onrender.com']
+    },
   };
 });
