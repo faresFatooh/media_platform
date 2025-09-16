@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic', # <-- تمت الإضافة لـ WhiteNoise
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # <-- تمت الإضافة لـ WhiteNoise
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -92,6 +94,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# --- إعدادات WhiteNoise ---
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# -------------------------
+
 CORS_ALLOWED_ORIGINS = []
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
@@ -109,4 +116,3 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
-

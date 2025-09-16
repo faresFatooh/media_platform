@@ -7,3 +7,4 @@ dj-database-url
 requests
 gunicorn
 djangorestframework-simplejwt
+whitenoise[brotli]
