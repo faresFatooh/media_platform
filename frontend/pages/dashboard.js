@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
-// هذا هو السطر الجديد والمهم
-// هو يقرأ عنوان الخادم الخلفي الصحيح من إعدادات Render
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Dashboard() {
@@ -19,13 +17,11 @@ export default function Dashboard() {
     }
 
     const fetchApplications = async () => {
-      // التأكد من أن الرابط موجود قبل إرسال الطلب
       if (!API_BASE) {
         setError('API URL is not configured. Please check environment variables.');
         return;
       }
       try {
-        // استخدمنا المتغير الجديد هنا بدلاً من "localhost"
         const response = await fetch(`${API_BASE}/api/applications/`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -37,14 +33,21 @@ export default function Dashboard() {
         }
 
         const data = await response.json();
-        setApps(data);
+
+        if (Array.isArray(data)) {
+            setApps(data);
+        } else {
+            console.error("Data received is not an array:", data);
+            setError('Received invalid data format from server.');
+        }
+
       } catch (err) {
         setError(err.message);
       }
     };
 
     fetchApplications();
-  }, []);
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
@@ -63,7 +66,7 @@ export default function Dashboard() {
         <h2>Available Applications</h2>
         {error && <p style={{ color: 'red' }}>{error}</p>}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-          {apps.map((app) => (
+          {Array.isArray(apps) && apps.map((app) => (
             <div key={app.id} style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <h3 style={{ marginTop: 0 }}>{app.name}</h3>
