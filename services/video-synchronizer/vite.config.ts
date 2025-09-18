@@ -1,28 +1,22 @@
-import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
-  return {
-    plugins: [react()], 
-    
-    server: {
-      host: true, 
-      watch: {
-        usePolling: true 
-      },
-      allowedHosts: ['.onrender.com']
-    },
-
-    define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-    },
+// https://vitejs.dev/config/
+export default defineConfig({
+    plugins: [react()],
     resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      }
+        alias: {
+            // Allows you to use '@/' as a shortcut to the root folder
+            '@': path.resolve(__dirname, '.'),
+        }
+    },
+    server: {
+        host: true,
+        watch: {
+            usePolling: true
+        },
+        // This is important for Render deployment
+        allowedHosts: ['.onrender.com'] 
     }
-  };
 });
