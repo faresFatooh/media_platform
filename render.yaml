@@ -5,7 +5,7 @@ services:
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    healthCheckPath: /api/token/
+    healthCheckPath: /health/
     envVars:
       - key: DATABASE_URL 
         sync: false
@@ -23,6 +23,13 @@ services:
     env: docker
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
+    envVars:
+      # هاد أهم شي يربط frontend بالbackend
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: backend
+          property: host
 
   - type: web
     name: video-sync-service
@@ -103,4 +110,3 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false
-
