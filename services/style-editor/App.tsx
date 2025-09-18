@@ -1,60 +1,111 @@
+import React, { useState, useEffect } from 'react';
+import { View, StylePair, ApiKeys } from './types';
+import { useLocalStorage } from './hooks/useLocalStorage';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import TrainingView from './components/TrainingView';
+import EditingView from './components/EditingView';
+import SettingsModal from './components/SettingsModal';
+import * as apiService from './services/apiService';
 
-import React, { useState, useCallback } from 'react';
-import { TextPair } from './types';
-import TrainingSection from './components/TrainingSection';
-import EditingSection from './components/EditingSection';
+const App: React.FC = () => {
+  const [view, setView] = useState<View>(View.Training);
+  const [pairs, setPairs] = useState<StylePair[]>([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [apiKeys, setApiKeys] = useLocalStorage<ApiKeys>('apiKeys', {
+    claude: '',
+    chatgpt: '',
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const initialExamples: TextPair[] = [
-  {
-    id: 'ex1',
-    raw: 'فريقنا عمل اجتماع لمناقشة المشروع الجديد.',
-    edited: 'عقد فريقنا اجتماعًا لمناقشة المشروع الجديد.'
-  },
-  {
-    id: 'ex2',
-    raw: 'التقرير لازم يتسلم بكرة الصبح.',
-    edited: 'يجب تسليم التقرير صباح الغد.'
-  }
-];
+  useEffect(() => {
+    const fetchPairs = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const fetchedPairs = await apiService.getPairs();
+        setPairs(fetchedPairs);
+      } catch (err) {
+        setError("فشل الاتصال بالخادم. تأكد من أن الخادم يعمل (عبر تشغيل `npm start` في مجلد `server`) وأن لا شيء يمنع الاتصال بـ http://localhost:3001.");
+        console.error("Fetch error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-function App() {
-  const [examples, setExamples] = useState<TextPair[]>(initialExamples);
-
-  const addExample = useCallback((newPair: Omit<TextPair, 'id'>) => {
-    setExamples(prev => [{ ...newPair, id: crypto.randomUUID() }, ...prev]);
+    fetchPairs();
   }, []);
 
-  const deleteExample = useCallback((id: string) => {
-    setExamples(prev => prev.filter(pair => pair.id !== id));
-  }, []);
+  const handleAddPair = async (pairData: { before: string; after: string }) => {
+    try {
+      const newPair = await apiService.addPair(pairData);
+      setPairs([...pairs, newPair]);
+    } catch (err) {
+      alert('فشل في إضافة الزوج الجديد. يرجى المحاولة مرة أخرى.');
+      console.error(err);
+    }
+  };
+
+  const handleDeletePair = async (id: string) => {
+    try {
+      await apiService.deletePair(id);
+      setPairs(pairs.filter((p) => p._id !== id));
+    } catch (err) {
+      alert('فشل في حذف الزوج. يرجى المحاولة مرة أخرى.');
+      console.error(err);
+    }
+  };
+  
+  const handleAddPairsBatch = async (batch: Omit<StylePair, '_id'>[]) => {
+    try {
+      const newPairs = await apiService.addPairsBatch(batch);
+      // To avoid duplicates on the frontend
+      const existingIds = new Set(pairs.map(p => p._id));
+      const uniqueNewPairs = newPairs.filter(p => !existingIds.has(p._id));
+      setPairs([...pairs, ...uniqueNewPairs]);
+    } catch (err) {
+      alert('فشل في استيراد الأزواج دفعة واحدة.');
+      console.error(err);
+    }
+  };
+
 
   return (
-    <div className="bg-slate-50 min-h-screen text-slate-800">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">محرر النصوص الذكي</h1>
-          <p className="text-sm sm:text-base text-slate-500 mt-1">
-            درّب الذكاء الاصطناعي على أسلوبك في الكتابة، وحرر نصوصك بضغطة زر.
-          </p>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1">
-            <TrainingSection examples={examples} onAddExample={addExample} onDeleteExample={deleteExample} />
-          </div>
-          <div className="lg:col-span-2">
-            <EditingSection examples={examples} onNewPairGenerated={addExample} />
-          </div>
-        </div>
-      </main>
-
-      <footer className="text-center py-4 text-slate-400 text-sm">
-        <p>تم التطوير بواسطة مهندس واجهات أمامية خبير.</p>
-      </footer>
+    <div className="flex h-screen bg-gray-50 text-gray-800">
+      <Sidebar
+        currentView={view}
+        setView={setView}
+        onSettingsClick={() => setIsSettingsOpen(true)}
+      />
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white p-6 md:p-8">
+          {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert"><p>{error}</p></div>}
+          {isLoading ? (
+             <div className="flex justify-center items-center h-full">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+             </div>
+          ) : view === View.Training ? (
+            <TrainingView
+              pairs={pairs}
+              onAddPair={handleAddPair}
+              onDeletePair={handleDeletePair}
+              onAddPairsBatch={handleAddPairsBatch}
+            />
+          ) : (
+            <EditingView pairs={pairs} apiKeys={apiKeys} />
+          )}
+        </main>
+      </div>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        initialKeys={apiKeys}
+        onSave={(newKeys) => setApiKeys(newKeys)}
+      />
     </div>
   );
-}
+};
 
 export default App;

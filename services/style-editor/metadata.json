@@ -1,5 +1,5 @@
 {
-  "name": "Copy of Copy of AI Text Editor - محرر النصوص الذكي",
-  "description": "An AI-powered text editing application that learns your writing style from examples and applies it to new texts. The interface is fully in Arabic. / تطبيق تحرير نصوص مدعوم بالذكاء الاصطناعي يتعلم أسلوب كتابتك من الأمثلة ويطبقه على النصوص الجديدة. الواجهة باللغة العربية بالكامل.",
+  "name": "محرر الأسلوب الشخصي",
+  "description": "تطبيق ذكاء اصطناعي لتدريب نموذج شخصي على أسلوب الكتابة الخاص بك باستخدام أزواج نصية (قبل وبعد) لتحرير النصوص المستقبلية.",
   "requestFramePermissions": []
 }
