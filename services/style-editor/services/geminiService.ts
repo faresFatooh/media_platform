@@ -1,7 +1,7 @@
 import { TextPair } from '../types';
 
 // This service now connects to the custom style editor backend.
-const API_URL = 'https://api.style-editor-service.onrender.com/predict';
+const API_URL = 'https://api.ghazimortaja.com/predict';
 
 /**
  * Sends a raw text and a list of style examples to the custom editing service
