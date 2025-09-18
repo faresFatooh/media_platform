@@ -5,20 +5,19 @@ services:
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    healthCheckPath: /health # استخدام مسار فحص السلامة البسيط
+    healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          # تأكد من أن هذا هو نفس اسم قاعدة البيانات التي أنشأتها يدويًا
           name: markaz-media-db 
-          property: internalConnectionString
+          property: connectionString
       - key: GEMINI_API_KEY
-        sync: false # ستقوم بإضافة هذا يدويًا في لوحة التحكم
+        sync: false
       - key: RENDER_FRONTEND_URL
         fromService:
           type: web
           name: frontend
-          property: url # يمرر رابط الواجهة الأمامية للخادم (لـ CORS)
+          property: host
 
   # 2. الواجهة الأمامية (الرئيسية)
   - type: web
@@ -28,11 +27,11 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     envVars:
-      - key: NEXT_PUBLIC_API_URL # يمرر رابط الخادم الخلفي للواجهة
+      - key: NEXT_PUBLIC_API_URL
         fromService:
           type: web
           name: backend
-          property: url
+          property: host 
 
   # 3. خدمة مزامنة الفيديو
   - type: web
@@ -114,7 +113,7 @@ services:
         fromService:
           type: web
           name: backend
-          property: url
+          property: host # <-- تم التصحيح هنا
 
   # 10. خدمة محول الانفوجرافيك
   - type: web
