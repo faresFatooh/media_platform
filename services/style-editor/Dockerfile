@@ -1,26 +1,19 @@
-# 1. Use an official Node.js runtime
-FROM node:18-alpine
-
-# 2. Set the working directory
+# المرحلة الأولى: بناء المشروع
+FROM node:18-alpine AS builder
 WORKDIR /app
-
-# --- Backend Dependencies ---
-# 3. Copy server's package file first
-COPY server/package*.json ./server/
-# 4. Install server dependencies
-RUN npm install --prefix server
-
-# --- Frontend Dependencies ---
-# 5. Copy frontend's package file
 COPY package*.json ./
-# 6. Install frontend dependencies
 RUN npm install
-
-# 7. Copy the rest of the project code
 COPY . .
+# يقوم ببناء الملفات النهائية للإنتاج
+RUN npm run build
 
-# 8. Expose the port the frontend runs on
-EXPOSE 3000
+# المرحلة الثانية: تقديم الملفات النهائية
+FROM node:18-alpine
+WORKDIR /app
+# انسخ فقط الملفات المبنية من المرحلة السابقة
+COPY --from=builder /app/dist ./dist  # لـ Vite
+COPY --from=builder /app/out ./out    # لـ Next.js (إذا كان موجودًا)
+COPY package.json .
 
-# 9. The final command to run both frontend and server
-CMD ["npm", "run", "dev"]
+# قم بتشغيل خادم بسيط لتقديم الملفات
+CMD ["npx", "serve", "-s", "dist"] # أو "out" لـ Next.js
