@@ -1,83 +1,48 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { StylePair } from "../types";
+import { GoogleGenerativeAI } from "@google/genai";
+import { TextPair } from '../types';
 
-export const editWithStyle = async (
-  textToEdit: string,
-  stylePairs: StylePair[]
-): Promise<string[]> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API key is not configured.");
-  }
-  
-  if (stylePairs.length === 0) {
-      throw new Error("لا توجد أزواج تدريب. يرجى إضافة بعض الأمثلة في خانة التدريب أولاً.");
-  }
+// تهيئة عميل Gemini AI باستخدام مفتاح API
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-  const examples = stylePairs
-    .map(
-      (pair, index) =>
-        `مثال ${index + 1}:\nالنص الأصلي (قبل): "${pair.before}"\nالنص المعدل (بعد): "${pair.after}"`
-    )
-    .join("\n\n");
-
-  const prompt = `أنت محرر خبير ومساعد كتابة ذكي. مهمتك هي إعادة كتابة النص المقدم لك بأسلوب محدد تعلمته من الأمثلة التالية.
-  
-قواعد صارمة:
-- يجب أن تلتزم بأسلوب "بعد" في الأمثلة المقدمة.
-- يجب أن تحافظ على المعنى الأساسي للنص الأصلي دون تغيير.
-- يجب أن تتجنب تمامًا أي عناصر من أسلوب "قبل".
-- يجب أن تقدم نسخة واحدة مُحسَّنة من النص المُحرر.
-- يجب أن يكون الرد بصيغة JSON فقط، ويجب أن يكون كائنًا يحتوي على مفتاح "edited_texts" وقيمته عبارة عن مصفوفة تحتوي على نص محرر واحد فقط.
-
-الأمثلة على الأسلوب المطلوب:
-${examples}
-
----
-الآن، أعد كتابة النص التالي بناءً على القواعد والأمثلة أعلاه.
-
-النص المراد تحريره:
-"${textToEdit}"
-`;
-
+/**
+ * يرسل نصًا خامًا وقائمة من أمثلة الأسلوب إلى Gemini API
+ * ويعيد النص المحرر بواسطة الذكاء الاصطناعي.
+ * @param rawText النص المراد تحريره.
+ * @param examples مصفوفة من أزواج النصوص التي توضح أسلوب التحرير المطلوب.
+ * @returns وعد يتم حله إلى سلسلة نصية تحتوي على النص المحرر.
+ */
+export async function editWithStyle(rawText: string, examples: TextPair[]): Promise<string> {
   try {
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              edited_texts: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.STRING,
-                },
-                description: "An array containing one edited version of the text."
-              }
-            },
-            required: ["edited_texts"]
-          }
-        }
-    });
+    // بناء الطلب (prompt) لنموذج الذكاء الاصطناعي
+    const examplePrompts = examples.map(p => `Original: ${p.before}\nEdited: ${p.after}`).join('\n\n');
+    const prompt = `
+      You are an expert text editor. Your task is to edit the following text based on the provided style examples.
+      
+      Here are the examples of the desired style:
+      ${examplePrompts}
+      
+      Now, please edit this text in the same style:
+      Original: ${rawText}
+      Edited:
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const editedText = response.text();
     
-    const jsonText = response.text.trim();
-    const parsed = JSON.parse(jsonText);
-    
-    if (parsed && Array.isArray(parsed.edited_texts) && parsed.edited_texts.length > 0) {
-      return parsed.edited_texts;
-    } else {
-      throw new Error("لم يتمكن الذكاء الاصطناعي من إنشاء اقتراحات صالحة.");
+    if (!editedText) {
+        throw new Error("AI response was empty.");
     }
+        
+    return editedText;
 
   } catch (error) {
-    console.error("Error calling Gemini API or parsing response:", error);
-    if (error instanceof SyntaxError) {
-        throw new Error("حدث خطأ أثناء معالجة الاستجابة من الذكاء الاصطناعي. قد تكون الاستجابة غير صالحة.");
+    console.error("Error calling Gemini API:", error);
+    if (error instanceof Error) {
+        // نعيد رسالة الخطأ للواجهة الأمامية لتعرضها للمستخدم
+        return `حدث خطأ أثناء الاتصال بخدمة Gemini: ${error.message}`;
     }
-    const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء الاتصال بالذكاء الاصطناعي. يرجى المحاولة مرة أخرى.";
-    throw new Error(errorMessage);
+    return "حدث خطأ غير معروف.";
   }
-};
+}
