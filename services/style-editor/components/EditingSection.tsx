@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { TextPair } from "../types";
 import { editWithStyle } from "../services/geminiService";
-import { saveStyleExample } from "../services/apiService";
+import { saveStyleExample } from "../apiService";
 
 interface EditingSectionProps {
   examples: TextPair[];

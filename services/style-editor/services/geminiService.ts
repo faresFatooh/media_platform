@@ -2,7 +2,7 @@ import { TextPair } from '../types';
 
 const API_URL = import.meta.env.VITE_MAIN_BACKEND_URL;
 
-export async function editWithStyle(rawText: string): Promise<string> {
+export async function editWithStyle(rawText: string, examples: any): Promise<string> {
   try {
     const token = localStorage.getItem('access_token');
     const response = await fetch(`${API_URL}/api/style-examples/predict/`, {
