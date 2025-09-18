@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { TextPair } from '../types';
 import ExamplePairView from './ExamplePairView';
+import { saveStyleExample } from '../services/apiService';
 
 interface TrainingSectionProps {
   examples: TextPair[];
@@ -15,15 +15,23 @@ const PlusIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-
 const TrainingSection: React.FC<TrainingSectionProps> = ({ examples, onAddExample, onDeleteExample }) => {
   const [rawText, setRawText] = useState('');
   const [editedText, setEditedText] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (rawText.trim() && editedText.trim()) {
-      onAddExample({ raw: rawText, edited: editedText });
+      const newPair = { raw: rawText, edited: editedText };
+      onAddExample(newPair);
+
+      try {
+        // حفظ مباشرة في Django
+        await saveStyleExample(newPair.raw, newPair.edited);
+      } catch (err: any) {
+        console.error("خطأ في الحفظ:", err);
+      }
+
       setRawText('');
       setEditedText('');
     }
@@ -33,48 +41,33 @@ const TrainingSection: React.FC<TrainingSectionProps> = ({ examples, onAddExampl
     <div className="bg-white p-6 rounded-xl shadow-md space-y-6 sticky top-24">
       <h2 className="text-xl font-bold text-slate-800 border-b pb-3">خانة رفع نصوص للتدريب</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="raw-text-train" className="block text-sm font-medium text-slate-600 mb-1">
-            النص الأصلي (قبل التحرير)
-          </label>
-          <textarea
-            id="raw-text-train"
-            rows={4}
-            value={rawText}
-            onChange={(e) => setRawText(e.target.value)}
-            className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            placeholder="مثال: فريقنا عمل اجتماع..."
-          />
-        </div>
-        <div>
-          <label htmlFor="edited-text-train" className="block text-sm font-medium text-slate-600 mb-1">
-            النص المحرر (بعد التحرير)
-          </label>
-          <textarea
-            id="edited-text-train"
-            rows={4}
-            value={editedText}
-            onChange={(e) => setEditedText(e.target.value)}
-            className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            placeholder="مثال: عقد فريقنا اجتماعًا..."
-          />
-        </div>
+        <textarea
+          rows={4}
+          value={rawText}
+          onChange={(e) => setRawText(e.target.value)}
+          className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          placeholder="النص الأصلي"
+        />
+        <textarea
+          rows={4}
+          value={editedText}
+          onChange={(e) => setEditedText(e.target.value)}
+          className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          placeholder="النص المحرر"
+        />
         <button
           type="submit"
           disabled={!rawText.trim() || !editedText.trim()}
           className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:bg-slate-300 disabled:cursor-not-allowed"
         >
-          <PlusIcon />
-          إضافة زوج تدريبي
+          <PlusIcon /> إضافة زوج تدريبي
         </button>
       </form>
-      
+
       <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
         <h3 className="text-lg font-semibold text-slate-700">الأمثلة الحالية ({examples.length})</h3>
         {examples.length > 0 ? (
-          examples.map(pair => (
-            <ExamplePairView key={pair.id} pair={pair} onDelete={onDeleteExample} />
-          ))
+          examples.map(pair => <ExamplePairView key={pair.id} pair={pair} onDelete={onDeleteExample} />)
         ) : (
           <p className="text-slate-500 text-sm text-center py-4">لا توجد أمثلة. أضف زوجًا تدريبيًا للبدء.</p>
         )}
