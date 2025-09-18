@@ -5,8 +5,7 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-for-dev')
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY') # <-- تمت إضافة هذا السطر
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-key-for-local-development')
 
 DEBUG = os.environ.get('RENDER') != 'true'
 
@@ -14,8 +13,7 @@ ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-
-ALLOWED_HOSTS.append('ghazimortaja.com') 
+ALLOWED_HOSTS.append('ghazimortaja.com')
 ALLOWED_HOSTS.append('backend.ghazimortaja.com')
 
 CSRF_TRUSTED_ORIGINS = [
@@ -32,7 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'whitenoise.runserver_nostatic',
+    'whitenoise.runserver_nostatic', # <-- تمت الإضافة لـ WhiteNoise
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
@@ -40,12 +38,11 @@ INSTALLED_APPS = [
     'users',
     'applications',
     'tasks',
-    'style_editor_data',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # <-- تمت الإضافة لـ WhiteNoise
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -93,17 +90,21 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
+
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# --- إعدادات WhiteNoise ---
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# -------------------------
 
 CORS_ALLOWED_ORIGINS = []
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
-    CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_FRONTEND_URL}") # Added https://
+    CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
 CORS_ALLOWED_ORIGINS.append("https://ghazimortaja.com")
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -111,4 +112,7 @@ REST_FRAMEWORK = {
     )
 }
 
-SIMPLE_JWT = { "ACCESS_TOKEN_LIFETIME": timedelta(days=1), "REFRESH_TOKEN_LIFETIME": timedelta(days=7), }
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
