@@ -15,7 +15,7 @@ async function getAuthToken() {
 
 export async function fetchExamples(): Promise<TextPair[]> {
     const token = await getAuthToken();
-    const response = await fetch(`${API_BASE_URL}admin/style_editor_data/styleexample/`, {
+    const response = await fetch(`${API_BASE_URL}/api/style-examples/`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!response.ok) throw new Error('Failed to fetch examples');
