@@ -30,7 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'whitenoise.runserver_nostatic', # <-- تمت الإضافة لـ WhiteNoise
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
@@ -38,12 +38,12 @@ INSTALLED_APPS = [
     'users',
     'applications',
     'tasks',
-    'style_editor_data.apps.StyleEditorDataConfig',
+    'style_editor_data', # The name from apps.py is better: 'style_editor_data.apps.StyleEditorDataConfig'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # <-- تمت الإضافة لـ WhiteNoise
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -95,17 +95,14 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- إعدادات WhiteNoise ---
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-# -------------------------
 
 CORS_ALLOWED_ORIGINS = []
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
 CORS_ALLOWED_ORIGINS.append("https://ghazimortaja.com")
-
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
