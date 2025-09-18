@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'users',
     'applications',
     'tasks',
+    'style_editor_data.apps.StyleEditorDataConfig',
 ]
 
 MIDDLEWARE = [
