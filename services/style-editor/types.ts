@@ -1,6 +1,5 @@
-
 export interface TextPair {
   id: string;
-  raw: string;
-  edited: string;
+  raw: string;     // <-- تم التصحيح هنا
+  edited: string;  // <-- وتم التصحيح هنا
 }
