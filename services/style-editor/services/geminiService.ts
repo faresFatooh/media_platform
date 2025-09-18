@@ -1,23 +1,22 @@
 import { TextPair } from '../types';
 
-const API_URL = '/api'; // Using the proxy
+const API_URL = import.meta.env.VITE_MAIN_BACKEND_URL;
 
-export async function editWithStyle(rawText: string, examples: TextPair[]): Promise<string> {
+export async function editWithStyle(rawText: string): Promise<string> {
   try {
-    const response = await fetch(`${API_URL}/predict`, {
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`${API_URL}/api/style-examples/predict/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        raw_text: rawText,
-        examples: examples.map(({ id, ...rest }) => rest), // Send correct format
-      }),
+      body: JSON.stringify({ raw_text: rawText }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Request failed');
+      throw new Error(errorData.error || 'Request failed');
     }
 
     const data = await response.json();
@@ -25,7 +24,7 @@ export async function editWithStyle(rawText: string, examples: TextPair[]): Prom
   } catch (error) {
     console.error("Error calling style editor API:", error);
     if (error instanceof Error) {
-        return `حدث خطأ: ${error.message}`;
+      return `حدث خطأ: ${error.message}`;
     }
     return "حدث خطأ غير معروف.";
   }

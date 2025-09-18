@@ -24,25 +24,25 @@ const EditingSection: React.FC<EditingSectionProps> = ({ examples, onNewPairGene
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleEdit = async () => {
-    if (!inputText.trim()) return;
-    setIsLoading(true);
-    setError(null);
-    setResult(null);
+const handleEdit = async () => {
+  if (!inputText.trim()) return;
+  setIsLoading(true);
+  setError(null);
+  setResult(null);
 
-    const editedText = await editWithStyle(inputText, examples);
-    
-    // Simple check for error message from service
-    if(editedText.startsWith('حدث خطأ')) {
-      setError(editedText);
-    } else {
-      const newPair = { raw: inputText, edited: editedText };
-      setResult(newPair);
-      onNewPairGenerated(newPair);
-    }
-    
-    setIsLoading(false);
-  };
+  const editedText = await editWithStyle(inputText);
+
+  if (editedText.startsWith('حدث خطأ')) {
+    setError(editedText);
+  } else {
+    const newPair = { raw: inputText, edited: editedText };
+    setResult(newPair);
+    // احفظ الزوج الجديد كمان بالتدريب لو بدك
+    // onNewPairGenerated(newPair);
+  }
+
+  setIsLoading(false);
+};
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-md space-y-6">
