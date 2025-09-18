@@ -5,7 +5,7 @@ import { saveStyleExample } from '../services/apiService';
 
 interface TrainingSectionProps {
   examples: TextPair[];
-  onAddExample: (pair: Omit<TextPair, 'id'>) => void;
+  onAddExample: (pair: TextPair) => void; // نستخدم TextPair كامل مع id
   onDeleteExample: (id: string) => void;
 }
 
@@ -21,19 +21,21 @@ const TrainingSection: React.FC<TrainingSectionProps> = ({ examples, onAddExampl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (rawText.trim() && editedText.trim()) {
-      const newPair = { raw: rawText, edited: editedText };
-      onAddExample(newPair);
+    if (!rawText.trim() || !editedText.trim()) return;
 
-      try {
-        // حفظ مباشرة في Django
-        await saveStyleExample(newPair.raw, newPair.edited);
-      } catch (err: any) {
-        console.error("خطأ في الحفظ:", err);
-      }
+    try {
+      // حفظ الزوج التدريبي في قاعدة البيانات
+      const savedPair = await saveStyleExample(rawText, editedText);
 
+      // إرسال الزوج المحفوظ للواجهة
+      onAddExample(savedPair);
+
+      // إعادة تعيين الحقول
       setRawText('');
       setEditedText('');
+    } catch (err: any) {
+      console.error("خطأ في الحفظ:", err);
+      alert(`خطأ في الحفظ: ${err.message || err}`);
     }
   };
 
@@ -41,26 +43,39 @@ const TrainingSection: React.FC<TrainingSectionProps> = ({ examples, onAddExampl
     <div className="bg-white p-6 rounded-xl shadow-md space-y-6 sticky top-24">
       <h2 className="text-xl font-bold text-slate-800 border-b pb-3">خانة رفع نصوص للتدريب</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <textarea
-          rows={4}
-          value={rawText}
-          onChange={(e) => setRawText(e.target.value)}
-          className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          placeholder="النص الأصلي"
-        />
-        <textarea
-          rows={4}
-          value={editedText}
-          onChange={(e) => setEditedText(e.target.value)}
-          className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          placeholder="النص المحرر"
-        />
+        <div>
+          <label htmlFor="raw-text-train" className="block text-sm font-medium text-slate-600 mb-1">
+            النص الأصلي (قبل التحرير)
+          </label>
+          <textarea
+            id="raw-text-train"
+            rows={4}
+            value={rawText}
+            onChange={(e) => setRawText(e.target.value)}
+            className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            placeholder="مثال: فريقنا عمل اجتماع..."
+          />
+        </div>
+        <div>
+          <label htmlFor="edited-text-train" className="block text-sm font-medium text-slate-600 mb-1">
+            النص المحرر (بعد التحرير)
+          </label>
+          <textarea
+            id="edited-text-train"
+            rows={4}
+            value={editedText}
+            onChange={(e) => setEditedText(e.target.value)}
+            className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            placeholder="مثال: عقد فريقنا اجتماعًا..."
+          />
+        </div>
         <button
           type="submit"
           disabled={!rawText.trim() || !editedText.trim()}
           className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:bg-slate-300 disabled:cursor-not-allowed"
         >
-          <PlusIcon /> إضافة زوج تدريبي
+          <PlusIcon />
+          إضافة زوج تدريبي
         </button>
       </form>
 

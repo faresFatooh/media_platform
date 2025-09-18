@@ -5,7 +5,7 @@ import { saveStyleExample } from '../services/apiService';
 
 interface EditingSectionProps {
   examples: TextPair[];
-  onNewPairGenerated: (pair: Omit<TextPair, 'id'>) => void;
+  onNewPairGenerated: (pair: TextPair) => void; // الآن نستخدم TextPair كامل مع id
 }
 
 const Spinner: React.FC = () => (
@@ -31,37 +31,44 @@ const EditingSection: React.FC<EditingSectionProps> = ({ examples, onNewPairGene
     setResult(null);
 
     try {
-      // تعديل النص بواسطة Gemini
+      // تحرير النص عبر Gemini
       const editedText = await editWithStyle(inputText, examples);
 
       if (editedText.startsWith('حدث خطأ')) {
         setError(editedText);
       } else {
-        const newPair = { raw: inputText, edited: editedText };
-        setResult(newPair);
-        onNewPairGenerated(newPair);
+        const newPairData = { raw: inputText, edited: editedText };
 
-        // حفظ النصوص في Django
-        await saveStyleExample(newPair.raw, newPair.edited);
+        // حفظ في قاعدة البيانات
+        const savedPair = await saveStyleExample(inputText, editedText);
+
+        setResult(newPairData);
+        onNewPairGenerated(savedPair); // إرسال الزوج مع id للواجهة
       }
     } catch (err: any) {
-      setError(err.message || 'حدث خطأ غير معروف');
+      setError(`خطأ: ${err.message || err}`);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-md space-y-6">
       <h2 className="text-xl font-bold text-slate-800 border-b pb-3">خانة تحرير نص جديد</h2>
       <div className="space-y-4">
-        <textarea
-          rows={8}
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          placeholder="اكتب أو الصق النص هنا..."
-        />
+        <div>
+          <label htmlFor="new-text-edit" className="block text-sm font-medium text-slate-600 mb-1">
+            أدخل النص الذي تريد تحريره
+          </label>
+          <textarea
+            id="new-text-edit"
+            rows={8}
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            placeholder="اكتب أو الصق النص هنا..."
+          />
+        </div>
         <button
           onClick={handleEdit}
           disabled={isLoading || !inputText.trim()}
@@ -71,7 +78,12 @@ const EditingSection: React.FC<EditingSectionProps> = ({ examples, onNewPairGene
         </button>
       </div>
 
-      {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md">{error}</div>}
+      {error && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
+          <p className="font-bold">خطأ</p>
+          <p>{error}</p>
+        </div>
+      )}
 
       {result && (
         <div className="space-y-4 pt-4">
