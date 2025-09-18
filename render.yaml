@@ -5,25 +5,36 @@ services:
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    healthCheckPath: /api/token/
+    healthCheckPath: /health # استخدام مسار فحص السلامة البسيط
     envVars:
-      - key: DATABASE_URL 
-        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          # تأكد من أن هذا هو نفس اسم قاعدة البيانات التي أنشأتها يدويًا
+          name: markaz-media-db 
+          property: internalConnectionString
       - key: GEMINI_API_KEY
-        sync: false
+        sync: false # ستقوم بإضافة هذا يدويًا في لوحة التحكم
       - key: RENDER_FRONTEND_URL
         fromService:
           type: web
           name: frontend
-          property: host
+          property: url # يمرر رابط الواجهة الأمامية للخادم (لـ CORS)
 
+  # 2. الواجهة الأمامية (الرئيسية)
   - type: web
     name: frontend
     plan: starter
     env: docker
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL # يمرر رابط الخادم الخلفي للواجهة
+        fromService:
+          type: web
+          name: backend
+          property: url
 
+  # 3. خدمة مزامنة الفيديو
   - type: web
     name: video-sync-service
     plan: starter
@@ -34,6 +45,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
+  # 4. خدمة صياغة الأخبار
   - type: web
     name: news-refine-service
     plan: starter
@@ -44,6 +56,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
   
+  # 5. خدمة مولد الأفاتار
   - type: web
     name: avatar-service
     plan: starter
@@ -54,6 +67,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
+  # 6. خدمة بوت الأخبار
   - type: web
     name: chatbot-service
     plan: starter
@@ -64,6 +78,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
+  # 7. خدمة أتمتة أخبار الشرق
   - type: web
     name: asharq-service
     plan: starter
@@ -74,6 +89,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
+  # 8. خدمة مساعد البودكاست
   - type: web
     name: podcast-service
     plan: starter
@@ -84,6 +100,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
         
+  # 9. خدمة محرر الأسلوب
   - type: web
     name: style-editor-service
     plan: starter
@@ -91,14 +108,15 @@ services:
     dockerfilePath: ./services/style-editor/Dockerfile
     dockerContext: ./services/style-editor
     envVars:
-    - key: GEMINI_API_KEY
-      sync: false
-    - key: MAIN_BACKEND_URL
-      fromService:
-        type: web
-        name: backend
-        property: url
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MAIN_BACKEND_URL
+        fromService:
+          type: web
+          name: backend
+          property: url
 
+  # 10. خدمة محول الانفوجرافيك
   - type: web
     name: infographic-service
     plan: starter
@@ -108,4 +126,3 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false
-
