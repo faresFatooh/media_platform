@@ -1,7 +1,7 @@
 import { TextPair } from '../types';
 
 // This service now connects to the custom style editor backend.
-const API_URL = 'https://style-editor-service.onrender.com/predict';
+const API_URL = '/api';
 
 /**
  * Sends a raw text and a list of style examples to the custom editing service
@@ -12,15 +12,13 @@ const API_URL = 'https://style-editor-service.onrender.com/predict';
  */
 export async function editWithStyle(rawText: string, examples: TextPair[]): Promise<string> {
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(`${API_URL}/predict`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // The API expects 'raw_text' and 'examples' to perform few-shot learning.
         raw_text: rawText,
-        // We remove the 'id' field as it's a client-side only property.
         examples: examples.map(({ id, ...rest }) => rest),
       }),
     });
