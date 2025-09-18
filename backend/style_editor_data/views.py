@@ -5,11 +5,14 @@ from rest_framework.decorators import action
 from .models import StyleExample
 from .serializers import StyleExampleSerializer
 from django.conf import settings
-from google.generativeai import GenerativeModel, configure
+import google.generativeai as genai
 
 # Configure the Gemini client
 try:
-    configure(api_key=settings.GEMINI_API_KEY)
+    if settings.GEMINI_API_KEY:
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+    else:
+        print("Warning: GEMINI_API_KEY not found in settings.")
 except Exception as e:
     print(f"Warning: Gemini API key not configured. Error: {e}")
 
@@ -19,26 +22,18 @@ class StyleExampleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Only return examples created by the current user
         return StyleExample.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Automatically assign the current user when a new example is created
-        serializer.save(user=self.request.user, before_text=self.request.data.get('raw'), after_text=self.request.data.get('edited'))
+        serializer.save(user=self.request.user)
 
     @action(detail=False, methods=['post'])
     def predict(self, request):
-        """
-        Receives raw text and uses the user's saved examples to edit it with Gemini.
-        """
         raw_text = request.data.get('raw_text')
         if not raw_text:
             return Response({"error": "No text provided for editing."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Fetch the user's personal training examples from the database
         user_examples = StyleExample.objects.filter(user=request.user)
-        
-        # Build the prompt for the AI model
         example_prompts = "\n\n".join([f"Original: {ex.before_text}\nEdited: {ex.after_text}" for ex in user_examples])
         
         prompt = f"""
@@ -54,15 +49,11 @@ class StyleExampleViewSet(viewsets.ModelViewSet):
         """
 
         try:
-            model = GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-1.5-flash")
             response = model.generate_content(prompt)
             edited_text = response.text
             
-            # --- تسجيل المهمة في قاعدة البيانات ---
-            # This part will be added in the next step to keep things clear
-            # For now, we just return the result.
-            
-            return Response({"edited_text": editedText})
+            return Response({"edited_text": edited_text})
             
         except Exception as e:
             print(f"Error calling Gemini API: {e}")
