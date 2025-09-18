@@ -1,23 +1,33 @@
+# ===================================================
+# ملف النشر النهائي لمنصة "مركز الإعلام" على Render
+# ===================================================
+
+databases:
+  - name: markaz-media-db # يمكنك تغيير هذا الاسم إذا كان محجوزًا
+    databaseName: media_platform_db
+    user: db_user
+
 services:
+  # 1. الخادم الخلفي (Backend)
   - type: web
     name: backend
     plan: starter
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    healthCheckPath: /health
+    healthCheckPath: /health # استخدام مسار فحص السلامة البسيط
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: markaz-media-db 
-          property: connectionString
+          name: markaz-media-db
+          property: connectionString # <-- الخاصية الصحيحة لقاعدة البيانات
       - key: GEMINI_API_KEY
-        sync: false
+        sync: false # ستقوم بإضافة هذا يدويًا في لوحة التحكم
       - key: RENDER_FRONTEND_URL
         fromService:
           type: web
           name: frontend
-          property: host
+          property: host # <-- الخاصية الصحيحة للخدمات
 
   # 2. الواجهة الأمامية (الرئيسية)
   - type: web
@@ -27,11 +37,11 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     envVars:
-      - key: NEXT_PUBLIC_API_URL
+      - key: NEXT_PUBLIC_API_URL # يمرر رابط الخادم الخلفي للواجهة
         fromService:
           type: web
           name: backend
-          property: host 
+          property: host # <-- الخاصية الصحيحة للخدمات
 
   # 3. خدمة مزامنة الفيديو
   - type: web
@@ -113,7 +123,7 @@ services:
         fromService:
           type: web
           name: backend
-          property: host # <-- تم التصحيح هنا
+          property: host # <-- الخاصية الصحيحة للخدمات
 
   # 10. خدمة محول الانفوجرافيك
   - type: web
