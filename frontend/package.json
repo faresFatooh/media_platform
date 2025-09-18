@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev \"concurrently \"npm:dev:frontend\" \"npm:dev:server\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -14,3 +14,4 @@
     "next": "14.2.4"
   }
 }
+    "dev": "next dev ",
