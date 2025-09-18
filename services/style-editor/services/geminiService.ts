@@ -2,7 +2,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TextPair } from '../types';
 
 // تهيئة عميل Gemini AI باستخدام مفتاح API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+if (!apiKey) {
+    throw new Error("VITE_GEMINI_API_KEY is not set in the environment variables.");
+}
+const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 /**
@@ -11,7 +15,6 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
  */
 export async function editWithStyle(rawText: string, examples: TextPair[]): Promise<string> {
   try {
-    // بناء الطلب (prompt) لنموذج الذكاء الاصطناعي
     const examplePrompts = examples.map(p => `Original: ${p.before}\nEdited: ${p.after}`).join('\n\n');
     const prompt = `
       You are an expert text editor. Your task is to edit the following text based on the provided style examples.
