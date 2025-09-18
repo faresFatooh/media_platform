@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { TextPair } from '../types';
 import { editWithStyle } from '../services/geminiService';
@@ -37,7 +38,7 @@ const EditingSection: React.FC<EditingSectionProps> = ({ examples, onNewPairGene
     } else {
       const newPair = { raw: inputText, edited: editedText };
       setResult(newPair);
-      onNewPairGenerated({ before: newPair.raw, after: newPair.edited }); // Corrected this line
+      onNewPairGenerated(newPair);
     }
     
     setIsLoading(false);

@@ -1,8 +1,7 @@
 import { TextPair } from '../types';
 
-// This is the only line we need to change. We use a relative path
-// so the Vite proxy can intercept it and forward it to the backend.
-const API_URL = '/api/predict';
+// This service now connects to the custom style editor backend.
+const API_URL = 'https://api.style-editor-service.onrender.com/predict';
 
 /**
  * Sends a raw text and a list of style examples to the custom editing service
