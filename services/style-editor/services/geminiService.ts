@@ -1,31 +1,14 @@
-import { TextPair } from '../types';
+import { TextPair } from "../types";
+import { callPredictAPI } from "./apiService";
 
-const API_URL = import.meta.env.VITE_MAIN_BACKEND_URL;
-
-export async function editWithStyle(rawText: string, examples: any): Promise<string> {
+// تحرير النص باستخدام Gemini عبر الباك اند
+export async function editWithStyle(rawText: string, examples: TextPair[]): Promise<string> {
   try {
-    const token = localStorage.getItem('access_token');
-    const response = await fetch(`${API_URL}/api/style-examples/predict/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ raw_text: rawText }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Request failed');
-    }
-
-    const data = await response.json();
-    return data.edited_text;
-  } catch (error) {
+    // إرسال النص + الأمثلة (إذا أردت أن الباك اند يستخدمها)
+    const editedText = await callPredictAPI(rawText);
+    return editedText;
+  } catch (error: any) {
     console.error("Error calling style editor API:", error);
-    if (error instanceof Error) {
-      return `حدث خطأ: ${error.message}`;
-    }
-    return "حدث خطأ غير معروف.";
+    return `حدث خطأ: ${error.message || "غير معروف"}`;
   }
 }
