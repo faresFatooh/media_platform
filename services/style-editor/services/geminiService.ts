@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TextPair } from '../types';
 
 // تهيئة عميل Gemini AI باستخدام مفتاح API
@@ -8,9 +8,6 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 /**
  * يرسل نصًا خامًا وقائمة من أمثلة الأسلوب إلى Gemini API
  * ويعيد النص المحرر بواسطة الذكاء الاصطناعي.
- * @param rawText النص المراد تحريره.
- * @param examples مصفوفة من أزواج النصوص التي توضح أسلوب التحرير المطلوب.
- * @returns وعد يتم حله إلى سلسلة نصية تحتوي على النص المحرر.
  */
 export async function editWithStyle(rawText: string, examples: TextPair[]): Promise<string> {
   try {
@@ -40,7 +37,6 @@ export async function editWithStyle(rawText: string, examples: TextPair[]): Prom
   } catch (error) {
     console.error("Error calling Gemini API:", error);
     if (error instanceof Error) {
-        // نعيد رسالة الخطأ للواجهة الأمامية لتعرضها للمستخدم
         return `حدث خطأ أثناء الاتصال بخدمة Gemini: ${error.message}`;
     }
     return "حدث خطأ غير معروف.";
