@@ -1,51 +1,55 @@
-// الملف: services/style-editor/services/geminiService.ts
-
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TextPair } from '../types';
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
-if (!apiKey) {
-    throw new Error("VITE_GEMINI_API_KEY is not set in the environment variables.");
-}
-
-const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// This service now connects to the custom style editor backend.
+const API_URL = 'https://style-editor-service.onrender.com/predict';
 
 /**
- * يرسل نصًا خامًا وقائمة من أمثلة الأسلوب إلى Gemini API
- * ويعيد النص المحرر بواسطة الذكاء الاصطناعي.
+ * Sends a raw text and a list of style examples to the custom editing service
+ * and returns the AI-edited text.
+ * @param rawText The text to be edited.
+ * @param examples An array of text pairs demonstrating the desired editing style.
+ * @returns A promise that resolves to the edited text string.
  */
 export async function editWithStyle(rawText: string, examples: TextPair[]): Promise<string> {
   try {
-    // --- تم تصحيح هذا السطر ليستخدم "raw" و "edited" ---
-    const examplePrompts = examples.map(p => `Original: ${p.raw}\nEdited: ${p.edited}`).join('\n\n');
-    
-    const prompt = `
-      You are an expert text editor. Your task is to edit the following text based on the provided style examples.
-      
-      Here are the examples of the desired style:
-      ${examplePrompts}
-      
-      Now, please edit this text in the same style:
-      Original: ${rawText}
-      Edited:
-    `;
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        // The API expects 'raw_text' and 'examples' to perform few-shot learning.
+        raw_text: rawText,
+        // We remove the 'id' field as it's a client-side only property.
+        examples: examples.map(({ id, ...rest }) => rest),
+      }),
+    });
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const editedText = response.text();
-    
-    if (!editedText) {
-        throw new Error("AI response was empty.");
+    if (!response.ok) {
+      let errorMessage = `Request failed with status ${response.status}`;
+      try {
+        // Attempt to parse a more specific error message from the backend.
+        const errorData = await response.json();
+        errorMessage = errorData.detail || JSON.stringify(errorData);
+      } catch (e) {
+        // If the response is not JSON, use the raw text as the error.
+        errorMessage = await response.text();
+      }
+      throw new Error(errorMessage);
     }
-        
-    return editedText;
+
+    const data = await response.json();
+    
+    if (typeof data.edited_text !== 'string') {
+        throw new Error("الاستجابة من الخادم غير صالحة. 'edited_text' مفقود أو ليس نصًا.");
+    }
+    
+    return data.edited_text;
 
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
+    console.error("Error calling style editor API:", error);
     if (error instanceof Error) {
-        return `حدث خطأ أثناء الاتصال بخدمة Gemini: ${error.message}`;
+        return `حدث خطأ أثناء الاتصال بخدمة التحرير: ${error.message}`;
     }
     return "حدث خطأ غير معروف.";
   }
