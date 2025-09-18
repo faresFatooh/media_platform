@@ -91,8 +91,13 @@ services:
     dockerfilePath: ./services/style-editor/Dockerfile
     dockerContext: ./services/style-editor
     envVars:
-      - key: GEMINI_API_KEY
-        sync: false
+    - key: GEMINI_API_KEY
+      sync: false
+    - key: MAIN_BACKEND_URL
+      fromService:
+        type: web
+        name: backend
+        property: url
 
   - type: web
     name: infographic-service
