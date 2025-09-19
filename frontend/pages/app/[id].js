@@ -1,6 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState, useRef } from 'react'; 
-
+import { useEffect, useState, useRef } from 'react'; // <-- أضفنا useRef
 import Link from 'next/link';
 
 export default function AppDetails() {
@@ -8,7 +7,7 @@ export default function AppDetails() {
   const { id } = router.query;
   const [app, setApp] = useState(null);
   const [error, setError] = useState('');
-  const iframeRef = useRef(null); 
+  const iframeRef = useRef(null); // <-- أنشأنا مرجعًا للإطار
 
 
 
@@ -23,7 +22,7 @@ export default function AppDetails() {
     '8': { url: 'https://infographic-service.onrender.com', name: 'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
   };
 
-  useEffect(() => {
+useEffect(() => {
     if (!id) return;
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -39,13 +38,15 @@ export default function AppDetails() {
     }
   }, [id, router]);
 
+  // --- دالة جديدة لإرسال التوكن ---
   const handleIframeLoad = () => {
     const token = localStorage.getItem('access_token');
-    if (iframeRef.current && token) {
+    if (iframeRef.current && token && app) {
+      // نرسل رسالة تحتوي على التوكن إلى الإطار
       iframeRef.current.contentWindow.postMessage({
         type: 'AUTH_TOKEN',
         token: token
-      }, new URL(app.url).origin); 
+      }, new URL(app.url).origin); // نحدد المصدر لزيادة الأمان
     }
   };
 
@@ -61,8 +62,8 @@ export default function AppDetails() {
       
       <main style={{ flexGrow: 1, padding: 0 }}>
         <iframe
-          ref={iframeRef} 
-          onLoad={handleIframeLoad} 
+          ref={iframeRef} // <-- ربطنا المرجع هنا
+          onLoad={handleIframeLoad} // <-- سنقوم بتشغيل الدالة عند اكتمال التحميل
           src={app.url}
           style={{ width: '100%', height: '100%', border: 'none' }}
           title={app.name}
