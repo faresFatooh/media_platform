@@ -9,48 +9,24 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- كود جديد لاستقبال التوكن ---
+  // جلب الأمثلة الأولية من قاعدة البيانات عند تحميل التطبيق
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // إجراء أمني: تأكد من أن الرسالة قادمة من نطاق موثوق
-      if (event.origin !== "https://ghazimortaja.com") { // <-- استبدل هذا برابط الواجهة الأمامية الرئيسي
-        return;
-      }
-      if (event.data && event.data.type === 'AUTH_TOKEN') {
-        localStorage.setItem('access_token', event.data.token);
-        // الآن بعد أن حصلنا على التوكن، يمكننا تحميل بيانات التدريب
-        loadExamples();
+    const loadExamples = async () => {
+      try {
+        const fetchedExamples = await getStyleExamples();
+        setExamples(fetchedExamples.reverse()); // عرض الأحدث أولاً
+      } catch (e) {
+        setError("فشل تحميل بيانات التدريب من الخادم.");
+        console.error(e);
+      } finally {
+        setIsLoading(false);
       }
     };
+    loadExamples();
+  }, []);
 
-    window.addEventListener('message', handleMessage);
-
-    // تنظيف المستمع عند مغادرة الصفحة
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, []); // يعمل مرة واحدة فقط عند تحميل التطبيق
-  
-  const loadExamples = async () => {
-    setIsLoading(true);
-    try {
-      const fetchedExamples = await getStyleExamples();
-      setExamples(fetchedExamples.reverse());
-      setError(null);
-    } catch (e) {
-      setError("فشل تحميل بيانات التدريب. تأكد من أنك سجلت الدخول.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAddExample = useCallback(async (newPair: Omit<TextPair, 'id'>) => {
-    try {
-      const savedPair = await addStyleExample(newPair);
-      setExamples(prev => [savedPair, ...prev]);
-    } catch (e) {
-      setError("فشل حفظ المثال الجديد.");
-    }
+  const handleAddExample = useCallback((savedPair: TextPair) => {
+    setExamples(prev => [savedPair, ...prev]);
   }, []);
 
   const handleDeleteExample = useCallback(async (id: string) => {
@@ -59,10 +35,11 @@ function App() {
       setExamples(prev => prev.filter(pair => pair.id !== id));
     } catch (e) {
       setError("فشل حذف المثال.");
+      console.error(e);
     }
   }, []);
   
-  if (isLoading) return <div className="text-center p-8">جاري تحميل...</div>;
+  if (isLoading) return <div className="text-center p-8">جاري تحميل بيانات التدريب...</div>;
   if (error) return <div className="text-center p-8 text-red-600">{error}</div>;
 
   return (
@@ -81,7 +58,7 @@ function App() {
             <TrainingSection examples={examples} onAddExample={handleAddExample} onDeleteExample={handleDeleteExample} />
           </div>
           <div className="lg:col-span-2">
-            <EditingSection onNewPairGenerated={() => {}} />
+            <EditingSection onNewPairGenerated={() => { /* يمكن استخدامها لاحقًا لتحديث سجل المهام */ }} />
           </div>
         </div>
       </main>

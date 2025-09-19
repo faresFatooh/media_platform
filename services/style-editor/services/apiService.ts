@@ -43,6 +43,7 @@ export const deleteStyleExample = async (id: string): Promise<void> => {
 
 // --- دالة التحرير باستخدام الذكاء الاصطناعي ---
 export const performEdit = async (rawText: string): Promise<string> => {
+  // هذا المسار يتصل بالدالة predict التي أضفناها في الخادم الخلفي
   const { data } = await api.post('/api/style-examples/predict/', { raw_text: rawText });
   return data.edited_text;
 };
