@@ -19,19 +19,21 @@ api.interceptors.request.use(config => {
 
 export const getStyleExamples = async (): Promise<TextPair[]> => {
   const { data } = await api.get('/api/style-examples/');
+  // تحويل أسماء الحقول من الخادم إلى ما تتوقعه الواجهة
   return data.map((item: any) => ({
     id: item.id.toString(),
     raw: item.before_text,
-    edited: item.after_text
+    edited: item.after_text,
   }));
 };
 
-export const saveStyleExample = async (raw: string, edited: string): Promise<TextPair> => {
-  const { data } = await api.post('/api/style-examples/', { before_text: raw, after_text: edited });
+export const addStyleExample = async (pair: { raw: string; edited: string }): Promise<TextPair> => {
+  // تحويل أسماء الحقول لتناسب ما يتوقعه الخادم
+  const { data } = await api.post('/api/style-examples/', { before_text: pair.raw, after_text: pair.edited });
    return {
     id: data.id.toString(),
     raw: data.before_text,
-    edited: data.after_text
+    edited: data.after_text,
   };
 };
 
