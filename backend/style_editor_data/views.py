@@ -1,13 +1,12 @@
-from rest_framework import viewsets
+# style_editor_data/views.py
+from rest_framework import viewsets, permissions
 from .models import StyleExample
 from .serializers import StyleExampleSerializer
-from rest_framework.permissions import IsAuthenticated
-
 
 class StyleExampleViewSet(viewsets.ModelViewSet):
     queryset = StyleExample.objects.all()
     serializer_class = StyleExampleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user)  # ربط المثال بالمستخدم
