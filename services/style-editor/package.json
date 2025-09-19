@@ -4,14 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "concurrently \"npm:dev:frontend\" \"npm:dev:server\"",
+    "dev:frontend": "vite --host",
+    "dev:server": "npm start --prefix server",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@google/generative-ai": "^0.11.0",
+    "concurrently": "^8.2.2",
     "axios": "^1.7.2"
   },
   "devDependencies": {
