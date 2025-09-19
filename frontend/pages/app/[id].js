@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react'; 
+
 import Link from 'next/link';
 
 export default function AppDetails() {
@@ -7,6 +8,8 @@ export default function AppDetails() {
   const { id } = router.query;
   const [app, setApp] = useState(null);
   const [error, setError] = useState('');
+  const iframeRef = useRef(null); 
+
 
 
   const services = {
@@ -27,16 +30,24 @@ export default function AppDetails() {
       router.push('/login');
       return;
     }
-
-  
+    
     const appDetails = services[id];
     if (appDetails) {
-        setApp(appDetails);
+      setApp(appDetails);
     } else {
-        setError('Application not found or configured.');
+      setError('Application not found or configured.');
     }
+  }, [id, router]);
 
-  }, [id]);
+  const handleIframeLoad = () => {
+    const token = localStorage.getItem('access_token');
+    if (iframeRef.current && token) {
+      iframeRef.current.contentWindow.postMessage({
+        type: 'AUTH_TOKEN',
+        token: token
+      }, new URL(app.url).origin); 
+    }
+  };
 
   if (error) return <p>Error: {error}</p>;
   if (!app) return <p>Loading application...</p>;
@@ -47,10 +58,11 @@ export default function AppDetails() {
         <Link href="/dashboard" style={{ color: 'white' }}>&larr; Back to Dashboard</Link>
         <h1 style={{ marginTop: '0.5rem' }}>{app.name}</h1>
       </header>
-
+      
       <main style={{ flexGrow: 1, padding: 0 }}>
-        {}
         <iframe
+          ref={iframeRef} 
+          onLoad={handleIframeLoad} 
           src={app.url}
           style={{ width: '100%', height: '100%', border: 'none' }}
           title={app.name}
