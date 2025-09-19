@@ -5,7 +5,7 @@ import { saveStyleExample } from '../services/apiService';
 
 interface TrainingSectionProps {
   examples: TextPair[];
-  onAddExample: (pair: TextPair) => void; // نستخدم TextPair كامل مع id
+  onAddExample: (pair: TextPair) => void;
   onDeleteExample: (id: string) => void;
 }
 
@@ -18,24 +18,28 @@ const PlusIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 const TrainingSection: React.FC<TrainingSectionProps> = ({ examples, onAddExample, onDeleteExample }) => {
   const [rawText, setRawText] = useState('');
   const [editedText, setEditedText] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rawText.trim() || !editedText.trim()) return;
 
+    setLoading(true); // بدء حالة التحميل لتعطيل الزر
+
     try {
-      // حفظ الزوج التدريبي في قاعدة البيانات
       const savedPair = await saveStyleExample(rawText, editedText);
 
-      // إرسال الزوج المحفوظ للواجهة
-      onAddExample(savedPair);
+      onAddExample(savedPair); // تحديث الواجهة
 
-      // إعادة تعيين الحقول
       setRawText('');
       setEditedText('');
+
+      alert('تم حفظ المثال بنجاح!'); // رسالة نجاح
     } catch (err: any) {
       console.error("خطأ في الحفظ:", err);
-      alert(`خطأ في الحفظ: ${err.message || err}`);
+      alert(`خطأ في الحفظ: ${err.message || 'فشل الاتصال بالسيرفر'}`);
+    } finally {
+      setLoading(false); // إعادة تفعيل الزر
     }
   };
 
@@ -71,11 +75,12 @@ const TrainingSection: React.FC<TrainingSectionProps> = ({ examples, onAddExampl
         </div>
         <button
           type="submit"
-          disabled={!rawText.trim() || !editedText.trim()}
-          className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:bg-slate-300 disabled:cursor-not-allowed"
+          disabled={!rawText.trim() || !editedText.trim() || loading}
+          className={`w-full flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-md transition
+            ${loading ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
         >
           <PlusIcon />
-          إضافة زوج تدريبي
+          {loading ? 'جارٍ الحفظ...' : 'إضافة زوج تدريبي'}
         </button>
       </form>
 
