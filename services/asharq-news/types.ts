@@ -1,25 +1,17 @@
-export enum InputType {
-  URL = 'url',
-  TEXT = 'text',
-}
+// Define the specific platforms you support
+export type Platform = 'x' | 'facebook' | 'instagram' | 'linkedin' | 'threads' | 'tiktok' | 'youtube_shorts' | 'telegram';
 
-export enum PublishStatus {
-  DRAFT = 'draft',
-  READY = 'ready',
-  POSTED = 'posted',
-  FAILED = 'failed',
-  SCHEDULED = 'scheduled',
-}
+// An object to hold the generated captions for each platform
+export type Captions = Partial<Record<Platform, string>>;
 
-export type Platform = 'x' | 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'youtube_shorts' | 'telegram' | 'threads';
-
+// The structure for the AI-parsed news data
 export interface ParsedNews {
   headline: string;
   summary: string;
   entities: string[];
-  source_name: string;
 }
 
+// The structure for an image asset associated with a news item
 export interface Asset {
   source: string;
   url: string;
@@ -28,19 +20,32 @@ export interface Asset {
   query: string;
 }
 
-export type Captions = Record<Platform, string>;
+// The different statuses a news item can have
+export enum PublishStatus {
+  DRAFT = 'draft',
+  READY = 'ready',
+  POSTED = 'posted',
+  SCHEDULED = 'scheduled',
+  FAILED = 'failed',
+}
 
+// The main data structure for a single news item
 export interface NewsItem {
   id: string;
   brandId: string;
-  inputType: InputType;
-  inputContent: string;
+  status: PublishStatus;
+  sourceUrl?: string;
   parsed: ParsedNews;
   image: Asset;
   captions: Captions;
   selectedPlatforms: Platform[];
-  status: PublishStatus;
-  publishTime?: string;
-  permalinks: Partial<Record<Platform, string>>;
   createdAt: string;
+  publishTime?: string;
+  permalinks?: Partial<Record<Platform, string>>;
+}
+
+// Enum for the input form type
+export enum InputType {
+    URL = 'url',
+    TEXT = 'text',
 }
