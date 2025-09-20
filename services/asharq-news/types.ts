@@ -1,4 +1,3 @@
-
 export enum InputType {
   URL = 'url',
   TEXT = 'text',
@@ -33,6 +32,7 @@ export type Captions = Record<Platform, string>;
 
 export interface NewsItem {
   id: string;
+  brandId: string;
   inputType: InputType;
   inputContent: string;
   parsed: ParsedNews;

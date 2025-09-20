@@ -10,7 +10,7 @@ function PlatformIconX() {
   );
 }
 function PlatformIconInstagram() {
-  return React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
+  return React.createElement('svg', { xmlns: "http://www.w.org/2000/svg", width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" },
       React.createElement('rect', { width: "20", height: "20", x: "2", y: "2", rx: "5", ry: "5" }),
       React.createElement('path', { d: "M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" }),
       React.createElement('line', { x1: "17.5", x2: "17.51", y1: "6.5", y2: "6.5" })
@@ -58,9 +58,6 @@ export const PLATFORMS: Record<Platform, { name: string; icon: React.ReactElemen
   youtube_shorts: { name: 'YouTube Shorts', icon: React.createElement(PlatformIconYouTube), charLimit: 150 },
   telegram: { name: 'Telegram', icon: React.createElement(PlatformIconTelegram), charLimit: 4096 },
 };
-
-// FIX: Exported the DEFAULT_HASHTAGS constant so it can be imported by other modules.
-export const DEFAULT_HASHTAGS = '#الشرق #الشرق_فلسطين';
 
 // FIX: Exported the LogoIcon component so it can be imported by other modules.
 export const LogoIcon: React.FC = () => (

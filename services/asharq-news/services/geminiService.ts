@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { InputType, type ParsedNews, type Captions } from '../types';
-import { PLATFORMS, DEFAULT_HASHTAGS } from '../constants';
+import { InputType, type ParsedNews, type Captions, type Platform } from '../types';
+import { PLATFORMS } from '../constants';
+import { BRANDS } from '../brands';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -49,21 +50,28 @@ ${type === InputType.URL ? `URL: ${content}` : `Text: "${content}"`}`;
 };
 
 export const generateAllCaptions = async (
-  parsedNews: ParsedNews
+  parsedNews: ParsedNews,
+  brandId: string,
+  platforms: Platform[]
 ): Promise<Captions> => {
+  const brand = BRANDS[brandId];
+  if (!brand) {
+    throw new Error(`Invalid brandId: ${brandId}`);
+  }
+  
   const prompt = `
-Based on the following news data, generate tailored captions for the specified social media platforms.
+Based on the following news data, generate tailored captions for the specified social media platforms for the brand "${brand.name}".
 
 News Data:
 - Headline: ${parsedNews.headline}
 - Summary: ${parsedNews.summary}
 
 General Rules:
-1. Maintain a neutral, journalistic tone suitable for Asharq News.
-2. ALWAYS append the hashtags "${DEFAULT_HASHTAGS}" at the very end of EACH caption.
+1. Maintain a neutral, journalistic tone suitable for ${brand.name}.
+2. ALWAYS append the hashtags "${brand.defaultHashtags}" at the very end of EACH caption.
 3. Strictly adhere to the character limits for each platform.
 
-Platform-Specific Instructions:
+Platform-Specific Instructions (generate for these platforms: ${platforms.join(', ')}):
 - x: Breaking news style. Short, impactful, and designed for quick consumption.
 - instagram: More descriptive and visual. Tell the story behind the image.
 - facebook: A comprehensive but concise summary.
@@ -72,7 +80,7 @@ Platform-Specific Instructions:
 - tiktok & youtube_shorts: A very short, punchy caption for a video format.
 - telegram: Informative and direct, like a news alert.
 
-Provide the output as a single, valid JSON object with platform identifiers as keys.
+Provide the output as a single, valid JSON object with platform identifiers as keys for ONLY the requested platforms.
 `;
 
   try {
@@ -80,11 +88,11 @@ Provide the output as a single, valid JSON object with platform identifiers as k
       model: textModel,
       contents: prompt,
       config: {
-        systemInstruction: `You are an expert social media editor for "Asharq News" (الشرق), a major international news organization. Your tone is always professional, objective, and authoritative. You are an expert in crafting engaging, platform-specific content that adheres to the highest journalistic standards. Ensure all text is in Arabic and formatted for RTL. Do not add commentary or opinion. Stick to the facts provided.`,
+        systemInstruction: `You are an expert social media editor for "${brand.name}", a major international news organization. Your tone is always professional, objective, and authoritative. You are an expert in crafting engaging, platform-specific content that adheres to the highest journalistic standards. Ensure all text is in Arabic and formatted for RTL. Do not add commentary or opinion. Stick to the facts provided.`,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
-          properties: Object.keys(PLATFORMS).reduce((acc, key) => {
+          properties: platforms.reduce((acc, key) => {
             acc[key] = { type: Type.STRING };
             return acc;
           }, {} as Record<string, { type: Type }>)
