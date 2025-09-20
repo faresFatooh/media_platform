@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import type { NewsItem, Platform } from '../types';
-import { InputType, PublishStatus } from '../types';
-import { parseAndSummarizeNews, generateAllCaptions, generateImageSearchQuery, generateImage } from '../services/geminiService';
+import { InputType } from '../types';
 import { Spinner } from './ui/Spinner';
 import { PLATFORMS } from '../constants';
 import { BRANDS } from '../brands';
+// استيراد الدالة الجديدة والآمنة من المراسل
+import { processAndGenerate } from '../services/apiService';
 
 interface NewsInputFormProps {
   onClose: () => void;
@@ -24,7 +25,7 @@ export const NewsInputForm: React.FC<NewsInputFormProps> = ({ onClose, onSubmit,
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(() => availablePlatforms);
 
   useEffect(() => {
-    // Reset selected platforms if the brand changes while the form is open
+    // إعادة تعيين المنصات المختارة إذا تغيرت العلامة التجارية
     setSelectedPlatforms(BRANDS[brandId].platforms);
   }, [brandId]);
 
@@ -50,42 +51,17 @@ export const NewsInputForm: React.FC<NewsInputFormProps> = ({ onClose, onSubmit,
     setError(null);
 
     try {
-      // 1. Parse news
-      const parsed = await parseAndSummarizeNews(content, inputType);
+      // 1. إرسال طلب واحد إلى الخادم الخلفي ليقوم بكل العمل
+      const source = inputType === InputType.URL ? { url: content } : { text: content };
+      const newItemFromBackend = await processAndGenerate(source, selectedPlatforms, brandId);
+      
+      // 2. إرسال الخبر الجديد الكامل إلى المكون "الأب" (App.tsx)
+      onSubmit(newItemFromBackend);
 
-      // 2. Generate captions for selected platforms and brand
-      const captions = await generateAllCaptions(parsed, brandId, selectedPlatforms);
-
-      // 3. Generate image query and then the image itself
-      const imageQuery = await generateImageSearchQuery(parsed);
-      const imageBase64 = await generateImage(imageQuery);
-      const imageUrl = `data:image/jpeg;base64,${imageBase64}`;
-
-      // 4. Assemble the new NewsItem
-      const newItem: NewsItem = {
-        id: new Date().toISOString(),
-        brandId,
-        inputType,
-        inputContent: content,
-        parsed,
-        captions,
-        image: {
-          source: 'AI Generated (Imagen 4)',
-          url: imageUrl,
-          license: 'N/A',
-          credit_line: 'صورة مولّدة بواسطة Google AI',
-          query: imageQuery,
-        },
-        selectedPlatforms,
-        status: PublishStatus.DRAFT,
-        createdAt: new Date().toISOString(),
-        permalinks: {},
-      };
-
-      onSubmit(newItem);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع.');
+      const errorMessage = (err as any).response?.data?.error || 'حدث خطأ غير متوقع أثناء معالجة الخبر.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

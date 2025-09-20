@@ -8,10 +8,12 @@ from django.conf import settings
 import google.generativeai as genai
 import json
 
-# ... (تهيئة Gemini كما في المرة السابقة) ...
+# تهيئة Gemini
 try:
     if settings.GEMINI_API_KEY:
         genai.configure(api_key=settings.GEMINI_API_KEY)
+    else:
+        print("Warning: GEMINI_API_KEY not found in settings.")
 except Exception as e:
     print(f"Warning: Gemini API key not configured. Error: {e}")
 
@@ -34,6 +36,7 @@ class NewsArticleViewSet(viewsets.ModelViewSet):
         source_url = request.data.get('url')
         original_text = request.data.get('text')
         platforms = request.data.get('platforms', [])
+        brand_id = request.data.get('brandId', 'asharq') # Add brandId
 
         if not (source_url or original_text) or not platforms:
             return Response({"error": "URL/text and platforms are required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -55,7 +58,7 @@ class NewsArticleViewSet(viewsets.ModelViewSet):
                 user=request.user,
                 source_url=source_url,
                 original_text=original_text or parsed_data.get('summary', ''),
-                topic="Asharq News"
+                topic=brand_id # Use brandId as topic
             )
 
             # 3. توليد منشورات التواصل الاجتماعي
@@ -82,11 +85,8 @@ class NewsArticleViewSet(viewsets.ModelViewSet):
             GeneratedPost.objects.bulk_create(posts_to_save)
             
             # 5. إرجاع كل البيانات إلى الواجهة الأمامية
-            final_result = {
-                'parsed_news': parsed_data,
-                'generated_posts': generated_captions
-            }
-            return Response(final_result, status=status.HTTP_201_CREATED)
+            serializer = NewsArticleSerializer(article)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             print(f"Error in process_and_generate: {e}")
