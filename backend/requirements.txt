@@ -9,3 +9,4 @@ gunicorn
 djangorestframework-simplejwt
 whitenoise[brotli]
 google-generativeai
+django-cors-headers==3.14.0

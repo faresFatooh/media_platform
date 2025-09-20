@@ -100,7 +100,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-CORS_ALLOWED_ORIGINS = ["https://style-editor-service.onrender.com",]
+CORS_ALLOWED_ORIGINS = [
+    "https://ghazimortaja.com",
+    "https://frontend-rgr7.onrender.com",
+    "https://asharq-service.onrender.com",
+    "https://avatar-service.onrender.com",
+    "https://chatbot-service-jjas.onrender.com",
+    "https://infographic-service.onrender.com",
+    "https://news-refine-service.onrender.com",
+    "https://podcast-service.onrender.com",
+    "https://style-editor-service.onrender.com",
+    "https://video-sync-service.onrender.com",
+]
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_FRONTEND_URL}") # Added https://
