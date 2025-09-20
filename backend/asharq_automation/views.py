@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import NewsArticle, GeneratedPost
-from .serializers import NewsArticleSerializer, GeneratedPostSerializer
+from .serializers import NewsArticleSerializer
 from django.conf import settings
 import google.generativeai as genai
 import json
@@ -29,14 +29,10 @@ class NewsArticleViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='process-and-generate')
     def process_and_generate(self, request):
-        """
-        الوظيفة الرئيسية: تستقبل رابطًا أو نصًا، تحلله، تحفظه،
-        ثم تولد منشورات التواصل الاجتماعي وتحفظها.
-        """
         source_url = request.data.get('url')
         original_text = request.data.get('text')
         platforms = request.data.get('platforms', [])
-        brand_id = request.data.get('brandId', 'asharq') # Add brandId
+        brand_id = request.data.get('brandId', 'asharq')
 
         if not (source_url or original_text) or not platforms:
             return Response({"error": "URL/text and platforms are required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -44,24 +40,35 @@ class NewsArticleViewSet(viewsets.ModelViewSet):
         try:
             model = genai.GenerativeModel("gemini-1.5-flash")
             
-            # 1. تحليل وتلخيص الخبر
+            # --- التعديل الأول: إضافة معالجة الأخطاء هنا ---
             content_to_parse = f"URL: {source_url}" if source_url else f'Text: "{original_text}"'
             parsing_prompt = f"""
             Analyze the provided news content. Your output must be a clean JSON object with keys: "headline", "summary", and "entities".
             Content: {content_to_parse}
             """
             parsing_response = model.generate_content(parsing_prompt)
-            parsed_data = json.loads(parsing_response.text)
+            
+            parsed_data = {}
+            try:
+                # محاولة قراءة رد Gemini كـ JSON
+                parsed_data = json.loads(parsing_response.text)
+            except json.JSONDecodeError:
+                # إذا فشلت القراءة، اطبع الخطأ في السجلات وقدم بيانات بديلة آمنة
+                print(f"--- Gemini Non-JSON Parsing Response ---\n{parsing_response.text}\n--------------------")
+                parsed_data = {
+                    "headline": "Could not parse headline from source",
+                    "summary": original_text or "Could not parse summary from source",
+                    "entities": []
+                }
 
-            # 2. حفظ المقال الأصلي في قاعدة البيانات
             article = NewsArticle.objects.create(
                 user=request.user,
                 source_url=source_url,
                 original_text=original_text or parsed_data.get('summary', ''),
-                topic=brand_id # Use brandId as topic
+                topic=brand_id
             )
 
-            # 3. توليد منشورات التواصل الاجتماعي
+            # --- التعديل الثاني: إضافة معالجة الأخطاء هنا أيضًا ---
             generation_prompt = f"""
             Based on the following news data, generate tailored captions in Arabic for these platforms: {', '.join(platforms)}.
             Your output must be a clean JSON object where keys are the platform names.
@@ -70,24 +77,35 @@ class NewsArticleViewSet(viewsets.ModelViewSet):
             - Summary: {parsed_data.get('summary')}
             """
             generation_response = model.generate_content(generation_prompt)
-            generated_captions = json.loads(generation_response.text)
+            
+            generated_captions = {}
+            try:
+                # محاولة قراءة رد Gemini كـ JSON
+                generated_captions = json.loads(generation_response.text)
+            except json.JSONDecodeError:
+                # إذا فشلت القراءة، اطبع الخطأ وقدم رسائل بديلة آمنة
+                print(f"--- Gemini Non-JSON Generation Response ---\n{generation_response.text}\n--------------------")
+                generated_captions = {platform: "Failed to generate caption due to safety or format error." for platform in platforms}
 
-            # 4. حفظ المنشورات المولدة في قاعدة البيانات
             posts_to_save = []
             for platform, content in generated_captions.items():
-                post = GeneratedPost(
-                    article=article,
-                    platform=platform,
-                    content=content
-                )
-                posts_to_save.append(post)
+                # التأكد من أن اسم المنصة يطابق الاختيارات في المودل
+                valid_platform_name = next((p[0] for p in GeneratedPost.PLATFORM_CHOICES if p[0].lower() == platform.lower()), None)
+                if valid_platform_name:
+                    post = GeneratedPost(
+                        article=article,
+                        platform=valid_platform_name,
+                        content=content
+                    )
+                    posts_to_save.append(post)
             
-            GeneratedPost.objects.bulk_create(posts_to_save)
+            if posts_to_save:
+                GeneratedPost.objects.bulk_create(posts_to_save)
             
-            # 5. إرجاع كل البيانات إلى الواجهة الأمامية
             serializer = NewsArticleSerializer(article)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            print(f"Error in process_and_generate: {e}")
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # للتعامل مع أي أخطاء حرجة أخرى
+            print(f"Critical Error in process_and_generate: {e}")
+            return Response({"error": f"A critical server error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
