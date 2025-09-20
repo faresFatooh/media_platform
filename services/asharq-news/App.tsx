@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { NewsItem } from './types';
 import { NewsInputForm } from './components/NewsInputForm';
 import { NewsEditorModal } from './components/NewsEditorModal';
@@ -6,6 +6,8 @@ import { ConfirmationModal } from './components/ui/ConfirmationModal';
 import { LogoIcon } from './constants';
 import { Dashboard } from './components/Dashboard';
 import { BRANDS } from './brands';
+// استيراد الدوال الجديدة
+import { getNewsArticles, createNewsArticle, deleteNewsArticle, updateNewsArticlePosts } from './services/apiService';
 
 const EditorPlaceholder: React.FC = () => (
   <div className="flex-grow flex items-center justify-center bg-gray-800/50 rounded-lg h-full">
@@ -22,6 +24,37 @@ const App: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [activeBrandId, setActiveBrandId] = useState<string>(Object.keys(BRANDS)[0]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // جلب الأخبار من قاعدة البيانات عند تحميل التطبيق
+  useEffect(() => {
+    const loadNews = async () => {
+      try {
+        const items = await getNewsArticles();
+        setNewsItems(items);
+      } catch (e) {
+        setError("فشل تحميل الأخبار من الخادم.");
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadNews();
+  }, []);
+  
+    // الكود الخاص بالـ postMessage لاستقبال التوكن
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== "https://ghazimortaja.com") return;
+      if (event.data && event.data.type === 'AUTH_TOKEN') {
+        localStorage.setItem('access_token', event.data.token);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
 
   const handleStartCreation = () => {
     setIsCreating(true);
@@ -32,13 +65,20 @@ const App: React.FC = () => {
     setIsCreating(false);
   };
 
-  const handleCreateNewPost = (newItem: NewsItem) => {
-    setNewsItems(prev => [newItem, ...prev]);
-    setIsCreating(false);
-    setSelectedNewsItem(newItem);
+  const handleCreateNewPost = async (newItem: NewsItem) => {
+      try {
+          const savedItem = await createNewsArticle(newItem);
+          setNewsItems(prev => [savedItem, ...prev]);
+          setIsCreating(false);
+          setSelectedNewsItem(savedItem);
+      } catch (e) {
+          setError("فشل حفظ الخبر الجديد في قاعدة البيانات.");
+          console.error(e);
+      }
   };
 
   const handleUpdatePost = (updatedItem: NewsItem) => {
+    // TODO: Implement update API call
     setNewsItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
     if (selectedNewsItem?.id === updatedItem.id) {
         setSelectedNewsItem(updatedItem);
@@ -54,14 +94,20 @@ const App: React.FC = () => {
     setItemToDelete(itemId);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete) {
-      setNewsItems(prev => prev.filter(item => item.id !== itemToDelete));
-      if (selectedNewsItem?.id === itemToDelete) {
-        setSelectedNewsItem(null);
-        setIsCreating(false);
-      }
-      setItemToDelete(null); 
+        try {
+            await deleteNewsArticle(itemToDelete);
+            setNewsItems(prev => prev.filter(item => item.id !== itemToDelete));
+            if (selectedNewsItem?.id === itemToDelete) {
+                setSelectedNewsItem(null);
+                setIsCreating(false);
+            }
+            setItemToDelete(null); 
+        } catch (e) {
+            setError("فشل حذف الخبر.");
+            console.error(e);
+        }
     }
   };
 
@@ -76,6 +122,9 @@ const App: React.FC = () => {
   };
 
   const filteredNewsItems = newsItems.filter(item => item.brandId === activeBrandId);
+
+  if (isLoading) return <div className="text-white text-center p-8">جاري تحميل الأخبار...</div>;
+  if (error) return <div className="text-red-400 text-center p-8">{error}</div>;
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col h-screen">
@@ -97,13 +146,10 @@ const App: React.FC = () => {
                         {brand.name}
                     </button>
                 ))}
-                 <button className="px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-gray-700/50 border-2 border-dashed border-gray-600 text-gray-500 cursor-not-allowed" title="قريباً">
-                    إضافة مواقع أخرى
-                </button>
-            </div>
+              </div>
             <button
               onClick={handleStartCreation}
-              className="px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-75 transition-colors"
+              className="px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-500"
             >
               إنشاء خبر جديد
             </button>
@@ -149,7 +195,7 @@ const App: React.FC = () => {
         <ConfirmationModal
           isOpen={!!itemToDelete}
           title="تأكيد الحذف"
-          message="هل أنت متأكد من رغبتك في حذف هذا الخبر بشكل دائم؟ لا يمكن التراجع عن هذا الإجراء."
+          message="هل أنت متأكد من رغبتك في حذف هذا الخبر بشكل دائم؟"
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
           confirmText="حذف"

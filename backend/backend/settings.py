@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'applications',
     'tasks',
     'style_editor_data',
+    'asharq_automation'
 ]
 
 MIDDLEWARE = [
