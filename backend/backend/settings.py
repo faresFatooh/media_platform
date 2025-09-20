@@ -111,6 +111,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://podcast-service.onrender.com",
     "https://style-editor-service.onrender.com",
     "https://video-sync-service.onrender.com",
+    'backend.ghazimortaja.com'
 ]
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
