@@ -27,9 +27,9 @@ const TrashIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-
 export const NewsItemCard: React.FC<NewsItemCardProps> = ({ item, onSelect, onDelete, isSelected }) => {
   const statusStyle = statusStyles[item.status];
+  const imageUrl = item.image?.url || 'https://via.placeholder.com/150'; // <-- هذا هو التعديل الرئيسي
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent onSelect from firing
@@ -53,23 +53,23 @@ export const NewsItemCard: React.FC<NewsItemCardProps> = ({ item, onSelect, onDe
       </button>
 
       <div className="w-24 h-24 shrink-0">
-        <img src={item.image.url} alt={item.parsed.headline} className="w-full h-full object-cover" />
+        <img src={imageUrl} alt={item.parsed?.headline || 'News image'} className="w-full h-full object-cover" />
       </div>
       
       <div className="p-3 flex flex-col justify-between overflow-hidden">
         <div>
-           <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${statusStyle.bg} ${statusStyle.text_color}`}>
-            {statusStyle.text}
-          </span>
-          <h3 className="font-bold text-sm text-white mt-1 leading-tight truncate group-hover:text-teal-400 transition-colors">
-            {item.parsed.headline}
-          </h3>
+            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${statusStyle.bg} ${statusStyle.text_color}`}>
+              {statusStyle.text}
+            </span>
+            <h3 className="font-bold text-sm text-white mt-1 leading-tight truncate group-hover:text-teal-400 transition-colors">
+              {item.parsed?.headline || 'خبر بدون عنوان'}
+            </h3>
         </div>
 
         <div className="flex flex-wrap gap-2 items-center mt-2">
-            {item.selectedPlatforms.map(p => (
-                <div key={p} className="text-gray-400 [&_svg]:h-4 [&_svg]:w-4" title={PLATFORMS[p].name}>
-                    {PLATFORMS[p].icon}
+            {item.selectedPlatforms?.map(p => (
+                <div key={p} className="text-gray-400 [&_svg]:h-4 [&_svg]:w-4" title={PLATFORMS[p]?.name}>
+                    {PLATFORMS[p]?.icon}
                 </div>
             ))}
         </div>
