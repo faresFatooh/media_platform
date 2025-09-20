@@ -21,6 +21,7 @@ export enum PublishStatus {
   POSTED = 'posted',
   SCHEDULED = 'scheduled',
   FAILED = 'failed',
+  READY = "READY",
 }
 
 export interface NewsItem {
