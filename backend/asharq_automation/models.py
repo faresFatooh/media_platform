@@ -3,28 +3,34 @@ from django.contrib.auth.models import User
 
 class NewsArticle(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    source_url = models.URLField(max_length=500, blank=True, null=True)
+    source_url = models.URLField(max_length=1024, blank=True, null=True)
     original_text = models.TextField()
-    topic = models.CharField(max_length=100, default="Palestine") # مثال: فلسطين
+    topic = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # --- الحقول الجديدة ---
+    edited_text = models.TextField(blank=True, null=True) # لتخزين النص بعد التحرير
+    image_url = models.URLField(max_length=2048, blank=True, null=True) # لتخزين رابط الصورة المولدة
 
     def __str__(self):
-        return f"Article on {self.topic} by {self.user.username}"
+        return f"{self.topic} - {self.id}"
 
-# هذا الجدول سيخزن المنشورات المولدة لكل منصة
 class GeneratedPost(models.Model):
     PLATFORM_CHOICES = [
         ('Facebook', 'Facebook'),
-        ('X', 'X (Twitter)'),
-        ('LinkedIn', 'LinkedIn'),
+        ('X', 'X'),
         ('Instagram', 'Instagram'),
-        # ... يمكن إضافة المزيد
+        ('LinkedIn', 'LinkedIn'),
+        ('Threads', 'Threads'),
+        ('TikTok', 'TikTok'),
+        ('YouTube_Shorts', 'YouTube Shorts'),
+        ('Telegram', 'Telegram'),
     ]
-
-    article = models.ForeignKey(NewsArticle, on_delete=models.CASCADE, related_name='posts')
+    
+    article = models.ForeignKey(NewsArticle, related_name='posts', on_delete=models.CASCADE)
     platform = models.CharField(max_length=50, choices=PLATFORM_CHOICES)
     content = models.TextField()
-    status = models.CharField(max_length=20, default='draft') # draft, scheduled, published
+    status = models.CharField(max_length=50, default='draft')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
