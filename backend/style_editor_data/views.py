@@ -5,20 +5,8 @@ from rest_framework.decorators import action
 from .models import StyleExample
 from .serializers import StyleExampleSerializer
 from django.conf import settings
-import anthropic # <-- استيراد المكتبة الجديدة
-
-# تهيئة "عميل" Claude
-try:
-    if settings.CLAUDE_API_KEY:
-        client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
-    else:
-        # طباعة تحذير إذا لم يتم العثور على المفتاح
-        print("Warning: CLAUDE_API_KEY not found in settings.")
-        client = None
-except Exception as e:
-    print(f"Warning: Claude client could not be configured. Error: {e}")
-    client = None
-
+import anthropic
+import os
 
 class StyleExampleViewSet(viewsets.ModelViewSet):
     serializer_class = StyleExampleSerializer
@@ -32,39 +20,50 @@ class StyleExampleViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='predict')
     def predict(self, request):
-        if not client:
-            return Response({"error": "AI model is not configured on the server."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        raw_text = request.data.get('raw_text')
-        if not raw_text:
-            return Response({"error": "No text provided for editing."}, status=status.HTTP_400_BAD_REQUEST)
-
-        user_examples = StyleExample.objects.filter(user=request.user)
-        
-        # Claude يفضل أن تكون الأمثلة جزءًا من رسالة المستخدم
-        example_prompts = "\n\n".join([f"Original: {ex.before_text}\nEdited: {ex.after_text}" for ex in user_examples])
-        
-        # الطلب (Prompt) تم تحسينه قليلاً لـ Claude
-        prompt = f"""
-Here are examples of my preferred writing style:
-{example_prompts}
-
-Now, please edit the following text to match that style. Only return the edited text, with no extra commentary.
-Original: {raw_text}
-"""
-
         try:
+            # --- التهيئة الكسولة (Lazy Initialization) ---
+            # نقرأ المفتاح ونُهيئ العميل هنا، داخل الدالة
+            api_key = None
+            key_path = settings.CLAUDE_API_KEY # يأتي من settings.py
+            
+            if key_path and os.path.exists(key_path):
+                # إذا كنا على Render (Secret File)، اقرأ الملف
+                with open(key_path, 'r') as f:
+                    api_key = f.read().strip()
+            else:
+                # إذا كنا على الجهاز المحلي (.env)، استخدم القيمة مباشرة
+                api_key = key_path
+
+            if not api_key:
+                return Response({"error": "Claude API Key is not configured on the server."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            client = anthropic.Anthropic(api_key=api_key)
+            # --- نهاية التهيئة ---
+
+            raw_text = request.data.get('raw_text')
+            if not raw_text:
+                return Response({"error": "No text provided for editing."}, status=status.HTTP_400_BAD_REQUEST)
+
+            user_examples = StyleExample.objects.filter(user=request.user)
+            example_prompts = "\n\n".join([f"Original: {ex.before_text}\nEdited: {ex.after_text}" for ex in user_examples])
+            
+            prompt = f"""
+            Here are examples of my preferred writing style:
+            {example_prompts}
+
+            Now, please edit the following text to match that style. Only return the edited text, with no extra commentary.
+            Original: {raw_text}
+            """
+
             message = client.messages.create(
                 model="claude-3-sonnet-20240229",
-                max_tokens=2048, # يمكنك تعديل هذا الرقم
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}]
             )
             edited_text = message.content[0].text
             
             return Response({"edited_text": edited_text})
             
         except Exception as e:
-            print(f"Error calling Claude API: {e}")
+            print(f"Error during predict execution: {e}")
             return Response({"error": f"An error occurred while communicating with the AI model: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

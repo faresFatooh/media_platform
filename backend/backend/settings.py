@@ -21,37 +21,21 @@ CSRF_TRUSTED_ORIGINS = [
     f"https://{RENDER_EXTERNAL_HOSTNAME}",
     "https://ghazimortaja.com",
     "https://backend.ghazimortaja.com"
-]
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+] if RENDER_EXTERNAL_HOSTNAME else []
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'whitenoise.runserver_nostatic',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'corsheaders',
-    'rest_framework_simplejwt',
-    'users',
-    'applications',
-    'tasks',
-    'style_editor_data',
-    'asharq_automation'
+    'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
+    'django.contrib.sessions', 'django.contrib.messages', 'whitenoise.runserver_nostatic',
+    'django.contrib.staticfiles', 'rest_framework', 'corsheaders',
+    'rest_framework_simplejwt', 'users', 'applications', 'tasks',
+    'style_editor_data', 'asharq_automation'
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.security.SecurityMiddleware', 'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware', 'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware', 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware', 'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -59,15 +43,11 @@ ROOT_URLCONF = 'backend.urls'
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
+        'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIRS': [], 'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.debug', 'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -77,16 +57,15 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600
+        default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'), conn_max_age=600
     )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
-    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
 
 LANGUAGE_CODE = 'en-us'
@@ -95,55 +74,27 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 CORS_ALLOWED_ORIGINS = [
     "https://ghazimortaja.com",
     "https://frontend-rgr7.onrender.com",
-    "https://asharq-service.onrender.com",
-    "https://avatar-service.onrender.com",
-    "https://chatbot-service-jjas.onrender.com",
-    "https://infographic-service.onrender.com",
-    "https://news-refine-service.onrender.com",
-    "https://podcast-service.onrender.com",
-    "https://style-editor-service.onrender.com",
-    "https://video-sync-service.onrender.com",
+    "https://asharq-service.onrender.com", "https://avatar-service.onrender.com",
+    "https://chatbot-service-jjas.onrender.com", "https://infographic-service.onrender.com",
+    "https://news-refine-service.onrender.com", "https://podcast-service.onrender.com",
+    "https://style-editor-service.onrender.com", "https://video-sync-service.onrender.com",
     'https://backend.ghazimortaja.com'
 ]
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
-    CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_FRONTEND_URL}")
-CORS_ALLOWED_ORIGINS.append("https://ghazimortaja.com")
+    CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
-}
-
-SIMPLE_JWT = { "ACCESS_TOKEN_LIFETIME": timedelta(days=1), "REFRESH_TOKEN_LIFETIME": timedelta(days=7), }
+REST_FRAMEWORK = {'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',)}
+SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(days=1), "REFRESH_TOKEN_LIFETIME": timedelta(days=7),}
 CORS_ALLOW_CREDENTIALS = True
 
-# --- START: الكود المضاف لقراءة "الملفات السرية" ---
-# هذا الكود يجب أن يكون في نهاية الملف
-
-# قراءة مفتاح Claude API
-CLAUDE_API_KEY_FROM_ENV = os.environ.get('CLAUDE_API_KEY')
-if CLAUDE_API_KEY_FROM_ENV and os.path.exists(CLAUDE_API_KEY_FROM_ENV):
-    # إذا كان المتغير هو مسار لملف (في Render)، قم بقراءة المفتاح من الملف
-    with open(CLAUDE_API_KEY_FROM_ENV, 'r') as f:
-        CLAUDE_API_KEY = f.read().strip()
-else:
-    # وإلا (على جهازك المحلي)، استخدم القيمة مباشرة
-    CLAUDE_API_KEY = CLAUDE_API_KEY_FROM_ENV
-
-# قراءة مفتاح Gemini API بنفس الطريقة
-GEMINI_API_KEY_FROM_ENV = os.environ.get('GEMINI_API_KEY')
-if GEMINI_API_KEY_FROM_ENV and os.path.exists(GEMINI_API_KEY_FROM_ENV):
-    with open(GEMINI_API_KEY_FROM_ENV, 'r') as f:
-        GEMINI_API_KEY = f.read().strip()
-else:
-    GEMINI_API_KEY = GEMINI_API_KEY_FROM_ENV
-# --- END: نهاية الكود المضاف ---
+# We read the keys directly from the environment here.
+# The logic to handle Secret Files will be moved to where the keys are used.
+CLAUDE_API_KEY = os.environ.get('CLAUDE_API_KEY')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
