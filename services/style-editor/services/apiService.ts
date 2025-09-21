@@ -16,10 +16,8 @@ api.interceptors.request.use(config => {
 });
 
 // --- دوال لإدارة بيانات التدريب ---
-
 export const getStyleExamples = async (): Promise<TextPair[]> => {
   const { data } = await api.get('/api/style-examples/');
-  // تحويل أسماء الحقول من الخادم إلى ما تتوقعه الواجهة
   return data.map((item: any) => ({
     id: item.id.toString(),
     raw: item.before_text,
@@ -28,7 +26,6 @@ export const getStyleExamples = async (): Promise<TextPair[]> => {
 };
 
 export const addStyleExample = async (pair: { raw: string; edited: string }): Promise<TextPair> => {
-  // تحويل أسماء الحقول لتناسب ما يتوقعه الخادم
   const { data } = await api.post('/api/style-examples/', { before_text: pair.raw, after_text: pair.edited });
    return {
     id: data.id.toString(),
@@ -42,8 +39,9 @@ export const deleteStyleExample = async (id: string): Promise<void> => {
 };
 
 // --- دالة التحرير باستخدام الذكاء الاصطناعي ---
+// *** هذا هو التعديل الرئيسي ***
 export const performEdit = async (rawText: string): Promise<string> => {
-  // هذا المسار يتصل بالدالة predict التي أضفناها في الخادم الخلفي
+  // لقد قمنا بتغيير الطلب من GET إلى POST وأضفنا البيانات في الجسم
   const { data } = await api.post('/api/style-examples/predict/', { raw_text: rawText });
   return data.edited_text;
 };
