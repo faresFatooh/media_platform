@@ -6,7 +6,7 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_MAIN_BACKEND_URL,
 });
 
-// إضافة "بطاقة الهوية" (التوكن) تلقائيًا مع كل طلب
+// هذا الجزء مهم جدًا: هو يضيف "بطاقة الهوية" (التوكن) تلقائيًا مع كل طلب
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('access_token');
   if (token) {
@@ -39,9 +39,9 @@ export const deleteStyleExample = async (id: string): Promise<void> => {
 };
 
 // --- دالة التحرير باستخدام الذكاء الاصطناعي ---
-// *** هذا هو التعديل الرئيسي ***
+// *** هذا هو الكود الصحيح والنهائي لهذه الدالة ***
 export const performEdit = async (rawText: string): Promise<string> => {
-  // لقد قمنا بتغيير الطلب من GET إلى POST وأضفنا البيانات في الجسم
+  // نستخدم "post" لإرسال "طرد" يحتوي على البيانات
   const { data } = await api.post('/api/style-examples/predict/', { raw_text: rawText });
   return data.edited_text;
 };
