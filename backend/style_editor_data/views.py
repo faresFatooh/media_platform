@@ -21,19 +21,8 @@ class StyleExampleViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='predict')
     def predict(self, request):
         try:
-            # --- التهيئة الكسولة (Lazy Initialization) ---
-            # نقرأ المفتاح ونُهيئ العميل هنا، داخل الدالة
-            api_key = None
-            key_path = settings.CLAUDE_API_KEY # يأتي من settings.py
-            
-            if key_path and os.path.exists(key_path):
-                # إذا كنا على Render (Secret File)، اقرأ الملف
-                with open(key_path, 'r') as f:
-                    api_key = f.read().strip()
-            else:
-                # إذا كنا على الجهاز المحلي (.env)، استخدم القيمة مباشرة
-                api_key = key_path
-
+            # --- التهيئة المباشرة من الإعدادات ---
+            api_key = settings.CLAUDE_API_KEY
             if not api_key:
                 return Response({"error": "Claude API Key is not configured on the server."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

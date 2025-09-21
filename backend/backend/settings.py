@@ -4,9 +4,7 @@ import dj_database_url
 from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-for-dev')
-
 DEBUG = os.environ.get('RENDER') != 'true'
 
 ALLOWED_HOSTS = []
@@ -40,34 +38,10 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'backend.urls'
-
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIRS': [], 'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug', 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
+TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIRS': [], 'APP_DIRS': True, 'OPTIONS': {'context_processors': ['django.template.context_processors.debug', 'django.template.context_processors.request', 'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages',],},},]
 WSGI_APPLICATION = 'backend.wsgi.application'
-
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'), conn_max_age=600
-    )
-}
-
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
-]
-
+DATABASES = {'default': dj_database_url.config(default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'), conn_max_age=600)}
+AUTH_PASSWORD_VALIDATORS = [{'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},{'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},{'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},]
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
@@ -76,25 +50,19 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
 CORS_ALLOWED_ORIGINS = [
-    "https://ghazimortaja.com",
-    "https://frontend-rgr7.onrender.com",
-    "https://asharq-service.onrender.com", "https://avatar-service.onrender.com",
-    "https://chatbot-service-jjas.onrender.com", "https://infographic-service.onrender.com",
-    "https://news-refine-service.onrender.com", "https://podcast-service.onrender.com",
-    "https://style-editor-service.onrender.com", "https://video-sync-service.onrender.com",
-    'https://backend.ghazimortaja.com'
+    "https://ghazimortaja.com", "https://frontend-rgr7.onrender.com", "https://asharq-service.onrender.com", 
+    "https://avatar-service.onrender.com", "https://chatbot-service-jjas.onrender.com", "https://infographic-service.onrender.com",
+    "https://news-refine-service.onrender.com", "https://podcast-service.onrender.com", "https://style-editor-service.onrender.com",
+    "https://video-sync-service.onrender.com", 'https://backend.ghazimortaja.com'
 ]
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
-
 REST_FRAMEWORK = {'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',)}
 SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(days=1), "REFRESH_TOKEN_LIFETIME": timedelta(days=7),}
 CORS_ALLOW_CREDENTIALS = True
 
-# We read the keys directly from the environment here.
-# The logic to handle Secret Files will be moved to where the keys are used.
+# --- الطريقة البسيطة والصحيحة لقراءة المفاتيح ---
 CLAUDE_API_KEY = os.environ.get('CLAUDE_API_KEY')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
