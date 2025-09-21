@@ -6,7 +6,6 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-for-dev')
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY') # <-- تمت إضافة هذا السطر
 
 DEBUG = os.environ.get('RENDER') != 'true'
 
@@ -115,7 +114,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
-    CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_FRONTEND_URL}") # Added https://
+    CORS_ALLOWED_ORIGINS.append(f"https://{RENDER_FRONTEND_URL}")
 CORS_ALLOWED_ORIGINS.append("https://ghazimortaja.com")
 
 REST_FRAMEWORK = {
@@ -126,3 +125,25 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = { "ACCESS_TOKEN_LIFETIME": timedelta(days=1), "REFRESH_TOKEN_LIFETIME": timedelta(days=7), }
 CORS_ALLOW_CREDENTIALS = True
+
+# --- START: الكود المضاف لقراءة "الملفات السرية" ---
+# هذا الكود يجب أن يكون في نهاية الملف
+
+# قراءة مفتاح Claude API
+CLAUDE_API_KEY_FROM_ENV = os.environ.get('CLAUDE_API_KEY')
+if CLAUDE_API_KEY_FROM_ENV and os.path.exists(CLAUDE_API_KEY_FROM_ENV):
+    # إذا كان المتغير هو مسار لملف (في Render)، قم بقراءة المفتاح من الملف
+    with open(CLAUDE_API_KEY_FROM_ENV, 'r') as f:
+        CLAUDE_API_KEY = f.read().strip()
+else:
+    # وإلا (على جهازك المحلي)، استخدم القيمة مباشرة
+    CLAUDE_API_KEY = CLAUDE_API_KEY_FROM_ENV
+
+# قراءة مفتاح Gemini API بنفس الطريقة
+GEMINI_API_KEY_FROM_ENV = os.environ.get('GEMINI_API_KEY')
+if GEMINI_API_KEY_FROM_ENV and os.path.exists(GEMINI_API_KEY_FROM_ENV):
+    with open(GEMINI_API_KEY_FROM_ENV, 'r') as f:
+        GEMINI_API_KEY = f.read().strip()
+else:
+    GEMINI_API_KEY = GEMINI_API_KEY_FROM_ENV
+# --- END: نهاية الكود المضاف ---
