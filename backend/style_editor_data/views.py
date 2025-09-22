@@ -37,13 +37,20 @@ class StyleExampleViewSet(viewsets.ModelViewSet):
             example_prompts = "\n\n".join([f"Original: {ex.before_text}\nEdited: {ex.after_text}" for ex in user_examples])
             
             prompt = f"""
-            Here are examples of my preferred writing style:
+            أنت محرر أخبار عربي وخبير في تحليل المحتوى. مهمتك هي تعديل "النص الأصلي" أدناه وفقًا لتعليمات رئيسية اثنتين:
+
+            1.  **الأسلوب العام:** أولاً، يجب أن تلتزم بأسلوب الكتابة العام الموضح في "أمثلة الأسلوب" المتوفرة أدناه. انتبه إلى النبرة، وبنية الجملة، والمفردات.
+
+            2.  **قاعدة تحويل الاقتباسات إلى نقاط (مهمة جدًا):** إذا كان "النص الأصلي" يحتوي على اقتباسات مباشرة (نص داخل علامتي التنصيص "..." أو '...')، فيجب عليك **استخراج المعلومات الأساسية** من داخل تلك الاقتباسات وإعادة صياغتها في شكل **قائمة نقطية** موجزة (باستخدام - لكل نقطة). يجب دمج هذه القائمة بشكل طبيعي في سياق النص.
+
+            هذه هي "أمثلة الأسلوب" لتعلم الأسلوب العام منها:
+            ---
             {example_prompts}
+             ---
 
-            Now, please edit the following text to match that style. Only return the edited text, with no extra commentary.
-            Original: {raw_text}
+            الآن، قم بتطبيق كل هذه القواعد وتعديل النص التالي.
+            النص الأصلي: {raw_text}
             """
-
             message = client.messages.create(
                  model="claude-3-haiku-20240307",
                 max_tokens=2048,
