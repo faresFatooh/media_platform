@@ -35,22 +35,25 @@ class StyleExampleViewSet(viewsets.ModelViewSet):
 
             user_examples = StyleExample.objects.filter(user=request.user).order_by('-id')[:10]
             example_prompts = "\n\n".join([f"Original: {ex.before_text}\nEdited: {ex.after_text}" for ex in user_examples])
-            
+            #
             prompt = f"""
-            أنت محرر أخبار عربي وخبير في تحليل المحتوى. مهمتك هي تعديل "النص الأصلي" أدناه وفقًا لتعليمات رئيسية اثنتين:
+            You are an expert Arabic news editor and content analyst. Your task is to edit the "Original Text" below according to two main instructions:
 
-            1.  **الأسلوب العام:** أولاً، يجب أن تلتزم بأسلوب الكتابة العام الموضح في "أمثلة الأسلوب" المتوفرة أدناه. انتبه إلى النبرة، وبنية الجملة، والمفردات.
+            1.  **General Style:** First, you must adhere to the general writing style demonstrated in the "Style Examples" provided below. Pay attention to tone, sentence structure, and vocabulary.
 
-            2.  **قاعدة تحويل الاقتباسات إلى نقاط (مهمة جدًا):** إذا كان "النص الأصلي" يحتوي على اقتباسات مباشرة (نص داخل علامتي التنصيص "..." أو '...')، فيجب عليك **استخراج المعلومات الأساسية** من داخل تلك الاقتباسات وإعادة صياغتها في شكل **قائمة نقطية** موجزة (باستخدام - لكل نقطة). يجب دمج هذه القائمة بشكل طبيعي في سياق النص.
+            2.  **Quotes to Bullet Points Rule (Very Important):** If the "Original Text" contains direct quotes (text inside "..." or '...'), you MUST extract the key pieces of information from within those quotes and rephrase them as a concise bulleted list (using - for each point). This list should be naturally integrated into the text.
 
-            هذه هي "أمثلة الأسلوب" لتعلم الأسلوب العام منها:
+            Here are the 'Style Examples' to learn the general style from:
             ---
             {example_prompts}
-             ---
+            ---
 
-            الآن، قم بتطبيق كل هذه القواعد وتعديل النص التالي.
-            النص الأصلي: {raw_text}
+            Now, apply all these rules and edit the following text.
+            Original Text: {raw_text}
             """
+            #
+            
+           
             message = client.messages.create(
                  model="claude-3-haiku-20240307",
                 max_tokens=2048,
