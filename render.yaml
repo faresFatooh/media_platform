@@ -9,15 +9,14 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: markaz-media-db 
-          property: connectionString 
+          name: markaz-media-db
+          property: connectionString
       - key: GEMINI_API_KEY
         sync: false
-      - key: RENDER_FRONTEND_URL
-        fromService:
-          type: web
-          name: frontend
-          property: host 
+      # RENDER_FRONTEND_URL لم نعد بحاجة إليه بنفس الطريقة، ولكن يمكننا تركه
+      # إذا كان الكود يستخدمه لشيء آخر مثل CORS
+      - key: RENDER_FRONTEND_URL 
+        value: https://frontend-rgr7.onrender.com # يمكن تحديثه لاحقًا
 
   - type: web
     name: frontend
@@ -26,11 +25,10 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     envVars:
+      # --- ✅ التعديل الرئيسي هنا ---
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: backend
-          property: host 
+        value: https://backend-y4ir.onrender.com # استخدام الرابط العام والمباشر للخادم
+      # --------------------------
 
   - type: web
     name: video-sync-service
@@ -99,11 +97,10 @@ services:
     dockerfilePath: ./services/style-editor/Dockerfile
     dockerContext: ./services/style-editor
     envVars:
+      # --- ✅ التعديل الرئيسي هنا ---
       - key: MAIN_BACKEND_URL
-        fromService:
-          type: web
-          name: backend
-          property: host 
+        value: https://backend-y4ir.onrender.com
+      # --------------------------
       - key: GEMINI_API_KEY
         sync: false
 
@@ -124,10 +121,9 @@ services:
     dockerfilePath: ./services/discovery-script-service/Dockerfile
     dockerContext: ./services/discovery-script-service
     envVars:
+      # --- ✅ التعديل الرئيسي هنا ---
       - key: MAIN_BACKEND_URL
-        fromService:
-          type: web
-          name: backend
-          property: host
+        value: https://backend-y4ir.onrender.com
+      # --------------------------
       - key: GEMINI_API_KEY
         sync: false
