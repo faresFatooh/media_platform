@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Theme } from '../types';
 
@@ -16,8 +15,8 @@ const Header: React.FC<HeaderProps> = ({ theme, setTheme }) => {
     <header className="bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white p-5 shadow-lg sticky top-0 z-40">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="text-2xl font-bold flex items-center gap-3">
-          <span>🎬</span>
-          <span>منصة إنتاج نصوص Discovery Channel</span>
+          <span>🎨</span>
+          <span>منصة الأسلوب</span>
         </div>
         <button
           onClick={toggleTheme}

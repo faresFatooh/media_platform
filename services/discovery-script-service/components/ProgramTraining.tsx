@@ -1,45 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { Program, TrainingData, TrainingMethod } from '../types';
+import { Style, TrainingData, TrainingMethod, TrainingExample } from '../types';
 
-interface ProgramTrainingProps {
-  programs: Program[];
-  onUpdateProgram: (programId: string, trainingData: TrainingData) => void;
+interface StyleTrainingProps {
+  styles: Style[];
+  onUpdateStyle: (styleId: string, trainingData: TrainingData) => void;
 }
 
 const TABS: { id: TrainingMethod; name: string }[] = [
     { id: 'instructions', name: 'الإرشادات المباشرة' },
-    { id: 'example', name: 'التدريب بالمثال (قبل وبعد)' },
+    { id: 'example', name: 'التدريب بالأمثلة' },
     { id: 'bulk', name: 'التدريب بمجموعة نصوص' },
 ];
 
-const ProgramTraining: React.FC<ProgramTrainingProps> = ({ programs, onUpdateProgram }) => {
-  const [selectedProgramId, setSelectedProgramId] = useState<string>(programs[0]?.id || '');
-  const [trainingData, setTrainingData] = useState<TrainingData>(programs[0]?.trainingData);
+const StyleTraining: React.FC<StyleTrainingProps> = ({ styles, onUpdateStyle }) => {
+  const [selectedStyleId, setSelectedStyleId] = useState<string>(styles[0]?.id || '');
+  const [trainingData, setTrainingData] = useState<TrainingData>(styles[0]?.trainingData);
   const [activeTab, setActiveTab] = useState<TrainingMethod>('instructions');
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
   useEffect(() => {
-    const selectedProgram = programs.find(p => p.id === selectedProgramId);
-    if (selectedProgram) {
-      setTrainingData(selectedProgram.trainingData);
-      setActiveTab(selectedProgram.trainingData.method);
+    const selectedStyle = styles.find(p => p.id === selectedStyleId);
+    if (selectedStyle) {
+      setTrainingData(selectedStyle.trainingData);
+      setActiveTab(selectedStyle.trainingData.method);
     }
-  }, [selectedProgramId, programs]);
+  }, [selectedStyleId, styles]);
 
-  const handleDataChange = (field: keyof TrainingData, value: string) => {
+  const handleDataChange = (field: keyof Omit<TrainingData, 'examples'>, value: string) => {
       setTrainingData(prev => ({...prev, [field]: value }));
   };
   
   const handleTabChange = (tabId: TrainingMethod) => {
     setActiveTab(tabId);
-    handleDataChange('method', tabId);
+    setTrainingData(prev => ({...prev, method: tabId }));
   }
 
   const handleSave = () => {
-    onUpdateProgram(selectedProgramId, trainingData);
+    onUpdateStyle(selectedStyleId, trainingData);
     setShowSaveSuccess(true);
     setTimeout(() => setShowSaveSuccess(false), 2000);
   };
+
+  const handleExampleChange = (id: number, field: 'before' | 'after', value: string) => {
+    setTrainingData(prev => ({
+        ...prev,
+        examples: prev.examples.map(ex => ex.id === id ? { ...ex, [field]: value } : ex)
+    }));
+  };
+
+  const handleAddExample = () => {
+      setTrainingData(prev => ({
+          ...prev,
+          examples: [...(prev.examples || []), { id: Date.now(), before: '', after: '' }]
+      }));
+  };
+
+  const handleDeleteExample = (id: number) => {
+      setTrainingData(prev => ({
+          ...prev,
+          examples: prev.examples.filter(ex => ex.id !== id)
+      }));
+  };
+
 
   const renderActiveTabContent = () => {
     switch (activeTab) {
@@ -59,25 +81,38 @@ const ProgramTraining: React.FC<ProgramTrainingProps> = ({ programs, onUpdatePro
         );
       case 'example':
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-bold text-text-secondary-light dark:text-text-secondary-dark mb-2">النص الأصلي (قبل التحرير)</label>
-                    <textarea
-                        value={trainingData.beforeText}
-                        onChange={(e) => handleDataChange('beforeText', e.target.value)}
-                        placeholder="ضع هنا النص الأصلي أو مثالاً على الأسلوب الذي لا تريده."
-                        className="w-full h-48 p-3 border rounded-lg bg-bg-secondary-light dark:bg-bg-secondary-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary font-sans"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-bold text-text-secondary-light dark:text-text-secondary-dark mb-2">النص المحرر (بعد التحرير)</label>
-                    <textarea
-                        value={trainingData.afterText}
-                        onChange={(e) => handleDataChange('afterText', e.target.value)}
-                        placeholder="ضع هنا النص بعد تحريره بأسلوبك المطلوب."
-                        className="w-full h-48 p-3 border rounded-lg bg-bg-secondary-light dark:bg-bg-secondary-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary font-sans"
-                    />
-                </div>
+            <div className="space-y-6">
+                {(trainingData.examples || []).map((example, index) => (
+                    <div key={example.id} className="bg-card-bg-light dark:bg-card-bg-dark p-4 rounded-lg border border-border-light dark:border-border-dark relative">
+                       <div className="flex justify-between items-center mb-2">
+                         <h4 className="font-bold text-text-primary-light dark:text-text-primary-dark">المثال {index + 1}</h4>
+                         <button onClick={() => handleDeleteExample(example.id)} className="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+                       </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-text-secondary-light dark:text-text-secondary-dark mb-2">النص الأصلي (مثال: نص خبري)</label>
+                                <textarea
+                                    value={example.before}
+                                    onChange={(e) => handleExampleChange(example.id, 'before', e.target.value)}
+                                    placeholder="ضع هنا النص الأصلي أو مثالاً على الأسلوب الذي لا تريده."
+                                    className="w-full h-48 p-3 border rounded-lg bg-bg-secondary-light dark:bg-bg-secondary-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary font-sans"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-text-secondary-light dark:text-text-secondary-dark mb-2">النص المحرر (بأسلوبك)</label>
+                                <textarea
+                                    value={example.after}
+                                    onChange={(e) => handleExampleChange(example.id, 'after', e.target.value)}
+                                    placeholder="ضع هنا النص بعد تحريره بأسلوبك المطلوب."
+                                    className="w-full h-48 p-3 border rounded-lg bg-bg-secondary-light dark:bg-bg-secondary-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary font-sans"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+                 <button onClick={handleAddExample} className="w-full py-2 px-4 border-2 border-dashed rounded-lg border-primary text-primary hover:bg-primary hover:text-white transition duration-300">
+                    + إضافة مثال جديد
+                </button>
             </div>
         );
       case 'bulk':
@@ -107,20 +142,20 @@ const ProgramTraining: React.FC<ProgramTrainingProps> = ({ programs, onUpdatePro
         تدريب النماذج (إدارة الأساليب)
       </h2>
       <p className="mb-6 text-text-secondary-light dark:text-text-secondary-dark">
-        اختر برنامجًا وحدد طريقة التدريب المفضلة لديك. سيقوم النموذج باتباع هذه الإرشادات عند توليد نصوص جديدة.
+        اختر أسلوبًا وحدد طريقة التدريب المفضلة لديك. سيقوم النموذج باتباع هذه الإرشادات عند توليد نصوص جديدة.
       </p>
 
       <div className="mb-6">
         <label className="block text-sm font-bold text-text-secondary-light dark:text-text-secondary-dark mb-2">
-          اختر البرنامج للتعديل
+          اختر الأسلوب للتعديل
         </label>
         <select
-          value={selectedProgramId}
-          onChange={(e) => setSelectedProgramId(e.target.value)}
+          value={selectedStyleId}
+          onChange={(e) => setSelectedStyleId(e.target.value)}
           className="w-full p-3 border rounded-lg bg-bg-secondary-light dark:bg-bg-secondary-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary"
         >
-          {programs.map(p => (
-            <option key={p.id} value={p.id}>{p.name}</option>
+          {styles.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
       </div>
@@ -139,7 +174,7 @@ const ProgramTraining: React.FC<ProgramTrainingProps> = ({ programs, onUpdatePro
         ))}
       </div>
       
-      <div className="p-4 bg-bg-secondary-light dark:bg-bg-secondary-dark rounded-b-md rounded-tr-md">
+      <div className="p-4 bg-bg-secondary-light dark:bg-bg-secondary-dark rounded-b-md rounded-tr-md min-h-[300px]">
         {renderActiveTabContent()}
       </div>
 
@@ -151,7 +186,7 @@ const ProgramTraining: React.FC<ProgramTrainingProps> = ({ programs, onUpdatePro
         )}
         <button
           onClick={handleSave}
-          disabled={!selectedProgramId}
+          disabled={!selectedStyleId}
           className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:-translate-y-0.5 transform transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span>💾</span>
@@ -162,4 +197,4 @@ const ProgramTraining: React.FC<ProgramTrainingProps> = ({ programs, onUpdatePro
   );
 };
 
-export default ProgramTraining;
+export default StyleTraining;

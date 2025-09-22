@@ -1,14 +1,21 @@
 export type Theme = 'light' | 'dark';
 
-export type TrainingMethod = 'instructions' | 'example' | 'bulk';
+export type TrainingMethod = 'instructions' | 'example' | 'bulk' | 'policy';
+
+export interface TrainingExample {
+  id: number; // For React keys
+  before: string;
+  after: string;
+}
 
 export interface TrainingData {
   method: TrainingMethod;
-  instructions: string;
-  beforeText: string;
-  afterText: string;
+  instructions: string; // Used for 'instructions' and 'bulk'
+  examples: TrainingExample[]; // Used for 'example'
+  policyUrl: string; // Used for 'policy'
+  policyText: string; // Used for 'policy' from file content or URL analysis
 }
-export interface Program {
+export interface Style {
   id: string;
   name: string;
   icon: string;
@@ -30,7 +37,7 @@ export interface Source {
 
 export interface Script {
   title: string;
-  program: string;
+  style: string;
   duration: string;
   content: string;
   scenes: Scene[];
@@ -49,7 +56,7 @@ export interface FactCheckResult {
   details: string; // Could be markdown
 }
 
-export type Section = 'dashboard' | 'newScript' | 'factCheck' | 'api' | 'training';
+export type Section = 'dashboard' | 'newScript' | 'factCheck' | 'api' | 'training' | 'onThisDay';
 
 export interface NotificationMessage {
   id: number;
@@ -69,4 +76,18 @@ export type ConnectionStatus = 'connected' | 'disconnected' | 'pending';
 export interface ApiStatuses {
   claude: ConnectionStatus;
   chatGpt: ConnectionStatus;
+}
+
+export type GenerationEngine = 'gemini' | 'claude' | 'chatgpt' | 'hybrid' | 'cross';
+
+export interface OnThisDayEvent {
+    year: string;
+    description: string;
+}
+  
+export interface OnThisDayData {
+    date: string;
+    events: OnThisDayEvent[];
+    births: OnThisDayEvent[];
+    deaths: OnThisDayEvent[];
 }

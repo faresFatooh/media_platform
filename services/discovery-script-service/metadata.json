@@ -1,5 +1,5 @@
 {
-  "name": "Discovery Channel Script Production Platform",
-  "description": "An advanced platform for generating, managing, and fact-checking documentary scripts for various Discovery Channel programs using the Gemini API. Features include deep research capabilities, multi-language support, and a dynamic, theme-switchable user interface.",
+  "name": "منصة الأسلوب",
+  "description": "منصة متقدمة لتوليد النصوص الإبداعية وإدارتها بناءً على أساليب قابلة للتدريب والتخصيص باستخدام واجهة برمجة تطبيقات Gemini. تتضمن الميزات البحث العميق ودعم لغات متعددة وتدريب مخصص للنماذج.",
   "requestFramePermissions": []
 }

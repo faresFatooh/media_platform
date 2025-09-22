@@ -1,10 +1,12 @@
-
-import React, { useState, useEffect } from 'react';
-import { ApiConfigs, ApiStatuses, ConnectionStatus, NotificationMessage, ApiName } from '../types';
-import { getApiConfigs, saveApiConfigs, testApiConnection } from '../services/apiConfigService';
+import React, { useState } from 'react';
+import { ApiConfigs, ApiStatuses, ConnectionStatus, ApiName } from '../types';
 
 interface ApiSettingsProps {
-    addNotification: (message: string, type: NotificationMessage['type']) => void;
+    initialConfigs: ApiConfigs;
+    initialStatuses: ApiStatuses;
+    onSave: (configs: ApiConfigs) => void;
+    onConfigsChange: (configs: ApiConfigs) => void;
+    addNotification: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
 const Spinner: React.FC = () => (
@@ -28,54 +30,39 @@ const StatusIndicator: React.FC<{ status: ConnectionStatus }> = ({ status }) => 
     );
 };
 
-const ApiSettings: React.FC<ApiSettingsProps> = ({ addNotification }) => {
-    const [configs, setConfigs] = useState<ApiConfigs>({ claudeApiKey: '', chatGptApiKey: '' });
-    const [statuses, setStatuses] = useState<ApiStatuses>({ claude: 'disconnected', chatGpt: 'disconnected' });
-    const [isLoading, setIsLoading] = useState(false);
-
-    useEffect(() => {
-        const loadConfigs = async () => {
-            const savedConfigs = await getApiConfigs();
-            setConfigs(savedConfigs);
-            // Optionally, test connections on load
-            if(savedConfigs.claudeApiKey) testConnection('claude', savedConfigs.claudeApiKey, false);
-            if(savedConfigs.chatGptApiKey) testConnection('chatGpt', savedConfigs.chatGptApiKey, false);
-        };
-        loadConfigs();
-    }, []);
-
-    const testConnection = async (apiName: ApiName, apiKey: string, showNotification: boolean) => {
-        setStatuses(prev => ({ ...prev, [apiName]: 'pending' }));
-        const isConnected = await testApiConnection(apiKey);
-        setStatuses(prev => ({ ...prev, [apiName]: isConnected ? 'connected' : 'disconnected' }));
-        if(showNotification){
-            if(isConnected){
-                addNotification(`تم الاتصال بـ ${apiName} API بنجاح`, 'success');
-            } else {
-                addNotification(`فشل الاتصال بـ ${apiName} API. يرجى التحقق من المفتاح.`, 'error');
-            }
-        }
-    };
+const ApiSettings: React.FC<ApiSettingsProps> = ({ initialConfigs, initialStatuses, onSave, onConfigsChange, addNotification }) => {
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLocked, setIsLocked] = useState({ 
+        claude: !!initialConfigs.claudeApiKey && initialStatuses.claude === 'connected', 
+        chatGpt: !!initialConfigs.chatGptApiKey && initialStatuses.chatGpt === 'connected' 
+    });
 
     const handleSave = async () => {
-        setIsLoading(true);
-        addNotification('جاري حفظ الإعدادات...', 'info');
-        const success = await saveApiConfigs(configs);
-        if (success) {
-            addNotification('تم حفظ الإعدادات بنجاح. جاري اختبار الاتصالات...', 'success');
-            // Test connections after saving
-            await testConnection('claude', configs.claudeApiKey, true);
-            await testConnection('chatGpt', configs.chatGptApiKey, true);
-        } else {
-            addNotification('فشل حفظ الإعدادات.', 'error');
-        }
-        setIsLoading(false);
+        setIsSaving(true);
+        await onSave(initialConfigs);
+        // After save, lock fields that are successfully connected
+        setIsLocked({
+            claude: initialStatuses.claude === 'connected',
+            chatGpt: initialStatuses.chatGpt === 'connected',
+        });
+        setIsSaving(false);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, apiName: ApiName) => {
-        setConfigs(prev => ({ ...prev, [`${apiName}ApiKey`]: e.target.value }));
-        // Set status to disconnected when key is changed
-        setStatuses(prev => ({ ...prev, [apiName]: 'disconnected' }));
+        const newConfigs = { ...initialConfigs, [`${apiName}ApiKey`]: e.target.value };
+        onConfigsChange(newConfigs);
+    };
+
+    const toggleLock = (apiName: ApiName) => {
+        // Prevent locking if key is empty or not connected
+        if(!initialConfigs[`${apiName}ApiKey`] || initialStatuses[apiName] !== 'connected') {
+             setIsLocked(prev => ({ ...prev, [apiName]: false }));
+             if(isLocked[apiName]) {
+                 addNotification('لا يمكن القفل إلا بعد اتصال ناجح.', 'warning');
+             }
+             return;
+        }
+        setIsLocked(prev => ({ ...prev, [apiName]: !prev[apiName] }));
     };
 
     return (
@@ -85,7 +72,6 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({ addNotification }) => {
                 إعدادات واجهات برمجة التطبيقات (API)
             </h2>
             <div className="space-y-6">
-                {/* Gemini API Info Card - Retained from original logic */}
                  <div className="bg-bg-secondary-light dark:bg-bg-secondary-dark p-4 rounded-lg flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <h3 className="font-bold text-lg text-text-primary-light dark:text-text-primary-dark">Gemini API</h3>
@@ -104,42 +90,54 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({ addNotification }) => {
                 <div className="bg-bg-secondary-light dark:bg-bg-secondary-dark p-4 rounded-lg">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold text-lg text-text-primary-light dark:text-text-primary-dark">Claude API</h3>
-                        <StatusIndicator status={statuses.claude} />
+                        <StatusIndicator status={initialStatuses.claude} />
                     </div>
-                    <input 
-                        type="password"
-                        placeholder="أدخل مفتاح Claude API"
-                        value={configs.claudeApiKey}
-                        onChange={(e) => handleInputChange(e, 'claude')}
-                        className="w-full p-2 border rounded-md bg-card-bg-light dark:bg-card-bg-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary text-left"
-                        dir="ltr"
-                    />
+                    <div className="flex items-center gap-2">
+                        <input 
+                            type="password"
+                            placeholder="أدخل مفتاح Claude API"
+                            value={initialConfigs.claudeApiKey}
+                            readOnly={isLocked.claude}
+                            onChange={(e) => handleInputChange(e, 'claude')}
+                            className={`w-full p-2 border rounded-md bg-card-bg-light dark:bg-card-bg-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary text-left transition-colors ${isLocked.claude ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}`}
+                            dir="ltr"
+                        />
+                         <button onClick={() => toggleLock('claude')} title={isLocked.claude ? 'تعديل المفتاح' : 'قفل المفتاح'} className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                            {isLocked.claude ? '✏️' : '🔓'}
+                        </button>
+                    </div>
                 </div>
 
                 {/* ChatGPT API Card */}
                 <div className="bg-bg-secondary-light dark:bg-bg-secondary-dark p-4 rounded-lg">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold text-lg text-text-primary-light dark:text-text-primary-dark">ChatGPT API</h3>
-                        <StatusIndicator status={statuses.chatGpt} />
+                        <StatusIndicator status={initialStatuses.chatGpt} />
                     </div>
-                    <input 
-                        type="password"
-                        placeholder="أدخل مفتاح ChatGPT API"
-                        value={configs.chatGptApiKey}
-                        onChange={(e) => handleInputChange(e, 'chatGpt')}
-                        className="w-full p-2 border rounded-md bg-card-bg-light dark:bg-card-bg-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary text-left"
-                        dir="ltr"
-                    />
+                    <div className="flex items-center gap-2">
+                        <input 
+                            type="password"
+                            placeholder="أدخل مفتاح ChatGPT API"
+                            value={initialConfigs.chatGptApiKey}
+                            readOnly={isLocked.chatGpt}
+                            onChange={(e) => handleInputChange(e, 'chatGpt')}
+                            className={`w-full p-2 border rounded-md bg-card-bg-light dark:bg-card-bg-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary text-left transition-colors ${isLocked.chatGpt ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}`}
+                            dir="ltr"
+                        />
+                         <button onClick={() => toggleLock('chatGpt')} title={isLocked.chatGpt ? 'تعديل المفتاح' : 'قفل المفتاح'} className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                            {isLocked.chatGpt ? '✏️' : '🔓'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div className="mt-6 flex justify-end">
                 <button 
                     onClick={handleSave} 
-                    disabled={isLoading}
+                    disabled={isSaving}
                     className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:-translate-y-0.5 transform transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isLoading ? <Spinner /> : '💾'}
+                    {isSaving || initialStatuses.claude === 'pending' || initialStatuses.chatGpt === 'pending' ? <Spinner /> : '💾'}
                     <span>حفظ واختبار الاتصالات</span>
                 </button>
             </div>

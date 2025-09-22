@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Theme, Section, Script, FactCheckResult, NotificationMessage, Program, TrainingData } from './types';
-import { NAV_ITEMS, PROGRAMS } from './constants';
+import { Theme, Section, Script, FactCheckResult, NotificationMessage, Style, TrainingData, ApiConfigs, ApiStatuses, ConnectionStatus, ApiName, TrainingExample } from './types';
+import { NAV_ITEMS, STYLES } from './constants';
+import { getApiConfigs, saveApiConfigs, testApiConnection } from './services/apiConfigService';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
 import NewScriptForm from './components/NewScriptForm';
 import Notification from './components/Notification';
 import ApiSettings from './components/ApiSettings';
-import ProgramTraining from './components/ProgramTraining';
+import StyleTraining from './components/ProgramTraining';
+import OnThisDay from './components/OnThisDay';
 
-const PROGRAMS_STORAGE_KEY = 'discovery_programs_data_v2';
+const STYLES_STORAGE_KEY = 'style_platform_data_v2'; // Incremented version for new structure
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>('light');
@@ -17,22 +19,79 @@ const App: React.FC = () => {
   const [generatedScript, setGeneratedScript] = useState<Script | null>(null);
   const [factCheckResult, setFactCheckResult] = useState<FactCheckResult | null>(null);
   const [notifications, setNotifications] = useState<NotificationMessage[]>([]);
-  const [programs, setPrograms] = useState<Program[]>(() => {
+  const [styles, setStyles] = useState<Style[]>(() => {
     try {
-      const storedPrograms = localStorage.getItem(PROGRAMS_STORAGE_KEY);
-      // Basic validation to ensure stored data matches new structure
-      if (storedPrograms) {
-        const parsed = JSON.parse(storedPrograms);
-        if(Array.isArray(parsed) && parsed[0]?.trainingData?.method) {
+      const storedStyles = localStorage.getItem(STYLES_STORAGE_KEY);
+      if (storedStyles) {
+        const parsed = JSON.parse(storedStyles);
+        // FIX: Add a much more robust validation check for data loaded from localStorage
+        // to prevent crashes from outdated data structures.
+        if (
+            Array.isArray(parsed) &&
+            parsed.length > 0 &&
+            parsed.every(style =>
+                style.trainingData &&
+                typeof style.trainingData.method === 'string' &&
+                Array.isArray(style.trainingData.examples) &&
+                typeof style.trainingData.policyUrl === 'string' &&
+                typeof style.trainingData.policyText === 'string'
+            )
+        ) {
             return parsed;
         }
       }
-      return PROGRAMS;
+      return STYLES;
     } catch (error) {
-      console.error("Failed to load programs from localStorage", error);
-      return PROGRAMS;
+      console.error("Failed to load styles from localStorage", error);
+      return STYLES;
     }
   });
+
+  const [apiConfigs, setApiConfigs] = useState<ApiConfigs>({ claudeApiKey: '', chatGptApiKey: '' });
+  const [apiStatuses, setApiStatuses] = useState<ApiStatuses>({ claude: 'disconnected', chatGpt: 'disconnected' });
+
+  // Load API configs on mount
+  useEffect(() => {
+      const loadAndTestConfigs = async () => {
+          const savedConfigs = await getApiConfigs();
+          setApiConfigs(savedConfigs);
+          if (savedConfigs.claudeApiKey) testAndSetConnection('claude', savedConfigs.claudeApiKey, false);
+          if (savedConfigs.chatGptApiKey) testAndSetConnection('chatGpt', savedConfigs.chatGptApiKey, false);
+      };
+      loadAndTestConfigs();
+  }, []);
+
+  const testAndSetConnection = async (apiName: ApiName, apiKey: string, showNotification: boolean = false) => {
+      if (!apiKey) {
+          setApiStatuses(prev => ({ ...prev, [apiName]: 'disconnected' }));
+          return false;
+      }
+      setApiStatuses(prev => ({ ...prev, [apiName]: 'pending' }));
+      const isConnected = await testApiConnection(apiKey);
+      setApiStatuses(prev => ({ ...prev, [apiName]: isConnected ? 'connected' : 'disconnected' }));
+
+      if(showNotification){
+          if(isConnected){
+              addNotification(`تم الاتصال بـ ${apiName} API بنجاح`, 'success');
+          } else {
+              addNotification(`فشل الاتصال بـ ${apiName} API. يرجى التحقق من المفتاح.`, 'error');
+          }
+      }
+      return isConnected;
+  };
+
+  const handleSaveApiSettings = async (configs: ApiConfigs) => {
+    addNotification('جاري حفظ الإعدادات...', 'info');
+    const success = await saveApiConfigs(configs);
+    if (success) {
+        addNotification('تم حفظ الإعدادات بنجاح. جاري اختبار الاتصالات...', 'success');
+        await testAndSetConnection('claude', configs.claudeApiKey, true);
+        await testAndSetConnection('chatGpt', configs.chatGptApiKey, true);
+    } else {
+        addNotification('فشل حفظ الإعدادات.', 'error');
+    }
+  };
+
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -48,11 +107,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
-        localStorage.setItem(PROGRAMS_STORAGE_KEY, JSON.stringify(programs));
+        localStorage.setItem(STYLES_STORAGE_KEY, JSON.stringify(styles));
     } catch (error) {
-        console.error("Failed to save programs to localStorage", error);
+        console.error("Failed to save styles to localStorage", error);
     }
-  }, [programs]);
+  }, [styles]);
 
   const addNotification = useCallback((message: string, type: NotificationMessage['type']) => {
     const newNotification = {
@@ -73,7 +132,14 @@ const App: React.FC = () => {
 
   const handleScriptGenerated = (script: Script) => {
     setGeneratedScript(script);
-    setActiveSection('newScript'); // Stay on the same page to show the result
+    setActiveSection('newScript');
+    setStyles(prevStyles =>
+      prevStyles.map(style =>
+        style.name === script.style
+          ? { ...style, scriptCount: style.scriptCount + 1 }
+          : style
+      )
+    );
   };
   
   const handleFactCheckComplete = (result: FactCheckResult) => {
@@ -81,33 +147,74 @@ const App: React.FC = () => {
       setActiveSection('factCheck');
   };
 
-  const handleAddProgram = (newProgram: Omit<Program, 'id' | 'scriptCount' | 'trainingData'>) => {
-    const programToAdd: Program = {
-      ...newProgram,
-      id: newProgram.name.toLowerCase().replace(/\s+/g, '-'),
+  const handleGenerateFromEvent = (title: string) => {
+    const placeholderScript: Script = {
+        title: title,
+        style: styles[0]?.id || '', // Default to the first style
+        duration: '5',
+        content: `هذا نص مبدئي حول "${title}". اضغط على "توليد النص" لإنشاء سيناريو كامل.`,
+        scenes: [],
+        sources: []
+    };
+    setGeneratedScript(placeholderScript);
+    setActiveSection('newScript');
+};
+
+  const handleAddStyle = (newStyle: Omit<Style, 'id' | 'scriptCount' | 'trainingData'>) => {
+    const styleToAdd: Style = {
+      ...newStyle,
+      id: newStyle.name.toLowerCase().replace(/\s+/g, '-'),
       scriptCount: 0,
       trainingData: {
         method: 'instructions',
         instructions: '',
-        beforeText: '',
-        afterText: ''
+        examples: [],
+        policyUrl: '',
+        policyText: '',
       },
     };
-    setPrograms(prev => [...prev, programToAdd]);
-    addNotification(`تمت إضافة برنامج "${newProgram.name}" بنجاح`, 'success');
+    setStyles(prev => [...prev, styleToAdd]);
+    addNotification(`تمت إضافة أسلوب "${newStyle.name}" بنجاح`, 'success');
   };
 
-  const handleUpdateProgramTraining = (programId: string, trainingData: TrainingData) => {
-    setPrograms(prev => prev.map(p => p.id === programId ? { ...p, trainingData } : p));
-    addNotification('تم حفظ إرشادات البرنامج بنجاح', 'success');
+  const handleUpdateStyleTraining = (styleId: string, trainingData: TrainingData) => {
+    setStyles(prev => prev.map(s => s.id === styleId ? { ...s, trainingData } : s));
+    addNotification('تم حفظ إرشادات الأسلوب بنجاح', 'success');
   };
+
+  const handleAddToTraining = (styleId: string, originalContent: string, editedContent: string) => {
+    setStyles(prevStyles => {
+        return prevStyles.map(style => {
+            if (style.id === styleId) {
+                const newExample: TrainingExample = {
+                    id: Date.now(),
+                    before: originalContent,
+                    after: editedContent,
+                };
+                const updatedTrainingData = { ...style.trainingData };
+                // FIX: Defensively ensure the examples array exists before trying to spread it.
+                updatedTrainingData.examples = [...(updatedTrainingData.examples || []), newExample];
+                
+                // If the user adds an example, switch the preferred method to 'example'
+                updatedTrainingData.method = 'example';
+
+                return { ...style, trainingData: updatedTrainingData };
+            }
+            return style;
+        });
+    });
+    addNotification('تمت إضافة المثال بنجاح إلى بيانات التدريب!', 'success');
+};
+
 
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard programs={programs} onAddProgram={handleAddProgram} onSelectProgram={(programName: string) => setActiveSection('newScript')} />;
+        return <Dashboard styles={styles} onAddStyle={handleAddStyle} onSelectStyle={(styleName: string) => setActiveSection('newScript')} />;
       case 'newScript':
-        return <NewScriptForm programs={programs} addNotification={addNotification} onScriptGenerated={handleScriptGenerated} onFactCheckComplete={handleFactCheckComplete} initialScript={generatedScript}/>;
+        return <NewScriptForm styles={styles} addNotification={addNotification} onScriptGenerated={handleScriptGenerated} onFactCheckComplete={handleFactCheckComplete} initialScript={generatedScript} onAddToTraining={handleAddToTraining} apiStatuses={apiStatuses}/>;
+      case 'onThisDay':
+        return <OnThisDay onGenerateScript={handleGenerateFromEvent} addNotification={addNotification} />;
       case 'factCheck':
         return factCheckResult ? (
           <div className="bg-card-bg-light dark:bg-card-bg-dark p-6 rounded-lg shadow-md border border-border-light dark:border-border-dark">
@@ -130,11 +237,11 @@ const App: React.FC = () => {
           </div>
         ) : <p className="text-center text-text-secondary-light dark:text-text-secondary-dark">لم يتم إجراء تدقيق للحقائق بعد.</p>;
       case 'training':
-        return <ProgramTraining programs={programs} onUpdateProgram={handleUpdateProgramTraining} />;
+        return <StyleTraining styles={styles} onUpdateStyle={handleUpdateStyleTraining} />;
       case 'api':
-        return <ApiSettings addNotification={addNotification} />;
+        return <ApiSettings addNotification={addNotification} initialConfigs={apiConfigs} initialStatuses={apiStatuses} onSave={handleSaveApiSettings} onConfigsChange={setApiConfigs}/>;
       default:
-        return <Dashboard programs={programs} onAddProgram={handleAddProgram} onSelectProgram={() => setActiveSection('newScript')} />;
+        return <Dashboard styles={styles} onAddStyle={handleAddStyle} onSelectStyle={() => setActiveSection('newScript')} />;
     }
   };
 
