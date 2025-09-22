@@ -1,40 +1,46 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { Script, FactCheckResult, Source, GroundingChunk, TrainingData } from '../types';
+// services/discovery-channel-script-production-platform/src/services/geminiService.ts
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable not set");
+import { GoogleGenerativeAI, Part, FunctionDeclarationSchemaType } from "@google/generative-ai";
+import type { Script, FactCheckResult, Source, GroundingChunk, TrainingData } from '../types';
+
+// --- ✅ التصحيح الأول: قراءة المفتاح بالطريقة الصحيحة لـ Vite ---
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+if (!apiKey) {
+  throw new Error("VITE_GEMINI_API_KEY environment variable not set");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const genAI = new GoogleGenerativeAI(apiKey);
 
-const SCRIPT_SCHEMA = {
-  type: Type.OBJECT,
+// --- ✅ التصحيح الثاني: تعريف المخطط (Schema) ككائن جافاسكريبت عادي ---
+const SCRIPT_SCHEMA: FunctionDeclarationSchemaType = {
+  type: "object",
   properties: {
-    title: { type: Type.STRING, description: 'The title of the episode.' },
-    program: { type: Type.STRING, description: 'The name of the program.' },
-    duration: { type: Type.STRING, description: 'The duration of the episode in minutes.' },
-    content: { type: Type.STRING, description: 'The full script of the episode in the specified language, including narrator dialogue and scene descriptions.' },
+    title: { type: "string", description: 'The title of the episode.' },
+    program: { type: "string", description: 'The name of the program.' },
+    duration: { type: "string", description: 'The duration of the episode in minutes.' },
+    content: { type: "string", description: 'The full script of the episode in the specified language, including narrator dialogue and scene descriptions.' },
     scenes: {
-      type: Type.ARRAY,
+      type: "array",
       description: 'A breakdown of the episode into major scenes.',
       items: {
-        type: Type.OBJECT,
+        type: "object",
         properties: {
-          time: { type: Type.STRING, description: 'The time code for the scene (e.g., 00:00-05:30).' },
-          description: { type: Type.STRING, description: 'A brief description of the scene and its content.' },
-          visuals: { type: Type.STRING, description: 'Suggestions for visual elements (archival footage, animations, etc.).' },
+          time: { type: "string", description: 'The time code for the scene (e.g., 00:00-05:30).' },
+          description: { type: "string", description: 'A brief description of the scene and its content.' },
+          visuals: { type: "string", description: 'Suggestions for visual elements (archival footage, animations, etc.).' },
         },
         required: ["time", "description", "visuals"]
       }
     },
     sources: {
-        type: Type.ARRAY,
+        type: "array",
         description: "A list of suggested sources that can be used for fact-checking.",
         items: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
-                name: { type: Type.STRING, description: "The name of the source (e.g., National Geographic)." },
-                url: { type: Type.STRING, description: "The URL of the source." }
+                name: { type: "string", description: "The name of the source (e.g., National Geographic)." },
+                url: { type: "string", description: "The URL of the source." }
             },
             required: ["name", "url"]
         }
@@ -43,9 +49,7 @@ const SCRIPT_SCHEMA = {
   required: ["title", "program", "duration", "content", "scenes", "sources"]
 };
 
-
 export const generateScript = async (program: string, title: string, duration: string, language: string, trainingData?: TrainingData): Promise<Script> => {
-  
   let trainingInstruction = '';
   if (trainingData) {
     switch(trainingData.method) {
@@ -68,21 +72,24 @@ export const generateScript = async (program: string, title: string, duration: s
   }
 
   const systemInstruction = `You are a professional scriptwriter for Discovery Channel. Your task is to generate a complete script based on the user's request. ${trainingInstruction}`;
-  
   const prompt = `Generate a script for the program "${program}", titled "${title}". The episode duration should be ${duration} minutes. The script must be in ${language}. Provide the output as a valid JSON object that strictly follows the provided schema. Do not include any text or markdown markers outside the JSON object.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: systemInstruction,
-        responseMimeType: 'application/json',
+    // --- ✅ التصحيح الثالث: استخدام الطريقة الحديثة لتهيئة النموذج واستدعائه ---
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: { role: "user", parts: [{ text: systemInstruction }] },
+    });
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
         responseSchema: SCRIPT_SCHEMA,
       },
     });
 
-    const scriptJson = JSON.parse(response.text);
+    const scriptJson = JSON.parse(result.response.text());
     return scriptJson as Script;
   } catch (error) {
     console.error("Error generating script:", error);
@@ -91,59 +98,42 @@ export const generateScript = async (program: string, title: string, duration: s
 };
 
 export const generateIdeas = async (program: string): Promise<string[]> => {
-    const prompt = `Suggest 5 new and creative episode ideas for the Discovery program titled "${program}". Provide the ideas as a simple list.`;
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt
-    });
-    return response.text.split('\n').filter(idea => idea.trim() !== '');
+    const prompt = `Suggest 5 new and creative episode ideas for the Discovery program titled "${program}". Provide the ideas as a simple list separated by newlines.`;
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    return response.text().split('\n').filter(idea => idea.trim() !== '' && !idea.startsWith('* ')).map(idea => idea.replace(/^\d+\.\s*/, ''));
 };
 
 export const deepResearch = async (topic: string): Promise<{ research: string; sources: Source[] }> => {
     const prompt = `Conduct in-depth research on the topic: "${topic}". Provide a detailed report including key facts, historical context, important figures, and the latest developments. Use Google Search to find the most current information.`;
-    
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                tools: [{googleSearch: {}}],
-            },
-        });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        tools: [{ googleSearch: {} }],
+    });
 
-        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks as GroundingChunk[] || [];
-        const sources: Source[] = groundingChunks.map(chunk => ({
-            name: chunk.web.title,
-            url: chunk.web.uri,
-        }));
-        
-        return { research: response.text, sources };
-    } catch (error) {
-        console.error("Error during deep research:", error);
-        throw new Error("فشل البحث المعمق. يرجى المحاولة مرة أخرى.");
-    }
+    const response = result.response;
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingAttributions as GroundingChunk[] || [];
+    const sources: Source[] = groundingChunks.map(chunk => ({
+        name: chunk.web?.title || "Source",
+        url: chunk.web?.uri || "#",
+    }));
+    
+    return { research: response.text(), sources };
 };
 
 export const factCheckScript = async (scriptContent: string): Promise<FactCheckResult> => {
-    const prompt = `Please fact-check the following script content. Assess the overall accuracy as a percentage and provide a detailed summary of any inaccurate or questionable information with suggested corrections. Use Google Search to verify the information. Script: """${scriptContent}"""`;
-    
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                tools: [{googleSearch: {}}],
-            },
-        });
+    const prompt = `Please fact-check the following script content. Assess the overall accuracy as a percentage (e.g., "Accuracy: 95%") and provide a detailed summary of any inaccurate or questionable information with suggested corrections. Use Google Search to verify the information. Script: """${scriptContent}"""`;
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        tools: [{ googleSearch: {} }],
+    });
 
-        const text = response.text;
-        // Simple parsing to extract accuracy percentage
-        const accuracyMatch = text.match(/(\d+)%/);
-        const accuracy = accuracyMatch ? parseInt(accuracyMatch[1], 10) : 85; // Default if not found
+    const text = result.response.text();
+    const accuracyMatch = text.match(/(\d+)%/);
+    const accuracy = accuracyMatch ? parseInt(accuracyMatch[1], 10) : 85;
 
-        return { accuracy, details: text };
-    } catch (error) {
-        console.error("Error during fact check:", error);
-        throw new Error("فشل تدقيق الحقائق. يرجى المحاولة مرة أخرى.");
-    }
+    return { accuracy, details: text };
 };
