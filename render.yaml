@@ -99,13 +99,14 @@ services:
     dockerfilePath: ./services/style-editor/Dockerfile
     dockerContext: ./services/style-editor
     envVars:
-      - key: GEMINI_API_KEY
-        sync: false
       - key: MAIN_BACKEND_URL
         fromService:
           type: web
           name: backend
           property: host 
+      - key: GEMINI_API_KEY
+        sync: false
+
   - type: web
     name: infographic-service
     plan: starter
@@ -113,5 +114,20 @@ services:
     dockerfilePath: ./services/infographic-converter/Dockerfile
     dockerContext: ./services/infographic-converter
     envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+  
+  - type: web
+    name: discovery-script-service
+    plan: starter
+    env: docker
+    dockerfilePath: ./services/discovery-channel-script-production-platform/Dockerfile
+    dockerContext: ./services/discovery-channel-script-production-platform
+    envVars:
+      - key: MAIN_BACKEND_URL
+        fromService:
+          type: web
+          name: backend
+          property: host
       - key: GEMINI_API_KEY
         sync: false
