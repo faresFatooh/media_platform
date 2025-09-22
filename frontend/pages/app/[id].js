@@ -20,6 +20,8 @@ export default function AppDetails() {
     '6': { url: 'https://podcast-service.onrender.com', name: 'مساعد أتمتة البودكاست' },
     '7': { url: 'https://style-editor-service.onrender.com', name: 'محرر-الأسلوب-الشخصي' },
     '8': { url: 'https://infographic-service.onrender.com', name: 'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
+    '9': { url: 'https://infographic-service.onrender.com', name: 'محرر الاسلوب جديد' },
+
   };
 
 useEffect(() => {
