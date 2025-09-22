@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions', 'django.contrib.messages', 'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles', 'rest_framework', 'corsheaders',
     'rest_framework_simplejwt', 'users', 'applications', 'tasks',
-    'style_editor_data', 'asharq_automation'
+    'style_editor_data', 'asharq_automation','discovery_data',
 ]
 
 MIDDLEWARE = [
