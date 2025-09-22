@@ -33,7 +33,7 @@ class StyleExampleViewSet(viewsets.ModelViewSet):
             if not raw_text:
                 return Response({"error": "No text provided for editing."}, status=status.HTTP_400_BAD_REQUEST)
 
-            user_examples = StyleExample.objects.filter(user=request.user)
+            user_examples = StyleExample.objects.filter(user=request.user).order_by('-id')[:10]
             example_prompts = "\n\n".join([f"Original: {ex.before_text}\nEdited: {ex.after_text}" for ex in user_examples])
             
             prompt = f"""
