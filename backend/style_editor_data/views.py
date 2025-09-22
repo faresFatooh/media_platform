@@ -34,7 +34,7 @@ class StyleExampleViewSet(viewsets.ModelViewSet):
                 return Response({"error": "No text provided for editing."}, status=status.HTTP_400_BAD_REQUEST)
 
             # جلب آخر 10 أمثلة فقط للبقاء ضمن حدود الاستخدام
-            user_examples = StyleExample.objects.filter(user=request.user).order_by('-id')[:10]
+            user_examples = StyleExample.objects.filter(user=request.user).order_by('-id')
             example_prompts = "\n\n".join([f"Original: {ex.before_text}\nEdited: {ex.after_text}" for ex in user_examples])
             
             # --- التعليمات الجديدة والمفصلة باللغة الإنجليزية ---
