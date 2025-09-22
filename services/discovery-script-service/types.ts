@@ -1,11 +1,19 @@
-
 export type Theme = 'light' | 'dark';
 
+export type TrainingMethod = 'instructions' | 'example' | 'bulk';
+
+export interface TrainingData {
+  method: TrainingMethod;
+  instructions: string;
+  beforeText: string;
+  afterText: string;
+}
 export interface Program {
   id: string;
   name: string;
   icon: string;
   scriptCount: number;
+  trainingData: TrainingData;
 }
 
 export interface Scene {
@@ -41,7 +49,7 @@ export interface FactCheckResult {
   details: string; // Could be markdown
 }
 
-export type Section = 'dashboard' | 'newScript' | 'factCheck' | 'api';
+export type Section = 'dashboard' | 'newScript' | 'factCheck' | 'api' | 'training';
 
 export interface NotificationMessage {
   id: number;

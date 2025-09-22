@@ -1,11 +1,10 @@
-
-import React, { useState } from 'react';
-import { Script, FactCheckResult, NotificationMessage } from '../types';
-import { PROGRAMS } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { Script, FactCheckResult, NotificationMessage, Program } from '../types';
 import { generateScript, generateIdeas, deepResearch, factCheckScript } from '../services/geminiService';
 import Modal from './Modal';
 
 interface NewScriptFormProps {
+    programs: Program[];
     addNotification: (message: string, type: NotificationMessage['type']) => void;
     onScriptGenerated: (script: Script) => void;
     onFactCheckComplete: (result: FactCheckResult) => void;
@@ -26,15 +25,41 @@ const ActionButton: React.FC<{ onClick: () => void, text: string, icon: string, 
     </button>
 );
 
-const NewScriptForm: React.FC<NewScriptFormProps> = ({ addNotification, onScriptGenerated, onFactCheckComplete, initialScript }) => {
-    const [program, setProgram] = useState(PROGRAMS[0].id);
+const exportToWord = (content: string, title: string) => {
+    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
+        "xmlns:w='urn:schemas-microsoft-com:office:word' "+
+        "xmlns='http://www.w3.org/TR/REC-html40'>"+
+        "<head><meta charset='utf-8'><title>Export HTML to Word Document with JavaScript</title></head><body>";
+    const footer = "</body></html>";
+    const sourceHTML = header + content.replace(/\n/g, '<br/>') + footer;
+    
+    const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+    const fileDownload = document.createElement("a");
+    document.body.appendChild(fileDownload);
+    fileDownload.href = source;
+    fileDownload.download = `${title}.doc`;
+    fileDownload.click();
+    document.body.removeChild(fileDownload);
+};
+
+
+const NewScriptForm: React.FC<NewScriptFormProps> = ({ programs, addNotification, onScriptGenerated, onFactCheckComplete, initialScript }) => {
+    const [program, setProgram] = useState(programs[0]?.id || '');
     const [title, setTitle] = useState('');
     const [duration, setDuration] = useState('22');
     const [language, setLanguage] = useState('ar');
     const [script, setScript] = useState<Script | null>(initialScript);
+    const [editedContent, setEditedContent] = useState('');
     const [loadingStates, setLoadingStates] = useState({ generate: false, ideas: false, research: false, factCheck: false });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState({ title: '', content: '' });
+
+    useEffect(() => {
+        if(initialScript){
+            setScript(initialScript);
+            setEditedContent(initialScript.content);
+        }
+    }, [initialScript]);
 
     const handleGenerateScript = async () => {
         if (!program || !title) {
@@ -43,9 +68,10 @@ const NewScriptForm: React.FC<NewScriptFormProps> = ({ addNotification, onScript
         }
         setLoadingStates(prev => ({ ...prev, generate: true }));
         try {
-            const selectedProgram = PROGRAMS.find(p => p.id === program);
-            const generatedScript = await generateScript(selectedProgram?.name || '', title, duration, language);
+            const selectedProgram = programs.find(p => p.id === program);
+            const generatedScript = await generateScript(selectedProgram?.name || '', title, duration, language, selectedProgram?.trainingData);
             setScript(generatedScript);
+            setEditedContent(generatedScript.content);
             onScriptGenerated(generatedScript);
             addNotification('تم توليد النص بنجاح!', 'success');
         } catch (error) {
@@ -62,7 +88,7 @@ const NewScriptForm: React.FC<NewScriptFormProps> = ({ addNotification, onScript
         }
         setLoadingStates(prev => ({ ...prev, ideas: true }));
         try {
-            const selectedProgram = PROGRAMS.find(p => p.id === program);
+            const selectedProgram = programs.find(p => p.id === program);
             const ideas = await generateIdeas(selectedProgram?.name || '');
             setModalContent({ title: 'أفكار للحلقات', content: ideas.join('\n') });
             setIsModalOpen(true);
@@ -92,13 +118,14 @@ const NewScriptForm: React.FC<NewScriptFormProps> = ({ addNotification, onScript
     };
 
     const handleFactCheck = async () => {
-        if (!script) {
+        const contentToCheck = editedContent || script?.content;
+        if (!contentToCheck) {
             addNotification('لا يوجد نص لتدقيق الحقائق. الرجاء توليد نص أولاً.', 'warning');
             return;
         }
         setLoadingStates(prev => ({ ...prev, factCheck: true }));
         try {
-            const result = await factCheckScript(script.content);
+            const result = await factCheckScript(contentToCheck);
             onFactCheckComplete(result);
             addNotification('تم إكمال تدقيق الحقائق بنجاح', 'success');
         } catch (error) {
@@ -119,7 +146,7 @@ const NewScriptForm: React.FC<NewScriptFormProps> = ({ addNotification, onScript
                     <div>
                         <label className="block text-sm font-bold text-text-secondary-light dark:text-text-secondary-dark mb-2">اختر البرنامج</label>
                         <select value={program} onChange={e => setProgram(e.target.value)} className="w-full p-3 border rounded-lg bg-bg-secondary-light dark:bg-bg-secondary-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary">
-                            {PROGRAMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                     </div>
                     <div>
@@ -128,11 +155,7 @@ const NewScriptForm: React.FC<NewScriptFormProps> = ({ addNotification, onScript
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-text-secondary-light dark:text-text-secondary-dark mb-2">مدة الحلقة (دقيقة)</label>
-                        <select value={duration} onChange={e => setDuration(e.target.value)} className="w-full p-3 border rounded-lg bg-bg-secondary-light dark:bg-bg-secondary-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary">
-                            <option value="22">22 دقيقة</option>
-                            <option value="44">44 دقيقة</option>
-                            <option value="60">60 دقيقة</option>
-                        </select>
+                        <input type="number" min="1" value={duration} onChange={e => setDuration(e.target.value)} placeholder="مثال: 22" className="w-full p-3 border rounded-lg bg-bg-secondary-light dark:bg-bg-secondary-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary" />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-text-secondary-light dark:text-text-secondary-dark mb-2">لغة النص</label>
@@ -155,8 +178,17 @@ const NewScriptForm: React.FC<NewScriptFormProps> = ({ addNotification, onScript
                 <div className="space-y-8">
                     <div>
                       <h3 className="text-xl font-bold mb-4 text-text-primary-light dark:text-text-primary-dark">النص المُولّد: {script.title}</h3>
-                      <div className="bg-bg-secondary-light dark:bg-bg-secondary-dark p-4 rounded-lg border-r-4 border-primary whitespace-pre-wrap font-mono text-sm leading-relaxed overflow-x-auto max-h-96">
-                          {script.content}
+                      <textarea
+                          value={editedContent}
+                          onChange={(e) => setEditedContent(e.target.value)}
+                          className="w-full h-96 p-4 border rounded-lg bg-bg-secondary-light dark:bg-bg-secondary-dark border-border-light dark:border-border-dark focus:ring-primary focus:border-primary font-mono text-sm leading-relaxed"
+                          placeholder="يمكنك التعديل على النص هنا..."
+                      ></textarea>
+                      <div className="mt-4 flex gap-3">
+                        <button onClick={() => exportToWord(editedContent, script.title)} className="flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition">
+                            <span>📝</span>
+                            <span>تصدير Word</span>
+                        </button>
                       </div>
                     </div>
                     <div>

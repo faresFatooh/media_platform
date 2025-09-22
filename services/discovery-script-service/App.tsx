@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { Theme, Section, Script, FactCheckResult, NotificationMessage, Program } from './types';
+import { Theme, Section, Script, FactCheckResult, NotificationMessage, Program, TrainingData } from './types';
 import { NAV_ITEMS, PROGRAMS } from './constants';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
@@ -8,6 +7,9 @@ import Dashboard from './components/Dashboard';
 import NewScriptForm from './components/NewScriptForm';
 import Notification from './components/Notification';
 import ApiSettings from './components/ApiSettings';
+import ProgramTraining from './components/ProgramTraining';
+
+const PROGRAMS_STORAGE_KEY = 'discovery_programs_data_v2';
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>('light');
@@ -15,7 +17,22 @@ const App: React.FC = () => {
   const [generatedScript, setGeneratedScript] = useState<Script | null>(null);
   const [factCheckResult, setFactCheckResult] = useState<FactCheckResult | null>(null);
   const [notifications, setNotifications] = useState<NotificationMessage[]>([]);
-  const [programs, setPrograms] = useState<Program[]>(PROGRAMS);
+  const [programs, setPrograms] = useState<Program[]>(() => {
+    try {
+      const storedPrograms = localStorage.getItem(PROGRAMS_STORAGE_KEY);
+      // Basic validation to ensure stored data matches new structure
+      if (storedPrograms) {
+        const parsed = JSON.parse(storedPrograms);
+        if(Array.isArray(parsed) && parsed[0]?.trainingData?.method) {
+            return parsed;
+        }
+      }
+      return PROGRAMS;
+    } catch (error) {
+      console.error("Failed to load programs from localStorage", error);
+      return PROGRAMS;
+    }
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -28,6 +45,14 @@ const App: React.FC = () => {
     body.classList.add(theme === 'light' ? 'bg-bg-primary-light' : 'bg-bg-primary-dark');
 
   }, [theme]);
+
+  useEffect(() => {
+    try {
+        localStorage.setItem(PROGRAMS_STORAGE_KEY, JSON.stringify(programs));
+    } catch (error) {
+        console.error("Failed to save programs to localStorage", error);
+    }
+  }, [programs]);
 
   const addNotification = useCallback((message: string, type: NotificationMessage['type']) => {
     const newNotification = {
@@ -56,14 +81,25 @@ const App: React.FC = () => {
       setActiveSection('factCheck');
   };
 
-  const handleAddProgram = (newProgram: Omit<Program, 'id' | 'scriptCount'>) => {
+  const handleAddProgram = (newProgram: Omit<Program, 'id' | 'scriptCount' | 'trainingData'>) => {
     const programToAdd: Program = {
       ...newProgram,
       id: newProgram.name.toLowerCase().replace(/\s+/g, '-'),
-      scriptCount: 0
+      scriptCount: 0,
+      trainingData: {
+        method: 'instructions',
+        instructions: '',
+        beforeText: '',
+        afterText: ''
+      },
     };
     setPrograms(prev => [...prev, programToAdd]);
     addNotification(`تمت إضافة برنامج "${newProgram.name}" بنجاح`, 'success');
+  };
+
+  const handleUpdateProgramTraining = (programId: string, trainingData: TrainingData) => {
+    setPrograms(prev => prev.map(p => p.id === programId ? { ...p, trainingData } : p));
+    addNotification('تم حفظ إرشادات البرنامج بنجاح', 'success');
   };
 
   const renderSection = () => {
@@ -71,7 +107,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard programs={programs} onAddProgram={handleAddProgram} onSelectProgram={(programName: string) => setActiveSection('newScript')} />;
       case 'newScript':
-        return <NewScriptForm addNotification={addNotification} onScriptGenerated={handleScriptGenerated} onFactCheckComplete={handleFactCheckComplete} initialScript={generatedScript}/>;
+        return <NewScriptForm programs={programs} addNotification={addNotification} onScriptGenerated={handleScriptGenerated} onFactCheckComplete={handleFactCheckComplete} initialScript={generatedScript}/>;
       case 'factCheck':
         return factCheckResult ? (
           <div className="bg-card-bg-light dark:bg-card-bg-dark p-6 rounded-lg shadow-md border border-border-light dark:border-border-dark">
@@ -93,6 +129,8 @@ const App: React.FC = () => {
             </div>
           </div>
         ) : <p className="text-center text-text-secondary-light dark:text-text-secondary-dark">لم يتم إجراء تدقيق للحقائق بعد.</p>;
+      case 'training':
+        return <ProgramTraining programs={programs} onUpdateProgram={handleUpdateProgramTraining} />;
       case 'api':
         return <ApiSettings addNotification={addNotification} />;
       default:

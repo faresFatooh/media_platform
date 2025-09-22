@@ -1,6 +1,5 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
-import { Script, FactCheckResult, Source, GroundingChunk } from '../types';
+import { Script, FactCheckResult, Source, GroundingChunk, TrainingData } from '../types';
 
 if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable not set");
@@ -11,31 +10,31 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const SCRIPT_SCHEMA = {
   type: Type.OBJECT,
   properties: {
-    title: { type: Type.STRING, description: 'عنوان الحلقة' },
-    program: { type: Type.STRING, description: 'اسم البرنامج' },
-    duration: { type: Type.STRING, description: 'مدة الحلقة بالدقائق' },
-    content: { type: Type.STRING, description: 'النص الكامل للحلقة باللغة العربية، متضمناً حوار الراوي ووصف المشاهد.' },
+    title: { type: Type.STRING, description: 'The title of the episode.' },
+    program: { type: Type.STRING, description: 'The name of the program.' },
+    duration: { type: Type.STRING, description: 'The duration of the episode in minutes.' },
+    content: { type: Type.STRING, description: 'The full script of the episode in the specified language, including narrator dialogue and scene descriptions.' },
     scenes: {
       type: Type.ARRAY,
-      description: 'تقسيم الحلقة إلى مشاهد رئيسية.',
+      description: 'A breakdown of the episode into major scenes.',
       items: {
         type: Type.OBJECT,
         properties: {
-          time: { type: Type.STRING, description: 'التوقيت الزمني للمشهد (مثال: 00:00-05:30)' },
-          description: { type: Type.STRING, description: 'وصف موجز للمشهد ومحتواه.' },
-          visuals: { type: Type.STRING, description: 'اقتراحات للعناصر البصرية (لقطات أرشيفية، رسوم متحركة، ...)' },
+          time: { type: Type.STRING, description: 'The time code for the scene (e.g., 00:00-05:30).' },
+          description: { type: Type.STRING, description: 'A brief description of the scene and its content.' },
+          visuals: { type: Type.STRING, description: 'Suggestions for visual elements (archival footage, animations, etc.).' },
         },
         required: ["time", "description", "visuals"]
       }
     },
     sources: {
         type: Type.ARRAY,
-        description: "قائمة بالمصادر المقترحة التي يمكن استخدامها للتحقق من المعلومات.",
+        description: "A list of suggested sources that can be used for fact-checking.",
         items: {
             type: Type.OBJECT,
             properties: {
-                name: { type: Type.STRING, description: "اسم المصدر (مثال: National Geographic)" },
-                url: { type: Type.STRING, description: "رابط المصدر" }
+                name: { type: Type.STRING, description: "The name of the source (e.g., National Geographic)." },
+                url: { type: Type.STRING, description: "The URL of the source." }
             },
             required: ["name", "url"]
         }
@@ -45,14 +44,39 @@ const SCRIPT_SCHEMA = {
 };
 
 
-export const generateScript = async (program: string, title: string, duration: string, language: string): Promise<Script> => {
-  const prompt = `أنت كاتب سيناريو محترف في قناة Discovery. قم بإنشاء نص حلقة مدتها ${duration} دقيقة لبرنامج "${program}" بعنوان "${title}". يجب أن يكون النص باللغة ${language}. قم بتوفير المخرجات ككائن JSON صالح يتبع المخطط المحدد بدقة. لا تقم بتضمين أي نص أو علامات markdown خارج كائن JSON.`;
+export const generateScript = async (program: string, title: string, duration: string, language: string, trainingData?: TrainingData): Promise<Script> => {
+  
+  let trainingInstruction = '';
+  if (trainingData) {
+    switch(trainingData.method) {
+      case 'instructions':
+        if(trainingData.instructions) {
+          trainingInstruction = `Follow these specific style guidelines for the program: "${trainingData.instructions}"`;
+        }
+        break;
+      case 'example':
+        if (trainingData.beforeText && trainingData.afterText) {
+          trainingInstruction = `Learn from this example. Transform the text from a style like this: "BEFORE: ${trainingData.beforeText}" to a style like this: "AFTER: ${trainingData.afterText}". Apply this learned style to the new script.`;
+        }
+        break;
+      case 'bulk':
+        if (trainingData.instructions) { // Using 'instructions' field for bulk text
+          trainingInstruction = `Analyze the following collection of texts to understand the writing style, tone, and structure. Apply this learned style to the new script you generate. Texts: """${trainingData.instructions}"""`;
+        }
+        break;
+    }
+  }
+
+  const systemInstruction = `You are a professional scriptwriter for Discovery Channel. Your task is to generate a complete script based on the user's request. ${trainingInstruction}`;
+  
+  const prompt = `Generate a script for the program "${program}", titled "${title}". The episode duration should be ${duration} minutes. The script must be in ${language}. Provide the output as a valid JSON object that strictly follows the provided schema. Do not include any text or markdown markers outside the JSON object.`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
+        systemInstruction: systemInstruction,
         responseMimeType: 'application/json',
         responseSchema: SCRIPT_SCHEMA,
       },
@@ -67,7 +91,7 @@ export const generateScript = async (program: string, title: string, duration: s
 };
 
 export const generateIdeas = async (program: string): Promise<string[]> => {
-    const prompt = `اقترح 5 أفكار جديدة ومبتكرة لحلقات لبرنامج Discovery بعنوان "${program}". قدم الأفكار كقائمة بسيطة.`;
+    const prompt = `Suggest 5 new and creative episode ideas for the Discovery program titled "${program}". Provide the ideas as a simple list.`;
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt
@@ -76,7 +100,7 @@ export const generateIdeas = async (program: string): Promise<string[]> => {
 };
 
 export const deepResearch = async (topic: string): Promise<{ research: string; sources: Source[] }> => {
-    const prompt = `قم بإجراء بحث معمق حول موضوع: "${topic}". قدم تقريرًا مفصلاً يتضمن الحقائق الرئيسية، السياق التاريخي، الشخصيات الهامة، وآخر التطورات. استخدم بحث Google للعثور على أحدث المعلومات.`;
+    const prompt = `Conduct in-depth research on the topic: "${topic}". Provide a detailed report including key facts, historical context, important figures, and the latest developments. Use Google Search to find the most current information.`;
     
     try {
         const response = await ai.models.generateContent({
@@ -101,7 +125,7 @@ export const deepResearch = async (topic: string): Promise<{ research: string; s
 };
 
 export const factCheckScript = async (scriptContent: string): Promise<FactCheckResult> => {
-    const prompt = `يرجى تدقيق الحقائق في النص التالي. قيم الدقة الإجمالية كنسبة مئوية وقدم ملخصًا تفصيليًا لأي معلومات غير دقيقة أو مشكوك فيها مع التصحيحات المقترحة. استخدم بحث Google للتحقق من المعلومات. النص: """${scriptContent}"""`;
+    const prompt = `Please fact-check the following script content. Assess the overall accuracy as a percentage and provide a detailed summary of any inaccurate or questionable information with suggested corrections. Use Google Search to verify the information. Script: """${scriptContent}"""`;
     
     try {
         const response = await ai.models.generateContent({
