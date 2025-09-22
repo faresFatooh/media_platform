@@ -1,6 +1,5 @@
 {
-  "name": "discovery-script-service"
-  "private": true,
+  "name": "discovery-script-service",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
