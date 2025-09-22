@@ -121,8 +121,8 @@ services:
     name: discovery-script-service
     plan: starter
     env: docker
-    dockerfilePath: ./services/discovery-channel-script-production-platform/Dockerfile
-    dockerContext: ./services/discovery-channel-script-production-platform
+    dockerfilePath: ./services/discovery-script-service/Dockerfile
+    dockerContext: ./services/discovery-script-service
     envVars:
       - key: MAIN_BACKEND_URL
         fromService:
