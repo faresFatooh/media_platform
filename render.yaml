@@ -115,11 +115,11 @@ services:
         sync: false
   
   - type: web
-    name: discovery_script_service
+    name: discovery-script-service
     plan: starter
     env: docker
-    dockerfilePath: ./services/discovery_script_service/Dockerfile
-    dockerContext: ./services/discovery_script_service
+    dockerfilePath: ./services/discovery-script-service/Dockerfile
+    dockerContext: ./services/discovery-script-service
     envVars:
       # --- ✅ التعديل الرئيسي هنا ---
       - key: MAIN_BACKEND_URL
