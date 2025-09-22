@@ -1,5 +1,5 @@
-import { GoogleGenAI, Type } from "@google/generative-ai";
-import { Script, FactCheckResult, Source, GroundingChunk, TrainingData, GenerationEngine, NotificationMessage, OnThisDayData, OnThisDayEvent } from '../types';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+ainingData, GenerationEngine, NotificationMessage, OnThisDayData, OnThisDayEvent } from '../types';
 import { transformWithClaude, researchWithClaude } from './claudeService';
 import { generateWithChatGPT, researchWithChatGPT } from "./chatGptService";
 
@@ -7,7 +7,7 @@ if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable not set");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = ew GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 const SCRIPT_SCHEMA = {
   type: Type.OBJECT,
