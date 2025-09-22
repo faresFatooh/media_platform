@@ -1,7 +1,5 @@
 {
-  "name": "أتمتة نشر الأخبار (Asharq News Automation)",
-  "description": "A dashboard to automate the process of parsing news, generating social media content with AI, and preparing it for publishing to multiple platforms from a single interface.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "name": "Arabic Newsroom Automation System",
+  "description": "A comprehensive, AI-powered automation system for a multi-platform Arabic newsroom. It handles the entire editorial workflow from content ingestion and AI-powered rewriting to multi-format media generation and cross-platform publishing.",
+  "requestFramePermissions": []
 }
