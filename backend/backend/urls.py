@@ -16,5 +16,4 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('health/', health_check, name='health_check'),
     path('api/asharq-automation/', include('asharq_automation.urls')),
-    path('api/discovery/', include('discovery_data.urls')),
 ]
