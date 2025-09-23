@@ -51,7 +51,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
             // IMPORTANT: Replace with your main frontend's URL for security
-            if (event.origin !== "https://frontend-rgr7.onrender.com") {
+            if (event.origin !== "https://ghazimortaja.com") {
                 return;
             }
             if (event.data && event.data.type === 'AUTH_TOKEN') {
