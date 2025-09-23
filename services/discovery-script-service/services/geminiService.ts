@@ -3,11 +3,11 @@ ainingData, GenerationEngine, NotificationMessage, OnThisDayData, OnThisDayEvent
 import { transformWithClaude, researchWithClaude } from './claudeService';
 import { generateWithChatGPT, researchWithChatGPT } from "./chatGptService";
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable not set");
+if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  throw new Error("VITE_GEMINI_API_KEY environment variable not set");
 }
 
-const ai = ew GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+const ai = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 const SCRIPT_SCHEMA = {
   type: Type.OBJECT,
