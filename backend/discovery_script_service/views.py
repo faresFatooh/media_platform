@@ -1,21 +1,15 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions
+from rest_framework import viewsets, permissions
 from .models import ApiConfig
-from .serializers import ApiConfigSerializer
+from .serializers import ApiConfigSerializer # <-- ١. استورد الـ Serializer الجديد
 
-class ApiConfigView(APIView):
+class ApiConfigViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ApiConfigSerializer # <-- ٢. عيّنه كلاسًا للاستخدام
 
-    def get(self, request):
-        config, _ = ApiConfig.objects.get_or_create(user=request.user)
-        serializer = ApiConfigSerializer(config)
-        return Response(serializer.data)
+    def get_queryset(self):
+        # هذا يجلب الإعدادات الخاصة بالمستخدم المسجل دخوله فقط
+        return ApiConfig.objects.filter(user=self.request.user)
 
-    def post(self, request):
-        config, _ = ApiConfig.objects.get_or_create(user=request.user)
-        serializer = ApiConfigSerializer(config, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response(serializer.data)
-    
+    def perform_create(self, serializer):
+        # هذا ينشئ أو يحدّث الإعدادات للمستخدم المسجل دخوله
+        serializer.save(user=self.request.user)
