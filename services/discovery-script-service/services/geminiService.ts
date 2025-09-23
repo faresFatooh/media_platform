@@ -1,136 +1,156 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { TrainingData, GenerationEngine, NotificationMessage, OnThisDayData, OnThisDayEvent, Script, Source, FactCheckResult, GroundingChunk } from "../types";
 import { transformWithClaude, researchWithClaude } from "./claudeService";
 import { generateWithChatGPT, researchWithChatGPT } from "./chatGptService";
 
-// ======================
-// JSON Schema للـ Script
-// ======================
+if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  throw new Error("❌ VITE_GEMINI_API_KEY environment variable not set");
+}
+
+const ai = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+
+// ✅ JSON Schema عادي بدون Type
 const SCRIPT_SCHEMA = {
   type: "object",
   properties: {
     title: { type: "string", description: "The title of the episode." },
     style: { type: "string", description: "The name of the style for the script." },
     duration: { type: "string", description: "The duration of the episode in minutes." },
-    content: {
-      type: "string",
-      description: "The full script of the episode, written in natural language.",
-    },
+    content: { type: "string", description: "Full script of the episode with citations [1], [2], etc." },
     scenes: {
       type: "array",
-      description: "A breakdown of the episode into major scenes.",
+      description: "Breakdown of the episode into scenes.",
       items: {
         type: "object",
         properties: {
-          time: { type: "string", description: "The time code for the scene." },
-          description: { type: "string", description: "A brief description of the scene." },
-          visuals: { type: "string", description: "Suggestions for visuals accompanying the narration." },
+          time: { type: "string" },
+          description: { type: "string" },
+          visuals: { type: "string" }
         },
-        required: ["time", "description", "visuals"],
-      },
+        required: ["time", "description", "visuals"]
+      }
     },
     sources: {
       type: "array",
-      description: "A list of suggested sources used to create the script.",
+      description: "List of sources used with citation index.",
       items: {
         type: "object",
         properties: {
-          name: { type: "string", description: "The name of the source." },
-          url: { type: "string", description: "The URL of the source." },
+          name: { type: "string" },
+          url: { type: "string" }
         },
-        required: ["name", "url"],
-      },
-    },
+        required: ["name", "url"]
+      }
+    }
   },
-  required: ["title", "style", "duration", "content", "scenes", "sources"],
+  required: ["title", "style", "duration", "content", "scenes", "sources"]
 };
 
-// ======================
-// تهيئة Google Generative AI
-// ======================
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
-// ======================
-// Function: توليد سكربت كامل
-// ======================
-export async function generateWithGemini(prompt: string) {
+// ✅ الدوال الأساسية
+export const generateScript = async (
+  styleName: string,
+  title: string,
+  duration: string,
+  language: string,
+  sourceText: string,
+  trainingData?: TrainingData,
+  engine: GenerationEngine = "gemini",
+  addNotification?: (message: string, type: NotificationMessage["type"]) => void
+): Promise<Script> => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    addNotification?.("📡 Starting script generation with Gemini...", "info");
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
+    const prompt = `Generate a documentary script.
+- Style: ${styleName}
+- Title: ${title}
+- Duration: ${duration} minutes
+- Language: ${language}
+- Source Text: """${sourceText}"""`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        systemInstruction: "Return only JSON strictly matching the schema.",
         responseMimeType: "application/json",
-        responseSchema: SCRIPT_SCHEMA,
-      },
+        responseSchema: SCRIPT_SCHEMA
+      }
     });
 
-    if (!result?.response?.text) {
-      throw new Error("No response from Gemini");
-    }
-
-    return JSON.parse(result.response.text());
+    return JSON.parse(response.text) as Script;
   } catch (error) {
-    console.error("❌ Error in generateWithGemini:", error);
-    throw error;
+    console.error("❌ Error generating script:", error);
+    throw new Error("فشل توليد النص باستخدام Gemini");
   }
-}
+};
 
-// ======================
-// Function: بحث بالمصادر
-// ======================
-export async function researchWithGemini(topic: string) {
+export const generateIdeas = async (styleName: string): Promise<string[]> => {
+  const prompt = `Suggest 5 new creative episode ideas for style "${styleName}".`;
+  const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+  return response.text.split("\n").filter(i => i.trim() !== "");
+};
+
+export const deepResearch = async (topic: string): Promise<{ research: string; sources: Source[] }> => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    const researchPrompt = `
-      ابحث عن موضوع: "${topic}" 
-      وارجع قائمة من 5 مصادر موثوقة بصيغة JSON.
-      كل مصدر يحتوي: name, url, description.
-    `;
-
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: researchPrompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `Do deep research on "${topic}" with citations.`,
+      config: { tools: [{ googleSearch: {} }] }
     });
 
-    if (!result?.response?.text) {
-      throw new Error("No response from Gemini");
-    }
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks as GroundingChunk[] || [];
+    const sources: Source[] = groundingChunks.map(chunk => ({
+      name: chunk.web.title,
+      url: chunk.web.uri
+    }));
 
-    return JSON.parse(result.response.text());
+    return { research: response.text, sources };
   } catch (error) {
-    console.error("❌ Error in researchWithGemini:", error);
-    throw error;
+    console.error("❌ Error during deep research:", error);
+    throw new Error("فشل البحث المعمق");
   }
-}
+};
 
-// ======================
-// Function: تحويل النص
-// (زي transformWithClaude)
-// ======================
-export async function transformWithGemini(text: string, style: string) {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+export const factCheckScript = async (scriptContent: string): Promise<FactCheckResult> => {
+  const prompt = `Fact-check this script and return accuracy % with notes: """${scriptContent}"""`;
 
-    const transformPrompt = `
-      حول النص التالي ليتماشى مع أسلوب: "${style}"
-      النص:
-      ${text}
-    `;
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] }
+  });
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: transformPrompt }] }],
-    });
+  const text = response.text;
+  const match = text.match(/(\d+)%/);
+  const accuracy = match ? parseInt(match[1], 10) : 85;
 
-    if (!result?.response?.text) {
-      throw new Error("No response from Gemini");
-    }
+  return { accuracy, details: text };
+};
 
-    return result.response.text();
-  } catch (error) {
-    console.error("❌ Error in transformWithGemini:", error);
-    throw error;
-  }
-}
+export const getOnThisDayEvents = async (date: Date): Promise<OnThisDayData> => {
+  const formattedDate = date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  const prompt = `Give historical Events, Births, and Deaths for ${formattedDate} in Arabic. Format with ## Events, ## Births, ## Deaths.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: { tools: [{ googleSearch: {} }] }
+  });
+
+  const text = response.text;
+  const parseSection = (section: string): OnThisDayEvent[] =>
+    section
+      .split("\n")
+      .filter(line => line.includes(":"))
+      .map(line => {
+        const [year, ...rest] = line.split(":");
+        return { year: year.trim(), description: rest.join(":").trim() };
+      });
+
+  return {
+    date: date.toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" }),
+    events: parseSection(text.match(/## Events([\s\S]*?)(?=##|$)/)?.[1] || ""),
+    births: parseSection(text.match(/## Births([\s\S]*?)(?=##|$)/)?.[1] || ""),
+    deaths: parseSection(text.match(/## Deaths([\s\S]*)/)?.[1] || "")
+  };
+};
