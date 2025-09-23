@@ -32,13 +32,11 @@ const ActionButton: React.FC<{ onClick: () => void, text: string, icon: string, 
 
 const renderScriptContent = (text: string) => {
     if (!text) return '';
-    // Escape basic HTML tags to prevent XSS
     const escapedText = text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 
-    // Convert markdown footnotes like [1] to superscript links that jump to the source
     const footnoteRegex = /\[(\d+)\]/g;
     const contentWithFootnotes = escapedText.replace(
         footnoteRegex,
@@ -75,7 +73,6 @@ const exportToWord = (script: Script, editedContent: string) => {
     document.body.removeChild(fileDownload);
 };
 
-
 const NewScriptForm: React.FC<NewScriptFormProps> = ({ styles, addNotification, onScriptGenerated, onFactCheckComplete, initialScript, onAddToTraining, apiStatuses }) => {
   const [selectedStyleId, setSelectedStyleId] = useState(styles[0]?.id || '');
   const [title, setTitle] = useState('');
@@ -91,12 +88,10 @@ const NewScriptForm: React.FC<NewScriptFormProps> = ({ styles, addNotification, 
   const [isPreview, setIsPreview] = useState(false);
   const [engine, setEngine] = useState<GenerationEngine>('gemini');
 
-
   const selectedStyle = styles.find(s => s.id === selectedStyleId);
+  const canUseClaudeForTransform = apiStatuses.claude === 'connected' && sourceText.trim() !== '';
 
-    const canUseClaudeForTransform = apiStatuses.claude === 'connected' && sourceText.trim() !== '';
-
-    useEffect(() => {
+  useEffect(() => {
     if (initialScript) {
       setTitle(initialScript.title);
       setScript(initialScript);
@@ -105,155 +100,125 @@ const NewScriptForm: React.FC<NewScriptFormProps> = ({ styles, addNotification, 
     }
   }, [initialScript]);
 
-     handleApiCall(async () => {
-      if (engine === 'gemini') {
-        return generateScript(
-          selectedStyle?.name || '',
-          title,
-          duration,
-          language,
-          sourceText || '',
-          selectedStyle?.trainingData,
-          'gemini',
-          addNotification
-        );
-      }
-       if (engine === 'claude') {
-        return transformWithClaude(
-          selectedStyle?.name || '',
-          title,
-          duration,
-          language,
-          sourceText || '',
-          selectedStyle?.trainingData
-        );
-      }
+  // ✅ الدالة الناقصة: handleApiCall
+  const handleApiCall = async (apiCall: () => Promise<Script>) => {
+    setLoadingStates(prev => ({ ...prev, generate: true }));
+    try {
+      const newScript = await apiCall();
+      setScript(newScript);
+      setEditedContent(newScript.content);
+      onScriptGenerated(newScript);
+      addNotification('تم توليد النص بنجاح ✅', 'success');
+    } catch (err) {
+      addNotification('فشل في توليد النص ❌', 'error');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, generate: false }));
+    }
+  };
 
-      if (engine === 'chatgpt') {
-        return generateWithChatGPT(
-          selectedStyle?.name || '',
-          title,
-          duration,
-          language,
-          selectedStyle?.trainingData
-        );
+  const handleTransformScript = () => {
+    if (!selectedStyleId || !title || !sourceText) {
+      addNotification('الرجاء اختيار أسلوب، إدخال عنوان، وتوفير نص مصدري للتحويل.', 'error');
+      return;
+    }
+    handleApiCall(async () => {
+      if (canUseClaudeForTransform) {
+        addNotification('يتم التحويل باستخدام محرك Claude السريع...', 'info');
+        return transformWithClaude(selectedStyle?.name || '', title, duration, language, sourceText, selectedStyle?.trainingData);
+      } else {
+        addNotification('يتم التحويل باستخدام محرك Gemini...', 'info');
+        return generateScript(selectedStyle?.name || '', title, duration, language, sourceText, selectedStyle?.trainingData, 'gemini', addNotification);
       }
-
-      if (engine === 'hybrid') {
-        addNotification('البحث الهجين غير مفعّل بعد 🚧', 'warning');
-        throw new Error('ميزة البحث الهجين غير مطبقة بعد');
-      }
-
-      if (engine === 'cross') {
-        addNotification('البحث المتقاطع غير مفعّل بعد 🚧', 'warning');
-        throw new Error('ميزة البحث المتقاطع غير مطبقة بعد');
-      }
-
-      throw new Error('محرك غير معروف');
     });
   };
 
-    const handleTransformScript = () => {
-        if (!selectedStyleId || !title || !sourceText) {
-            addNotification('الرجاء اختيار أسلوب، إدخال عنوان، وتوفير نص مصدري للتحويل.', 'error');
-            return;
-        }
-        handleApiCall(async () => {
-            if (canUseClaudeForTransform) {
-                addNotification('يتم التحويل باستخدام محرك Claude السريع...', 'info');
-                return transformWithClaude(selectedStyle?.name || '', title, duration, language, sourceText, selectedStyle?.trainingData);
-            } else {
-                addNotification('يتم التحويل باستخدام محرك Gemini...', 'info');
-                return generateScript(selectedStyle?.name || '', title, duration, language, sourceText, selectedStyle?.trainingData, 'gemini', addNotification);
-            }
-        });
-    };
-
-    const handleGenerateFromTitle = () => {
-        if (!selectedStyleId || !title) {
-            addNotification('الرجاء اختيار أسلوب وإدخال عنوان الحلقة', 'error');
-            return;
-        }
-        handleApiCall(async () => generateScript(selectedStyle?.name || '', title, duration, language, '', selectedStyle?.trainingData, engine, addNotification));
-    };
-
-    const handleGenerateClick = () => {
-        if (sourceText.trim() !== '') {
-            handleTransformScript();
-        } else {
-            handleGenerateFromTitle();
-        }
-    };
-
-    const handleAddToTrainingClick = () => {
-        if (script && editedContent.trim() !== script.content.trim()) {
-            onAddToTraining(selectedStyleId, script.content, editedContent);
-        } else {
-            addNotification('لا يوجد تغييرات لإضافتها للتدريب.', 'warning');
-        }
-    };
-    
-    const handleGenerateIdeas = async () => {
-        if(!selectedStyleId) {
-            addNotification('الرجاء اختيار أسلوب أولاً', 'warning');
-            return;
-        }
-        setLoadingStates(prev => ({ ...prev, ideas: true }));
-        try {
-            const selectedStyleForIdeas = styles.find(p => p.id === selectedStyleId);
-            const ideas = await generateIdeas(selectedStyleForIdeas?.name || '');
-            setIdeasModalContent({ title: 'أفكار للحلقات', content: ideas.join('\n') });
-            setIsIdeasModalOpen(true);
-        } catch (error) {
-            addNotification('فشل في توليد الأفكار', 'error');
-        } finally {
-            setLoadingStates(prev => ({ ...prev, ideas: false }));
-        }
-    };
-    
-    const handleDeepResearch = async () => {
-        if(!title) {
-            addNotification('الرجاء إدخال عنوان أو موضوع للبحث', 'warning');
-            return;
-        }
-        setLoadingStates(prev => ({ ...prev, research: true }));
-        try {
-            const { research, sources } = await deepResearch(title);
-            const sourcesText = sources.map(s => `[${s.name}](${s.url})`).join('\n');
-            setIdeasModalContent({ title: 'نتائج البحث المعمق', content: `${research}\n\n**المصادر:**\n${sourcesText}` });
-            setIsIdeasModalOpen(true);
-        } catch (error) {
-            addNotification('فشل البحث المعمق', 'error');
-        } finally {
-            setLoadingStates(prev => ({ ...prev, research: false }));
-        }
-    };
-
-    const handleFactCheck = async () => {
-        const contentToCheck = editedContent || script?.content;
-        if (!contentToCheck) {
-            addNotification('لا يوجد نص لتدقيق الحقائق. الرجاء توليد نص أولاً.', 'warning');
-            return;
-        }
-        setLoadingStates(prev => ({ ...prev, factCheck: true }));
-        try {
-            const result = await factCheckScript(contentToCheck);
-            onFactCheckComplete(result);
-            addNotification('تم إكمال تدقيق الحقائق بنجاح', 'success');
-        } catch (error) {
-            addNotification('فشل تدقيق الحقائق', 'error');
-        } finally {
-            setLoadingStates(prev => ({ ...prev, factCheck: false }));
-        }
-    };
-
-    const getEngineTooltip = (engine: GenerationEngine) => {
-        switch(engine) {
-            case 'hybrid': return "يستخدم كل المحركات المتصلة (Gemini, Claude, ChatGPT) للبحث ثم يدمج النتائج لكتابة نص فائق الدقة.";
-            case 'cross': return "يستخدم Claude للبحث الأولي، ChatGPT للبحث المعمق، ثم Gemini للكتابة والتدقيق النهائي.";
-            default: return `استخدام ${engine} لتوليد النص.`;
-        }
+  const handleGenerateFromTitle = () => {
+    if (!selectedStyleId || !title) {
+      addNotification('الرجاء اختيار أسلوب وإدخال عنوان الحلقة', 'error');
+      return;
     }
+    handleApiCall(async () => generateScript(selectedStyle?.name || '', title, duration, language, '', selectedStyle?.trainingData, engine, addNotification));
+  };
+
+  const handleGenerateClick = () => {
+    if (sourceText.trim() !== '') {
+      handleTransformScript();
+    } else {
+      handleGenerateFromTitle();
+    }
+  };
+
+  const handleAddToTrainingClick = () => {
+    if (script && editedContent.trim() !== script.content.trim()) {
+      onAddToTraining(selectedStyleId, script.content, editedContent);
+    } else {
+      addNotification('لا يوجد تغييرات لإضافتها للتدريب.', 'warning');
+    }
+  };
+  
+  const handleGenerateIdeas = async () => {
+    if(!selectedStyleId) {
+      addNotification('الرجاء اختيار أسلوب أولاً', 'warning');
+      return;
+    }
+    setLoadingStates(prev => ({ ...prev, ideas: true }));
+    try {
+      const selectedStyleForIdeas = styles.find(p => p.id === selectedStyleId);
+      const ideas = await generateIdeas(selectedStyleForIdeas?.name || '');
+      setIdeasModalContent({ title: 'أفكار للحلقات', content: ideas.join('\n') });
+      setIsIdeasModalOpen(true);
+    } catch (error) {
+      addNotification('فشل في توليد الأفكار', 'error');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, ideas: false }));
+    }
+  };
+  
+  const handleDeepResearch = async () => {
+    if(!title) {
+      addNotification('الرجاء إدخال عنوان أو موضوع للبحث', 'warning');
+      return;
+    }
+    setLoadingStates(prev => ({ ...prev, research: true }));
+    try {
+      const { research, sources } = await deepResearch(title);
+      const sourcesText = sources.map(s => `[${s.name}](${s.url})`).join('\n');
+      setIdeasModalContent({ title: 'نتائج البحث المعمق', content: `${research}\n\n**المصادر:**\n${sourcesText}` });
+      setIsIdeasModalOpen(true);
+    } catch (error) {
+      addNotification('فشل البحث المعمق', 'error');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, research: false }));
+    }
+  };
+
+  const handleFactCheck = async () => {
+    const contentToCheck = editedContent || script?.content;
+    if (!contentToCheck) {
+      addNotification('لا يوجد نص لتدقيق الحقائق. الرجاء توليد نص أولاً.', 'warning');
+      return;
+    }
+    setLoadingStates(prev => ({ ...prev, factCheck: true }));
+    try {
+      const result = await factCheckScript(contentToCheck);
+      onFactCheckComplete(result);
+      addNotification('تم إكمال تدقيق الحقائق بنجاح', 'success');
+    } catch (error) {
+      addNotification('فشل تدقيق الحقائق', 'error');
+    } finally {
+      setLoadingStates(prev => ({ ...prev, factCheck: false }));
+    }
+  };
+
+  const getEngineTooltip = (engine: GenerationEngine) => {
+    switch(engine) {
+      case 'hybrid': return "يستخدم كل المحركات المتصلة (Gemini, Claude, ChatGPT) للبحث ثم يدمج النتائج لكتابة نص فائق الدقة.";
+      case 'cross': return "يستخدم Claude للبحث الأولي، ChatGPT للبحث المعمق، ثم Gemini للكتابة والتدقيق النهائي.";
+      default: return `استخدام ${engine} لتوليد النص.`;
+    }
+  }
+
+
 
     return (
         <div className="space-y-8">
