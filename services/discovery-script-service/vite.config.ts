@@ -1,40 +1,39 @@
-import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
-import react from '@vitejs/plugin-react';
+import path from "path";
+import { defineConfig, loadEnv } from "vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-        plugins: [react()],
-        define: {
-            'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-            'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+  const env = loadEnv(mode, process.cwd(), "");
+
+  return {
+    plugins: [react()],
+    define: {
+      // 👇 مهم علشان نستعمل import.meta.env بدل process.env
+      "import.meta.env.VITE_GEMINI_API_KEY": JSON.stringify(env.VITE_GEMINI_API_KEY),
+      "import.meta.env.VITE_WS_BACKEND_URL": JSON.stringify(env.VITE_WS_BACKEND_URL),
+    },
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "."),
+      },
+    },
+    server: {
+      host: true,
+      watch: {
+        usePolling: true,
+      },
+      allowedHosts: [".onrender.com"],
+
+      proxy: {
+        "/api": {
+          // 👇 لو شغال محلي، هيوصل للباك إند على localhost
+          // لو على Render، رح يستعمل VITE_BACKEND_URL من env
+          target: env.VITE_BACKEND_URL || "http://localhost:3001",
+          changeOrigin: true,
+          secure: false,
+          rewrite: (p) => p.replace(/^\/api/, ""),
         },
-        resolve: {
-            alias: {
-                '@': path.resolve(__dirname, '.'),
-            }
-        },
-        server: {
-            host: true, 
-            watch: {
-                usePolling: true
-            },
-            // يسمح للمتصفح بالوصول إلى هذه الخدمة من الإنترنت
-            allowedHosts: ['.onrender.com'],
-            
-            // --- هذا هو القسم الجديد والمهم ---
-            // يخبر الواجهة الأمامية بكيفية التحدث مع الخادم الخلفي
-            proxy: {
-                '/api': {
-                    target: 'http://localhost:3001', // الخادم الخلفي يعمل على هذا المنفذ داخليًا
-                    changeOrigin: true,
-                    secure: false,
-                    // يقوم بإعادة كتابة المسار قبل إرساله
-                    // مثال: /api/predict  ->  /predict
-                    rewrite: (path) => path.replace(/^\/api/, ''), 
-                }
-            }
-        }
-    };
+      },
+    },
+  };
 });
