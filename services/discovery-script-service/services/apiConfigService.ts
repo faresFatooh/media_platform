@@ -1,30 +1,45 @@
 import axios from 'axios';
-import { ApiConfigs } from '../types';
 
-// إنشاء instance للـ API مع الـ baseURL
+// --- استرجاع التوكن من localStorage ---
+function getDjangoToken(): string | null {
+  try {
+    const raw = localStorage.getItem("django_api_configs");
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    // إذا محفوظ بصيغة { "claudeApiKey": "..." }
+    return parsed.claudeApiKey || null;
+  } catch (e) {
+    console.error("Error parsing django_api_configs:", e);
+    return null;
+  }
+}
+
+// --- إنشاء Axios instance ---
 const api = axios.create({
-  baseURL: import.meta.env.VITE_MAIN_BACKEND_URL,
+  baseURL: import.meta.env.VITE_MAIN_BACKEND_URL, // backend الأساسي
 });
 
-// إضافة التوكن تلقائيًا مع كل طلب
+// --- إضافة التوكن بالهيدر ---
 api.interceptors.request.use(config => {
-  const token = localStorage.getItem('access_token');
+  const token = getDjangoToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// --- دوال إدارة إعدادات API ---
-
-// جلب الإعدادات
-export const getApiConfigs = async (): Promise<ApiConfigs> => {
-  const { data } = await api.get('/api/discovery-script/configs/');
+// --- دوال API Configs ---
+export const getApiConfigs = async () => {
+  const { data } = await api.get("/api/discovery-script/configs/");
   return data;
 };
 
-// حفظ الإعدادات
-export const saveApiConfigs = async (configs: ApiConfigs): Promise<ApiConfigs> => {
-  const { data } = await api.post('/api/discovery-script/configs/', configs);
+export const addApiConfig = async (configData: any) => {
+  const { data } = await api.post("/api/discovery-script/configs/", configData);
   return data;
+};
+
+export const deleteApiConfig = async (id: number) => {
+  await api.delete(`/api/discovery-script/configs/${id}/`);
 };
