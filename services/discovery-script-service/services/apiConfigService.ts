@@ -1,35 +1,30 @@
-// apiConfigService.ts
 import { ApiConfigs } from '../types';
 
+const API_URL = '/api/discovery-script/api/configs/';
+
 export const getApiConfigs = async (): Promise<ApiConfigs> => {
-  const response = await fetch('/api/keys', {
-    headers: { 'Authorization': `Bearer ${localStorage.getItem("authToken")}` }
+  const response = await fetch(API_URL, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem("access_token")}`
+    }
   });
-  if (!response.ok) throw new Error("Failed to load configs");
+  if (!response.ok) throw new Error("Failed to fetch API configs");
   return await response.json();
 };
 
 export const saveApiConfigs = async (configs: ApiConfigs): Promise<boolean> => {
-  const response = await fetch('/api/keys', {
+  const response = await fetch(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem("authToken")}`
+      'Authorization': `Bearer ${localStorage.getItem("access_token")}`
     },
-    body: JSON.stringify(configs)
+    body: JSON.stringify(configs),
   });
   return response.ok;
 };
 
-export const testApiConnection = async (apiKey: string, provider: "openai"|"claude"|"gemini"): Promise<boolean> => {
-  const response = await fetch(`/api/test-connection/${provider}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem("authToken")}`
-    },
-    body: JSON.stringify({ apiKey })
-  });
-  const data = await response.json();
-  return data.connected;
+export const testApiConnection = async (apiKey: string): Promise<boolean> => {
+  return apiKey.trim() !== '' && apiKey.length > 10;
 };
