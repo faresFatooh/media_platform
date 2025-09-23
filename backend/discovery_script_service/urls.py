@@ -1,6 +1,7 @@
 from django.urls import path
-from .views import ApiConfigView
+from .views import ApiConfigViewSet
 
+# We define the specific routes for our ViewSet
 urlpatterns = [
-    path("configs/", ApiConfigView.as_view(), name="api-configs"),
+    path('configs/', ApiConfigViewSet.as_view({'get': 'list', 'post': 'create'}), name='api-configs'),
 ]
