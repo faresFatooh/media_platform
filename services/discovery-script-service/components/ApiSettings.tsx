@@ -57,35 +57,33 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({ addNotification }) => {
     loadConfigs();
   }, []);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const ok = await saveApiConfigs(configs);
-      if (ok) {
-        // اختبار المفاتيح بعد الحفظ
-        setStatuses({ claude: 'pending', chatGpt: 'pending' });
+const handleSave = async () => {
+  setIsSaving(true);
+  try {
+    const savedConfigs = await saveApiConfigs(configs);
 
-        
+    // تحديث الحالة بعد الحفظ
+    const claudeValid = !!savedConfigs.claudeApiKey;
+    const chatValid = !!savedConfigs.chatGptApiKey;
 
-        setStatuses({
-          claude: claudeValid ? 'connected' : 'disconnected',
-          chatGpt: chatValid ? 'connected' : 'disconnected',
-        });
+    setStatuses({
+      claude: claudeValid ? 'connected' : 'disconnected',
+      chatGpt: chatValid ? 'connected' : 'disconnected',
+    });
 
-        setIsLocked({
-          claude: claudeValid,
-          chatGpt: chatValid,
-        });
+    setIsLocked({
+      claude: claudeValid,
+      chatGpt: chatValid,
+    });
 
-        addNotification('تم حفظ المفاتيح بنجاح ✅', 'success');
-      } else {
-        addNotification('فشل حفظ المفاتيح ❌', 'error');
-      }
-    } catch (err) {
-      addNotification('خطأ أثناء حفظ المفاتيح', 'error');
-    }
-    setIsSaving(false);
-  };
+    addNotification('تم حفظ المفاتيح بنجاح ✅', 'success');
+  } catch (err) {
+    console.error("Error saving configs:", err);
+    addNotification('خطأ أثناء حفظ المفاتيح ❌', 'error');
+  }
+  setIsSaving(false);
+};
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, apiName: ApiName) => {
     const newConfigs = { ...configs, [`${apiName}ApiKey`]: e.target.value };
