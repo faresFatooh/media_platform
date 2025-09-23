@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Theme, Section, Script, FactCheckResult, NotificationMessage, Style, TrainingData, ApiConfigs, ApiStatuses, ConnectionStatus, ApiName, TrainingExample } from './types';
+import { Theme, Section, Script, FactCheckResult, NotificationMessage, Style, TrainingData, ApiConfigs, ApiStatuses, ApiName, TrainingExample } from './types';
 import { NAV_ITEMS, STYLES } from './constants';
-import { getApiConfigs, saveApiConfigs, testApiConnection } from './services/apiConfigService';
+import { getApiConfigs, saveApiConfigs } from './services/apiConfigService';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
@@ -24,20 +24,18 @@ const App: React.FC = () => {
       const storedStyles = localStorage.getItem(STYLES_STORAGE_KEY);
       if (storedStyles) {
         const parsed = JSON.parse(storedStyles);
-        // FIX: Add a much more robust validation check for data loaded from localStorage
-        // to prevent crashes from outdated data structures.
         if (
-            Array.isArray(parsed) &&
-            parsed.length > 0 &&
-            parsed.every(style =>
-                style.trainingData &&
-                typeof style.trainingData.method === 'string' &&
-                Array.isArray(style.trainingData.examples) &&
-                typeof style.trainingData.policyUrl === 'string' &&
-                typeof style.trainingData.policyText === 'string'
-            )
+          Array.isArray(parsed) &&
+          parsed.length > 0 &&
+          parsed.every(style =>
+            style.trainingData &&
+            typeof style.trainingData.method === 'string' &&
+            Array.isArray(style.trainingData.examples) &&
+            typeof style.trainingData.policyUrl === 'string' &&
+            typeof style.trainingData.policyText === 'string'
+          )
         ) {
-            return parsed;
+          return parsed;
         }
       }
       return STYLES;
@@ -52,64 +50,40 @@ const App: React.FC = () => {
 
   // Load API configs on mount
   useEffect(() => {
-      const loadAndTestConfigs = async () => {
-          const savedConfigs = await getApiConfigs();
-          setApiConfigs(savedConfigs);
-          if (savedConfigs.claudeApiKey) testAndSetConnection('claude', savedConfigs.claudeApiKey, false);
-          if (savedConfigs.chatGptApiKey) testAndSetConnection('chatGpt', savedConfigs.chatGptApiKey, false);
-      };
-      loadAndTestConfigs();
+    const loadConfigs = async () => {
+      const savedConfigs = await getApiConfigs();
+      setApiConfigs(savedConfigs);
+    };
+    loadConfigs();
   }, []);
-
-  const testAndSetConnection = async (apiName: ApiName, apiKey: string, showNotification: boolean = false) => {
-      if (!apiKey) {
-          setApiStatuses(prev => ({ ...prev, [apiName]: 'disconnected' }));
-          return false;
-      }
-      setApiStatuses(prev => ({ ...prev, [apiName]: 'pending' }));
-      const isConnected = await testApiConnection(apiKey);
-      setApiStatuses(prev => ({ ...prev, [apiName]: isConnected ? 'connected' : 'disconnected' }));
-
-      if(showNotification){
-          if(isConnected){
-              addNotification(`تم الاتصال بـ ${apiName} API بنجاح`, 'success');
-          } else {
-              addNotification(`فشل الاتصال بـ ${apiName} API. يرجى التحقق من المفتاح.`, 'error');
-          }
-      }
-      return isConnected;
-  };
 
   const handleSaveApiSettings = async (configs: ApiConfigs) => {
     addNotification('جاري حفظ الإعدادات...', 'info');
-    const success = await saveApiConfigs(configs);
-    if (success) {
-        addNotification('تم حفظ الإعدادات بنجاح. جاري اختبار الاتصالات...', 'success');
-        await testAndSetConnection('claude', configs.claudeApiKey, true);
-        await testAndSetConnection('chatGpt', configs.chatGptApiKey, true);
-    } else {
-        addNotification('فشل حفظ الإعدادات.', 'error');
+    try {
+      await saveApiConfigs(configs);
+      addNotification('تم حفظ الإعدادات بنجاح.', 'success');
+      setApiConfigs(configs);
+    } catch (e) {
+      addNotification('فشل حفظ الإعدادات.', 'error');
     }
   };
-
 
   useEffect(() => {
     const root = window.document.documentElement;
     const body = window.document.body;
-    
+
     root.classList.remove(theme === 'light' ? 'dark' : 'light');
     root.classList.add(theme);
 
     body.classList.remove(theme === 'light' ? 'bg-bg-primary-dark' : 'bg-bg-primary-light');
     body.classList.add(theme === 'light' ? 'bg-bg-primary-light' : 'bg-bg-primary-dark');
-
   }, [theme]);
 
   useEffect(() => {
     try {
-        localStorage.setItem(STYLES_STORAGE_KEY, JSON.stringify(styles));
+      localStorage.setItem(STYLES_STORAGE_KEY, JSON.stringify(styles));
     } catch (error) {
-        console.error("Failed to save styles to localStorage", error);
+      console.error("Failed to save styles to localStorage", error);
     }
   }, [styles]);
 
@@ -124,8 +98,8 @@ const App: React.FC = () => {
 
   const handleSectionChange = (section: Section) => {
     if (section === 'factCheck' && !generatedScript) {
-        addNotification('الرجاء توليد نص أولاً لتدقيق الحقائق', 'warning');
-        return;
+      addNotification('الرجاء توليد نص أولاً لتدقيق الحقائق', 'warning');
+      return;
     }
     setActiveSection(section);
   };
@@ -141,24 +115,24 @@ const App: React.FC = () => {
       )
     );
   };
-  
+
   const handleFactCheckComplete = (result: FactCheckResult) => {
-      setFactCheckResult(result);
-      setActiveSection('factCheck');
+    setFactCheckResult(result);
+    setActiveSection('factCheck');
   };
 
   const handleGenerateFromEvent = (title: string) => {
     const placeholderScript: Script = {
-        title: title,
-        style: styles[0]?.id || '', // Default to the first style
-        duration: '5',
-        content: `هذا نص مبدئي حول "${title}". اضغط على "توليد النص" لإنشاء سيناريو كامل.`,
-        scenes: [],
-        sources: []
+      title: title,
+      style: styles[0]?.id || '',
+      duration: '5',
+      content: `هذا نص مبدئي حول "${title}". اضغط على "توليد النص" لإنشاء سيناريو كامل.`,
+      scenes: [],
+      sources: []
     };
     setGeneratedScript(placeholderScript);
     setActiveSection('newScript');
-};
+  };
 
   const handleAddStyle = (newStyle: Omit<Style, 'id' | 'scriptCount' | 'trainingData'>) => {
     const styleToAdd: Style = {
@@ -184,35 +158,30 @@ const App: React.FC = () => {
 
   const handleAddToTraining = (styleId: string, originalContent: string, editedContent: string) => {
     setStyles(prevStyles => {
-        return prevStyles.map(style => {
-            if (style.id === styleId) {
-                const newExample: TrainingExample = {
-                    id: Date.now(),
-                    before: originalContent,
-                    after: editedContent,
-                };
-                const updatedTrainingData = { ...style.trainingData };
-                // FIX: Defensively ensure the examples array exists before trying to spread it.
-                updatedTrainingData.examples = [...(updatedTrainingData.examples || []), newExample];
-                
-                // If the user adds an example, switch the preferred method to 'example'
-                updatedTrainingData.method = 'example';
-
-                return { ...style, trainingData: updatedTrainingData };
-            }
-            return style;
-        });
+      return prevStyles.map(style => {
+        if (style.id === styleId) {
+          const newExample: TrainingExample = {
+            id: Date.now(),
+            before: originalContent,
+            after: editedContent,
+          };
+          const updatedTrainingData = { ...style.trainingData };
+          updatedTrainingData.examples = [...(updatedTrainingData.examples || []), newExample];
+          updatedTrainingData.method = 'example';
+          return { ...style, trainingData: updatedTrainingData };
+        }
+        return style;
+      });
     });
     addNotification('تمت إضافة المثال بنجاح إلى بيانات التدريب!', 'success');
-};
-
+  };
 
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard':
         return <Dashboard styles={styles} onAddStyle={handleAddStyle} onSelectStyle={(styleName: string) => setActiveSection('newScript')} />;
       case 'newScript':
-        return <NewScriptForm styles={styles} addNotification={addNotification} onScriptGenerated={handleScriptGenerated} onFactCheckComplete={handleFactCheckComplete} initialScript={generatedScript} onAddToTraining={handleAddToTraining} apiStatuses={apiStatuses}/>;
+        return <NewScriptForm styles={styles} addNotification={addNotification} onScriptGenerated={handleScriptGenerated} onFactCheckComplete={handleFactCheckComplete} initialScript={generatedScript} onAddToTraining={handleAddToTraining} apiStatuses={apiStatuses} />;
       case 'onThisDay':
         return <OnThisDay onGenerateScript={handleGenerateFromEvent} addNotification={addNotification} />;
       case 'factCheck':
@@ -223,12 +192,12 @@ const App: React.FC = () => {
               نتائج تدقيق الحقائق
             </h2>
             <div className="mb-6">
-                <span className="text-text-secondary-light dark:text-text-secondary-dark">دقة المعلومات:</span>
-                <div className="w-full bg-bg-secondary-light dark:bg-bg-secondary-dark rounded-full h-8 mt-2 overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-500 to-green-500 h-full rounded-full flex items-center justify-center text-white font-bold transition-all duration-1000" style={{ width: `${factCheckResult.accuracy}%` }}>
-                        {factCheckResult.accuracy}%
-                    </div>
+              <span className="text-text-secondary-light dark:text-text-secondary-dark">دقة المعلومات:</span>
+              <div className="w-full bg-bg-secondary-light dark:bg-bg-secondary-dark rounded-full h-8 mt-2 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-500 to-green-500 h-full rounded-full flex items-center justify-center text-white font-bold transition-all duration-1000" style={{ width: `${factCheckResult.accuracy}%` }}>
+                  {factCheckResult.accuracy}%
                 </div>
+              </div>
             </div>
             <div className="prose prose-sm max-w-none text-text-primary-light dark:text-text-primary-dark whitespace-pre-wrap">
               <h4 className="font-bold">التفاصيل:</h4>
@@ -239,7 +208,7 @@ const App: React.FC = () => {
       case 'training':
         return <StyleTraining styles={styles} onUpdateStyle={handleUpdateStyleTraining} />;
       case 'api':
-        return <ApiSettings addNotification={addNotification} initialConfigs={apiConfigs} initialStatuses={apiStatuses} onSave={handleSaveApiSettings} onConfigsChange={setApiConfigs}/>;
+        return <ApiSettings addNotification={addNotification} initialConfigs={apiConfigs} initialStatuses={apiStatuses} onSave={handleSaveApiSettings} onConfigsChange={setApiConfigs} />;
       default:
         return <Dashboard styles={styles} onAddStyle={handleAddStyle} onSelectStyle={() => setActiveSection('newScript')} />;
     }
