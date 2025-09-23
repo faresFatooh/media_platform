@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.http import HttpResponse
 from .views import health_check
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
@@ -13,7 +14,7 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/asharq-automation/', include('asharq_automation.urls')),
-    path("api/discovery-script/configs/", ApiConfigView.as_view(), name="api-configs"),
+    path("api/discovery-script/", include("discovery_script_service.urls")),
     path("health/", lambda request: JsonResponse({"status": "ok"})),  # ✅ health check
 
 ]
