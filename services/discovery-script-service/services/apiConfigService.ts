@@ -1,22 +1,30 @@
-import axios from "axios";
+import axios from 'axios';
+import { ApiConfigs } from '../types';
 
-const API_BASE = import.meta.env.VITE_MAIN_BACKEND_URL + "/api/discovery-script";
+// إنشاء instance للـ API مع الـ baseURL
+const api = axios.create({
+  baseURL: import.meta.env.VITE_MAIN_BACKEND_URL,
+});
 
-function getAuthHeaders() {
-  const token = localStorage.getItem("access_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+// إضافة التوكن تلقائيًا مع كل طلب
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-export async function getApiConfigs() {
-  const res = await axios.get(`${API_BASE}/configs/`, {
-    headers: { ...getAuthHeaders() },
-  });
-  return res.data;
-}
+// --- دوال إدارة إعدادات API ---
 
-export async function saveApiConfigs(data: any) {
-  const res = await axios.post(`${API_BASE}/configs/`, data, {
-    headers: { ...getAuthHeaders() },
-  });
-  return res.data;
-}
+// جلب الإعدادات
+export const getApiConfigs = async (): Promise<ApiConfigs> => {
+  const { data } = await api.get('/api/discovery-script/configs/');
+  return data;
+};
+
+// حفظ الإعدادات
+export const saveApiConfigs = async (configs: ApiConfigs): Promise<ApiConfigs> => {
+  const { data } = await api.post('/api/discovery-script/configs/', configs);
+  return data;
+};
