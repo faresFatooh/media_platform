@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ApiConfigs, ApiStatuses, ConnectionStatus, ApiName } from '../types';
-import { getApiConfigs, saveApiConfigs, testApiConnection } from '../services/apiConfigService';
+import { getApiConfigs, saveApiConfigs } from "@/services/apiConfigService";
 
 interface ApiSettingsProps {
   addNotification: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
@@ -65,8 +65,7 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({ addNotification }) => {
         // اختبار المفاتيح بعد الحفظ
         setStatuses({ claude: 'pending', chatGpt: 'pending' });
 
-        const claudeValid = await testApiConnection(configs.claudeApiKey);
-        const chatValid = await testApiConnection(configs.chatGptApiKey);
+        
 
         setStatuses({
           claude: claudeValid ? 'connected' : 'disconnected',
