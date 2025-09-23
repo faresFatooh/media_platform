@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Script, FactCheckResult, NotificationMessage, Style, ApiStatuses, GenerationEngine } from '../types';
 import { generateScript, generateIdeas, deepResearch, factCheckScript } from '../services/geminiService';
 import { transformWithClaude } from '../services/claudeService';
+import { generateWithChatGPT } from '../services/chatGptService';
 import Modal from './Modal';
 import AssetGenerationModal from './AssetGenerationModal';
 
@@ -76,49 +77,81 @@ const exportToWord = (script: Script, editedContent: string) => {
 
 
 const NewScriptForm: React.FC<NewScriptFormProps> = ({ styles, addNotification, onScriptGenerated, onFactCheckComplete, initialScript, onAddToTraining, apiStatuses }) => {
-    const [selectedStyleId, setSelectedStyleId] = useState(styles[0]?.id || '');
-    const [title, setTitle] = useState('');
-    const [duration, setDuration] = useState('22');
-    const [language, setLanguage] = useState('ar');
-    const [sourceText, setSourceText] = useState('');
-    const [script, setScript] = useState<Script | null>(initialScript);
-    const [editedContent, setEditedContent] = useState('');
-    const [loadingStates, setLoadingStates] = useState({ generate: false, ideas: false, research: false, factCheck: false });
-    const [isIdeasModalOpen, setIsIdeasModalOpen] = useState(false);
-    const [ideasModalContent, setIdeasModalContent] = useState({ title: '', content: '' });
-    const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
-    const [isPreview, setIsPreview] = useState(false);
-    const [engine, setEngine] = useState<GenerationEngine>('gemini');
+  const [selectedStyleId, setSelectedStyleId] = useState(styles[0]?.id || '');
+  const [title, setTitle] = useState('');
+  const [duration, setDuration] = useState('22');
+  const [language, setLanguage] = useState('ar');
+  const [sourceText, setSourceText] = useState('');
+  const [script, setScript] = useState<Script | null>(initialScript);
+  const [editedContent, setEditedContent] = useState('');
+  const [loadingStates, setLoadingStates] = useState({ generate: false, ideas: false, research: false, factCheck: false });
+  const [isIdeasModalOpen, setIsIdeasModalOpen] = useState(false);
+  const [ideasModalContent, setIdeasModalContent] = useState({ title: '', content: '' });
+  const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
+  const [engine, setEngine] = useState<GenerationEngine>('gemini');
 
 
-    const selectedStyle = styles.find(s => s.id === selectedStyleId);
+  const selectedStyle = styles.find(s => s.id === selectedStyleId);
 
     const canUseClaudeForTransform = apiStatuses.claude === 'connected' && sourceText.trim() !== '';
 
     useEffect(() => {
-        if(initialScript){
-            setTitle(initialScript.title);
-            setScript(initialScript);
-            setEditedContent(initialScript.content);
-            setIsPreview(true); // Default to preview mode when a script is loaded
-        }
-    }, [initialScript]);
+    if (initialScript) {
+      setTitle(initialScript.title);
+      setScript(initialScript);
+      setEditedContent(initialScript.content);
+      setIsPreview(true);
+    }
+  }, [initialScript]);
 
-    const handleApiCall = async (task: () => Promise<Script>) => {
-        setLoadingStates(prev => ({ ...prev, generate: true }));
-        try {
-            const generatedScript = await task();
-            setScript(generatedScript);
-            setEditedContent(generatedScript.content);
-            onScriptGenerated(generatedScript);
-            addNotification('تمت المهمة بنجاح!', 'success');
-            setIsPreview(true);
-        } catch (error) {
-            addNotification(error instanceof Error ? error.message : 'حدث خطأ غير متوقع', 'error');
-        } finally {
-            setLoadingStates(prev => ({ ...prev, generate: false }));
-        }
-    };
+     handleApiCall(async () => {
+      if (engine === 'gemini') {
+        return generateScript(
+          selectedStyle?.name || '',
+          title,
+          duration,
+          language,
+          sourceText || '',
+          selectedStyle?.trainingData,
+          'gemini',
+          addNotification
+        );
+      }
+       if (engine === 'claude') {
+        return transformWithClaude(
+          selectedStyle?.name || '',
+          title,
+          duration,
+          language,
+          sourceText || '',
+          selectedStyle?.trainingData
+        );
+      }
+
+      if (engine === 'chatgpt') {
+        return generateWithChatGPT(
+          selectedStyle?.name || '',
+          title,
+          duration,
+          language,
+          selectedStyle?.trainingData
+        );
+      }
+
+      if (engine === 'hybrid') {
+        addNotification('البحث الهجين غير مفعّل بعد 🚧', 'warning');
+        throw new Error('ميزة البحث الهجين غير مطبقة بعد');
+      }
+
+      if (engine === 'cross') {
+        addNotification('البحث المتقاطع غير مفعّل بعد 🚧', 'warning');
+        throw new Error('ميزة البحث المتقاطع غير مطبقة بعد');
+      }
+
+      throw new Error('محرك غير معروف');
+    });
+  };
 
     const handleTransformScript = () => {
         if (!selectedStyleId || !title || !sourceText) {
