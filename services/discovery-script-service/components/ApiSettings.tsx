@@ -38,8 +38,11 @@ const ApiSettings: React.FC<ApiSettingsProps> = ({ addNotification }) => {
     const loadConfigs = async () => {
       try {
         const data = await getApiConfigs();
-        setConfigs(data);
-
+          // AFTER
+          setConfigs({
+            claudeApiKey: data.claudeApiKey || '',
+            chatGptApiKey: data.chatGptApiKey || '',
+          });
         setStatuses({
           claude: data.claudeApiKey ? 'connected' : 'disconnected',
           chatGpt: data.chatgptApiKey ? 'connected' : 'disconnected',
