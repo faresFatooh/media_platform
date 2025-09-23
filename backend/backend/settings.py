@@ -54,7 +54,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://ghazimortaja.com", "https://frontend-rgr7.onrender.com", "https://asharq-service.onrender.com", 
     "https://avatar-service.onrender.com", "https://chatbot-service-jjas.onrender.com", "https://infographic-service.onrender.com",
     "https://news-refine-service.onrender.com", "https://podcast-service.onrender.com", "https://style-editor-service.onrender.com",
-    "https://video-sync-service.onrender.com", 'https://backend.ghazimortaja.com',"https://discovery-script-service.onrender.com",
+    "https://video-sync-service.onrender.com", 'https://backend.ghazimortaja.com',"https://discovery-script-service.onrender.com"
 ]
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
