@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-ainingData, GenerationEngine, NotificationMessage, OnThisDayData, OnThisDayEvent } from '../types';
-import { transformWithClaude, researchWithClaude } from './claudeService';
+import { TrainingData, GenerationEngine, NotificationMessage, OnThisDayData, OnThisDayEvent } from "../types";
+import { transformWithClaude, researchWithClaude } from "./claudeService";
 import { generateWithChatGPT, researchWithChatGPT } from "./chatGptService";
 
 if (!import.meta.env.VITE_GEMINI_API_KEY) {
