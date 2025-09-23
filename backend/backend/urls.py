@@ -12,6 +12,6 @@ urlpatterns = [
     path('api/style-examples/', include('style_editor_data.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path("health", health_check),
+    path("health", lambda request: JsonResponse({"status": "ok"})),  # مباشر
     path('api/asharq-automation/', include('asharq_automation.urls')),
     path("api/discovery-script/configs/", ApiConfigView.as_view(), name="api-configs"),
