@@ -11,11 +11,9 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/applications/', include('applications.urls')),
     path('api/tasks/', include('tasks.urls')),
-    path('api/style-examples/', include('style_editor_data.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('health/', health_check, name='health_check'),
-    path('api/asharq-automation/', include('asharq_automation.urls')),
-    path("api/discovery-script/", include("discovery_script_service.urls")),
     path('api/news-generator/', include('news_generator.urls')),
+
      ]

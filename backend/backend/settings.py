@@ -25,8 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
     'django.contrib.sessions', 'django.contrib.messages', 'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles', 'rest_framework', 'corsheaders',
-    'rest_framework_simplejwt', 'users', 'applications', 'tasks',
-    'style_editor_data', 'asharq_automation','discovery_script_service','news_generator',
+    'rest_framework_simplejwt', 'users', 'applications', 'tasks','news_generator',
 ]
 
 MIDDLEWARE = [
@@ -51,12 +50,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CORS_ALLOWED_ORIGINS = [
-    "https://ghazimortaja.com", "https://frontend-rgr7.onrender.com", "https://asharq-service.onrender.com", 
-    "https://avatar-service.onrender.com", "https://chatbot-service-jjas.onrender.com", "https://infographic-service.onrender.com",
-    "https://news-refine-service.onrender.com", "https://podcast-service.onrender.com", "https://style-editor-service.onrender.com",
-    "https://video-sync-service.onrender.com", 'https://backend.ghazimortaja.com',"https://discovery-script-service.onrender.com",
-    "https://ai-news-generator-service.onrender.com",
+    "https://ghazimortaja.com", "https://frontend-rgr7.onrender.com"
+    , 'https://backend.ghazimortaja.com',"https://ai-news-generator-service.onrender.com",
+
 ]
+    
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
