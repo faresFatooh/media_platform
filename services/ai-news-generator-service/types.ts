@@ -7,9 +7,12 @@ export enum InputType {
 }
 
 export interface EditorialStyle {
-  id: string;
+  id: number; 
+  user: string;
   name: string;
   content: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BreakingNewsItem {
@@ -36,13 +39,17 @@ export interface GeneratedArticle {
 }
 
 export interface CustomNewsSource {
-  id: string;
+  id: number; // The database ID is a number
+  user: string;
   url: string;
+  created_at: string;
 }
 
 export interface MonitoredSource {
-  id: string;
+  id: number; // The database ID is a number
+  user: string;
   url: string;
+  created_at: string;
 }
 
 export interface MonitoredContentItem {

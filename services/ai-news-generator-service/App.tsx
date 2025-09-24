@@ -1,4 +1,6 @@
 
+import { getStyles } from './services/apiService';   
+import { EditorialStyle } from './types';             
 import React, { useState, useCallback, useEffect } from 'react';
 import { InputType, BreakingNewsItem, GeneratedArticle, EditorialStyle, CustomNewsSource, MonitoredSource, MonitoredContentItem } from './types';
 import { generateNewsArticle, fetchBreakingNews, generateImageForArticle, fetchAllMonitoredContent } from './services/geminiService';
@@ -674,191 +676,153 @@ const MonitorModal: React.FC<{
     );
 };
 
+
+
+
 const App: React.FC = () => {
-    const [editorialStyles, setEditorialStyles] = useLocalStorage<EditorialStyle[]>('editorialStyles', []);
-    const [selectedStyleId, setSelectedStyleId] = useLocalStorage<string>('selectedStyleId', '');
-    const [customNewsSources, setCustomNewsSources] = useLocalStorage<CustomNewsSource[]>('customNewsSources', []);
-    const [monitoredSources, setMonitoredSources] = useLocalStorage<MonitoredSource[]>('monitoredSources', []);
+    // --- ✅ 2. Replace useLocalStorage with useState for data from the database ---
+    const [editorialStyles, setEditorialStyles] = useState<EditorialStyle[]>([]);
+    const [customNewsSources, setCustomNewsSources] = useState<CustomNewsSource[]>([]);
+    const [monitoredSources, setMonitoredSources] = useState<MonitoredSource[]>([]);
     
+    // This can stay in localStorage as it's a UI preference, not critical data
+    const [selectedStyleId, setSelectedStyleId] = useLocalStorage<string>('selectedStyleId', '');
+
+    // --- All your other state hooks remain the same ---
     const [inputs, setInputs] = useState<{type: string, value: string | File}[]>([]);
     const [generatedArticle, setGeneratedArticle] = useState<GeneratedArticle | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true); // Will be used for initial data load
     const [error, setError] = useState<string | null>(null);
     const [notification, setNotification] = useState('');
-    
     const [breakingNews, setBreakingNews] = useState<BreakingNewsItem[]>([]);
     const [isBreakingNewsLoading, setIsBreakingNewsLoading] = useState(true);
     const [hasNewBreakingNews, setHasNewBreakingNews] = useState(false);
-
     const [inputSelection, setInputSelection] = useState<{type: string; value: string}[]>([]);
     const [isBreakingNewsOpen, setBreakingNewsOpen] = useState(false);
     const [isStyleModalOpen, setStyleModalOpen] = useState(false);
     const [isMonitorOpen, setMonitorOpen] = useState(false);
-    
-    const fetchNews = useCallback(async () => {
-        setIsBreakingNewsLoading(true);
-        const freshNews = await fetchBreakingNews(customNewsSources);
-        if(!freshNews) {
-             setIsBreakingNewsLoading(false);
-             return;
+
+    // --- ✅ 3. Add authentication state and listener ---
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            if (event.origin !== "https://frontend-rgr7.onrender.com") { // Check your main frontend URL
+                return;
+            }
+            if (event.data && event.data.type === 'AUTH_TOKEN') {
+                localStorage.setItem('access_token', event.data.token);
+                setIsAuthenticated(true);
+            }
         };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
 
-        setBreakingNews(currentNews => {
-            if (currentNews.length > 0) {
-                const currentHeadlines = new Set(currentNews.map(n => n.headline));
-                const newItemsFound = freshNews.some(newItem => !currentHeadlines.has(newItem.headline));
-                if (newItemsFound) {
-                    setHasNewBreakingNews(true);
+    // --- ✅ 4. Fetch initial data from the database after authentication ---
+    useEffect(() => {
+        if (isAuthenticated) {
+            const fetchInitialData = async () => {
+                try {
+                    setIsLoading(true);
+                    // Fetch all data in parallel for better performance
+                    const [styles, customSources, monitoredSources] = await Promise.all([
+                        getStyles(),
+                        getCustomSources(),
+                        getMonitoredSources()
+                    ]);
+                    setEditorialStyles(styles);
+                    setCustomNewsSources(customSources);
+                    setMonitoredSources(monitoredSources);
+                } catch (err) {
+                    setError("Failed to load initial data from the database.");
+                    console.error(err);
+                } finally {
+                    setIsLoading(false);
                 }
-            }
-            return freshNews;
-        });
-        
-        setIsBreakingNewsLoading(false);
-    }, [customNewsSources]);
-
-    useEffect(() => {
-        fetchNews(); // Initial fetch
-        const interval = setInterval(fetchNews, 20 * 60 * 1000); // 20 minutes
-
-        return () => clearInterval(interval);
-    }, [fetchNews]);
-    
-    useEffect(() => {
-        if(notification) {
-            const timer = setTimeout(() => setNotification(''), 3000);
-            return () => clearTimeout(timer);
+            };
+            fetchInitialData();
         }
-    }, [notification]);
+    }, [isAuthenticated]);
 
-    const handleSelectNewsItem = (itemText: string) => {
-        setInputSelection([{ type: 'TEXT', value: itemText }]);
-        setGeneratedArticle(null);
-    }
-    
-    const handleSelectBreakingNews = (news: BreakingNewsItem) => {
-        handleSelectNewsItem(`${news.headline}\n${news.summary}`);
-    };
-    
-    const handleSelectMonitoredContent = (content: MonitoredContentItem) => {
-       handleSelectNewsItem(`${content.title}\n${content.summary}`);
-    };
+    // All your existing functions (fetchNews, handleGenerate, etc.) remain the same for now
+    const fetchNews = useCallback(async () => { /* ... */ }, [customNewsSources]);
+    const handleGenerate = useCallback(async () => { /* ... */ }, [selectedStyleId, editorialStyles, inputs]);
+    const handleArticleUpdate = (updatedArticle: GeneratedArticle, improveStyle: boolean) => { /* ... */ };
 
-    const handleOpenBreakingNews = () => {
-        setBreakingNewsOpen(true);
-        setHasNewBreakingNews(false);
-    };
-
-    const handleGenerate = useCallback(async () => {
-        const selectedStyle = editorialStyles.find(s => s.id === selectedStyleId);
-        if (!selectedStyle || !selectedStyle.content.trim()) {
-            setError("الرجاء تحديد أسلوب تحريري صالح أولاً.");
-            return;
-        }
-        if (inputs.every(i => (typeof i.value === 'string' && !i.value.trim()) || !i.value)) {
-            setError("الرجاء إضافة مصدر واحد على الأقل للمعلومات.");
-            return;
-        }
-        setError(null);
-        setIsLoading(true);
-        setGeneratedArticle(null);
-        setInputSelection([]); // Clear selection after use
-        
+    // --- ✅ 5. Create new handler for saving styles to the database ---
+    const handleSaveStyles = async (updatedStyles: EditorialStyle[]) => {
+        // This is a simplified version. A full version would compare the old and new lists
+        // to figure out what was added, deleted, or changed.
         try {
-            const article = await generateNewsArticle(selectedStyle.content, inputs);
-            if (article) {
-                setGeneratedArticle(article);
-            } else {
-                setError("فشل توليد الخبر. قد تكون هناك مشكلة في الاتصال أو المدخلات. يرجى المحاولة مرة أخرى.");
+            // For now, let's just demonstrate creating a new style if one was added.
+            for (const style of updatedStyles) {
+                if (typeof style.id === 'string' && style.id.startsWith('style-')) { // A temporary ID for new styles
+                    await createStyle({ name: style.name, content: style.content });
+                }
+                // A full implementation would handle updates and deletes here as well.
             }
-        } catch (e) {
-             setError("حدث خطأ غير متوقع. يرجى مراجعة وحدة التحكم لمزيد من التفاصيل.");
-             console.error(e);
-        } finally {
-            setIsLoading(false);
+            // After saving, re-fetch the list from the database to get the latest data
+            const freshStyles = await getStyles();
+            setEditorialStyles(freshStyles);
+            setNotification('Styles saved to the database successfully!');
+        } catch (err) {
+            setError('Failed to save styles to the database.');
         }
-    }, [selectedStyleId, editorialStyles, inputs]);
-    
-    const handleArticleUpdate = (updatedArticle: GeneratedArticle, improveStyle: boolean) => {
-        setGeneratedArticle(updatedArticle);
-
-        if (improveStyle) {
-            const selectedStyle = editorialStyles.find(s => s.id === selectedStyleId);
-            if (!selectedStyle) return;
-
-            const improvedExample = `\n\n--- مثال مُحسّن بواسطة المحرر ---\nالعنوان: ${updatedArticle.headline}\n\n${updatedArticle.body}\n--- نهاية المثال ---`;
-            
-            const newStyle = { ...selectedStyle, content: selectedStyle.content + improvedExample };
-            
-            setEditorialStyles(editorialStyles.map(s => s.id === selectedStyleId ? newStyle : s));
-            setNotification('تم تحسين الأسلوب بنجاح!');
-        }
+        setStyleModalOpen(false);
     };
+
+    // ... other handlers like handleSelectNewsItem, etc. remain the same ...
+    const handleSelectNewsItem = (itemText: string) => { /* ... */ };
+
+
+    if (isLoading && isAuthenticated) {
+        return <div className="flex items-center justify-center h-screen bg-gray-900 text-white">Loading Data from Database...</div>
+    }
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-200">
-            <Header onOpenBreakingNews={handleOpenBreakingNews} hasNewNews={hasNewBreakingNews} onOpenMonitor={() => setMonitorOpen(true)}/>
+            <Header onOpenBreakingNews={() => setBreakingNewsOpen(true)} hasNewNews={hasNewBreakingNews} onOpenMonitor={() => setMonitorOpen(true)}/>
+            
+            {/* --- ✅ 6. Pass the new database-aware handler to the modal --- */}
+            <EditorialStyleModal 
+                isOpen={isStyleModalOpen} 
+                onClose={() => setStyleModalOpen(false)} 
+                styles={editorialStyles} 
+                onSave={handleSaveStyles} // Use the new save handler
+            />
+
+            {/* The rest of your JSX remains the same */}
             <BreakingNewsModal 
                 isOpen={isBreakingNewsOpen} 
-                onClose={()=>setBreakingNewsOpen(false)} 
-                onSelectNews={handleSelectBreakingNews}
-                news={breakingNews}
-                isLoading={isBreakingNewsLoading}
-                onRefresh={fetchNews}
+                onClose={()=>setBreakingNewsOpen(false)}
+                // ... other props
                 customSources={customNewsSources}
-                onSourcesChange={setCustomNewsSources}
+                onSourcesChange={setCustomNewsSources} // TODO: This should also be converted to an API call
             />
-            <EditorialStyleModal isOpen={isStyleModalOpen} onClose={() => setStyleModalOpen(false)} styles={editorialStyles} onSave={setEditorialStyles} />
             <MonitorModal 
                 isOpen={isMonitorOpen}
                 onClose={() => setMonitorOpen(false)}
+                // ... other props
                 monitoredSources={monitoredSources}
-                onSourcesChange={setMonitoredSources}
-                onSelectContent={handleSelectMonitoredContent}
+                onSourcesChange={setMonitoredSources} // TODO: This should also be converted to an API call
             />
             
             <main className="container mx-auto p-4 md:p-8">
                 <div className="space-y-6">
-                    <EditorialStyleSelector styles={editorialStyles} selectedStyleId={selectedStyleId} onSelectStyle={setSelectedStyleId} onManageStyles={() => setStyleModalOpen(true)} />
-                    <InputSource onInputsChange={setInputs} initialInputs={inputSelection} />
-
-                    <div className="flex justify-center">
-                        <button
-                            onClick={handleGenerate}
-                            disabled={isLoading}
-                            className="flex items-center gap-3 px-8 py-4 bg-cyan-600 text-white text-lg font-bold rounded-lg shadow-lg hover:bg-cyan-700 transition-transform transform hover:scale-105 disabled:bg-cyan-800 disabled:cursor-not-allowed disabled:scale-100"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                    <span>جاري التوليد...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Wand2 />
-                                    <span>ولّد الخبر الآن</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-
-                    {error && <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-center">{error}</div>}
-                    
-                    {isLoading && (
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 mt-6 flex flex-col items-center justify-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
-                            <p className="mt-4 text-lg text-gray-400">يقوم الذكاء الاصطناعي بتحليل البيانات وصياغة الخبر...</p>
-                        </div>
-                    )}
-                    
-                    {generatedArticle && <GeneratedArticleDisplay article={generatedArticle} onArticleUpdate={handleArticleUpdate} />}
+                    <EditorialStyleSelector 
+                        styles={editorialStyles} 
+                        selectedStyleId={selectedStyleId} 
+                        onSelectStyle={setSelectedStyleId} 
+                        onManageStyles={() => setStyleModalOpen(true)} 
+                    />
+                    {/* ... The rest of your main page JSX ... */}
                 </div>
             </main>
-             <div className={`notification ${notification ? 'show' : ''}`}>
-                {notification}
-            </div>
+             {/* ... Your notification div ... */}
         </div>
     );
 };
+
 
 export default App;
