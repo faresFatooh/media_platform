@@ -1,9 +1,8 @@
 import type { User } from '../types';
 
-// Using relative paths for API calls.
-// This assumes the frontend is served from the same domain as the backend,
-// or a proxy is configured in production to forward /api requests to the backend service.
-const API_PREFIX = '/api';
+// ✅ Get the full backend URL from the environment variable set on Render
+// This must be set as VITE_MAIN_BACKEND_URL for this service
+const API_URL = import.meta.env.VITE_MAIN_BACKEND_URL;
 
 /**
  * Fetches the current user's data from the backend using an auth token.
@@ -11,7 +10,12 @@ const API_PREFIX = '/api';
  * @returns A promise that resolves to the User object.
  */
 export const getCurrentUser = async (token: string): Promise<User> => {
-  const response = await fetch(`${API_PREFIX}/user/me/`, {
+  if (!API_URL) {
+    throw new Error("VITE_MAIN_BACKEND_URL environment variable is not set.");
+  }
+  
+  // ✅ Use the full and correct URL for the API call
+  const response = await fetch(`${API_URL}/api/users/me/`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -20,7 +24,6 @@ export const getCurrentUser = async (token: string): Promise<User> => {
   });
 
   if (!response.ok) {
-    // This could be because the token is expired or invalid.
     throw new Error('Failed to fetch user data. Your session may have expired.');
   }
 

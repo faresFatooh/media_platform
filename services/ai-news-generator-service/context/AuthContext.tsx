@@ -10,31 +10,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const bootstrapAuth = async () => {
-      const storedToken = localStorage.getItem('access_token');
-      if (storedToken) {
-        try {
-          const userData = await getCurrentUser(storedToken);
-          setUser(userData);
-          setToken(storedToken);
-        } catch (error) {
-          console.error("Authentication failed:", error);
-          // Clear invalid/expired tokens
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+    const handleMessage = async (event: MessageEvent) => {
+      // ✅ Security: Only accept messages from your main dashboard
+      if (event.origin !== "https://ghazimortaja.com") { 
+        return;
+      }
+
+      if (event.data && event.data.type === 'AUTH_TOKEN') {
+        const receivedToken = event.data.token;
+        if (receivedToken) {
+          try {
+            const userData = await getCurrentUser(receivedToken);
+            setUser(userData);
+            setToken(receivedToken);
+            localStorage.setItem('access_token', receivedToken);
+          } catch (error) {
+            console.error("Authentication failed with received token:", error);
+            logout();
+          } finally {
+            setIsLoading(false);
+          }
         }
       }
-      setIsLoading(false);
     };
+    
+    window.addEventListener('message', handleMessage);
 
-    bootstrapAuth();
-  }, []);
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+      }
+    }, 5000); 
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearTimeout(timeoutId);
+    };
+  }, [isLoading]);
 
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
   };
 
   return (
