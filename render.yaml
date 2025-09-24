@@ -121,9 +121,20 @@ services:
     dockerfilePath: ./services/discovery-script-service/Dockerfile
     dockerContext: ./services/discovery-script-service
     envVars:
-      # --- ✅ التعديل الرئيسي هنا ---
       - key: MAIN_BACKEND_URL
         value: https://backend-y4ir.onrender.com
-      # --------------------------
+      - key: GEMINI_API_KEY
+        sync: false
+
+
+  - type: web
+    name: ai-news-generator-service
+    plan: starter
+    env: docker
+    dockerfilePath: ./services/ai-news-generator-service/Dockerfile
+    dockerContext: ./services/ai-news-generator-service
+    envVars:
+      - key: MAIN_BACKEND_URL
+        value: https://backend-y4ir.onrender.com
       - key: GEMINI_API_KEY
         sync: false
