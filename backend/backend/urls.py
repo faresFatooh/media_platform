@@ -8,12 +8,15 @@ def health_check(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health/', health_check, name='health_check'),
+
+    # --- الروابط الأساسية ---
     path('api/users/', include('users.urls')),
-    path('api/applications/', include('applications.urls')),
-    path('api/tasks/', include('tasks.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('health/', health_check, name='health_check'),
+    
+    # --- روابط التطبيقات التي أبقينا عليها ---
+    path('api/applications/', include('applications.urls')),
+    path('api/tasks/', include('tasks.urls')),
     path('api/news-generator/', include('news_generator.urls')),
-
-     ]
+]

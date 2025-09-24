@@ -21,18 +21,34 @@ CSRF_TRUSTED_ORIGINS = [
     "https://backend.ghazimortaja.com"
 ] if RENDER_EXTERNAL_HOSTNAME else []
 
+# --- ✅ هذه هي القائمة الصحيحة والنهائية ---
 INSTALLED_APPS = [
-    'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
-    'django.contrib.sessions', 'django.contrib.messages', 'whitenoise.runserver_nostatic',
-    'django.contrib.staticfiles', 'rest_framework', 'corsheaders',
-    'rest_framework_simplejwt', 'users', 'applications', 'tasks','news_generator',
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'corsheaders',
+    'rest_framework_simplejwt',
+    'users',
+    'applications', # <-- تم الإبقاء عليه
+    'tasks',        # <-- تم الإبقاء عليه
+    'news_generator', # <-- التطبيق الجديد
 ]
+# -----------------------------------------
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware', 'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware', 'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware', 'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware', 'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -50,11 +66,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CORS_ALLOWED_ORIGINS = [
-    "https://ghazimortaja.com", "https://frontend-rgr7.onrender.com"
-    , 'https://backend.ghazimortaja.com',"https://ai-news-generator-service.onrender.com",
-
+    "https://ghazimortaja.com", "https://frontend-rgr7.onrender.com",
+    "https://ai-news-generator-service.onrender.com", # التطبيق الجديد الوحيد
 ]
-    
 RENDER_FRONTEND_URL = os.environ.get('RENDER_FRONTEND_URL') 
 if RENDER_FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(RENDER_FRONTEND_URL)
@@ -62,6 +76,5 @@ REST_FRAMEWORK = {'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.a
 SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(days=1), "REFRESH_TOKEN_LIFETIME": timedelta(days=7),}
 CORS_ALLOW_CREDENTIALS = True
 
-# --- الطريقة البسيطة والصحيحة لقراءة المفاتيح ---
 CLAUDE_API_KEY = os.environ.get('CLAUDE_API_KEY')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')

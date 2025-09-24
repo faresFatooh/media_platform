@@ -1,0 +1,5 @@
+{
+  "name": "AI News Generator",
+  "description": "A web application to help journalists automate writing news articles using AI, from information gathering to publication.",
+  "requestFramePermissions": []
+}
