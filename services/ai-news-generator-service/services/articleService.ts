@@ -1,5 +1,14 @@
-// Fix for Vite environment variable type errors by adding a triple-slash directive.
-/// <reference types="vite/client" />
+// FIX: Corrected the Vite environment variable type declarations. By declaring `ImportMetaEnv` inside
+// a `declare global` block, it becomes a global, augmentable interface. This prevents type
+// conflicts with other files and ensures `import.meta.env` is consistently typed.
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_MAIN_BACKEND_URL: string;
+  }
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
 
 import type { GeneratedArticle, ArticleInputType, ImageFile } from '../types';
 
@@ -20,7 +29,7 @@ export const generateArticle = async (
   if (!API_URL) {
     throw new Error("VITE_MAIN_BACKEND_URL environment variable is not set.");
   }
-  const response = await fetch(`${API_URL}/api/news_generator/generate-article/`, {
+  const response = await fetch(`${API_URL}/api/generate-article/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -47,7 +56,7 @@ export const generateImage = async (prompt: string, token: string): Promise<stri
     if (!API_URL) {
     throw new Error("VITE_MAIN_BACKEND_URL environment variable is not set.");
   }
-  const response = await fetch(`${API_URL}/api/news_generator/generate-image/`, {
+  const response = await fetch(`${API_URL}/api/generate-image/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

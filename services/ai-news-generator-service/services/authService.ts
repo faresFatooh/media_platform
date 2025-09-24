@@ -1,3 +1,15 @@
+// FIX: Corrected the Vite environment variable type declarations. By declaring `ImportMetaEnv` inside
+// a `declare global` block, it becomes a global, augmentable interface. This prevents type
+// conflicts with other files and ensures `import.meta.env` is consistently typed.
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_MAIN_BACKEND_URL: string;
+  }
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
+
 import type { User } from '../types';
 
 // ✅ جلب الرابط الكامل للخادم الخلفي من متغير البيئة الذي تم تعيينه في Render
