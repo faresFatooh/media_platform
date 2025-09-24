@@ -1,9 +1,9 @@
+// Fix for Vite environment variable type errors by adding a triple-slash directive.
+/// <reference types="vite/client" />
+
 import type { GeneratedArticle, ArticleInputType, ImageFile } from '../types';
 
-// Using relative paths for API calls.
-// This assumes the frontend is served from the same domain as the backend,
-// or a proxy is configured in production to forward /api requests to the backend service.
-const API_PREFIX = '/api';
+const API_URL = import.meta.env.VITE_MAIN_BACKEND_URL;
 
 /**
  * Calls the Django backend to generate an article using the Gemini API.
@@ -17,7 +17,10 @@ export const generateArticle = async (
   data: string | ImageFile,
   token: string
 ): Promise<Omit<GeneratedArticle, 'imageUrl'>> => {
-  const response = await fetch(`${API_PREFIX}/generate-article/`, {
+  if (!API_URL) {
+    throw new Error("VITE_MAIN_BACKEND_URL environment variable is not set.");
+  }
+  const response = await fetch(`${API_URL}/api/news_generator/generate-article/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -41,7 +44,10 @@ export const generateArticle = async (
  * @returns A promise that resolves to the URL of the generated image.
  */
 export const generateImage = async (prompt: string, token: string): Promise<string> => {
-  const response = await fetch(`${API_PREFIX}/generate-image/`, {
+    if (!API_URL) {
+    throw new Error("VITE_MAIN_BACKEND_URL environment variable is not set.");
+  }
+  const response = await fetch(`${API_URL}/api/news_generator/generate-image/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
