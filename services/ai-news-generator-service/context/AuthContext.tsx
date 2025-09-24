@@ -7,13 +7,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // يبدأ بحالة التحميل
+  const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ هذا هو المنطق الجديد والصحيح لتطبيق يعمل داخل إطار
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
-      // للأمان: اقبل الرسائل فقط من لوحة التحكم الرئيسية
-      if (event.origin !== "https://ghazimortaja.com") { 
+      console.log("📩 Received message:", event.origin, event.data);
+
+      // ✅ origins المسموح فيها
+      const allowedOrigins = [
+        "https://ghazimortaja.com",
+        "https://www.ghazimortaja.com",
+        "https://ai-news-generator-service.onrender.com",
+      ];
+      if (!allowedOrigins.includes(event.origin)) {
+        console.warn("⛔ Blocked message from origin:", event.origin);
         return;
       }
 
@@ -21,37 +28,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const receivedToken = event.data.token;
         if (receivedToken) {
           try {
-            // 1. جلب بيانات المستخدم باستخدام التوكن المستلم
             const userData = await getCurrentUser(receivedToken);
-            
-            // 2. إذا نجحت العملية، قم بتحديث الحالة و localStorage
             setUser(userData);
             setToken(receivedToken);
             localStorage.setItem('access_token', receivedToken);
+            console.log("✅ User authenticated:", userData);
           } catch (error) {
-            console.error("Authentication failed with received token:", error);
-            logout(); // مسح أي حالة سيئة إذا كان التوكن غير صالح
+            console.error("❌ Authentication failed:", error);
+            logout();
           } finally {
-            setIsLoading(false); // إيقاف التحميل بعد المحاولة
+            setIsLoading(false);
           }
         }
       }
     };
-    
+
     window.addEventListener('message', handleMessage);
 
-    // إيقاف التحميل بعد 5 ثوانٍ إذا لم تصل أي رسالة
     const timeoutId = setTimeout(() => {
-        if (isLoading) {
-            setIsLoading(false);
-        }
-    }, 5000); 
+      if (isLoading) {
+        setIsLoading(false);
+      }
+    }, 5000);
 
     return () => {
       window.removeEventListener('message', handleMessage);
       clearTimeout(timeoutId);
     };
-  }, [isLoading]); // مصفوفة الاعتمادية
+  }, [isLoading]);
 
   const logout = () => {
     setUser(null);
