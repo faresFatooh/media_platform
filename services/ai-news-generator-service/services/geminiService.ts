@@ -1,4 +1,4 @@
-// ✅ تعريف متغيرات البيئة
+// ✅ تعريف متغيرات البيئة لـ Gemini
 declare global {
   interface ImportMetaEnv {
     readonly VITE_GEMINI_API_KEY: string;
@@ -9,17 +9,28 @@ declare global {
 }
 
 import { GoogleGenerativeAI, Part } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk"; // ✅ Claude SDK
 import { ArticleInputType, type GeneratedArticle, type ImageFile } from '../types';
 
+// ----------------------------
+// 🔑 مفاتيح الـ APIs
+// ----------------------------
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const CLAUDE_API_KEY = "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"; // ⚠️ مؤقت: بدّله لاحقاً بـ env
 
 if (!GEMINI_API_KEY) {
   console.error("VITE_GEMINI_API_KEY is not set. Frontend Gemini calls will fail.");
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+if (!CLAUDE_API_KEY) {
+  console.error("Claude API key is not set. Calls will fail.");
+}
 
-// ✅ المخطط (Schema) بالعربية
+// ✅ إنشاء الكلاسات
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const anthropic = new Anthropic({ apiKey: CLAUDE_API_KEY });
+
+// ✅ نفس المخطط (Schema) مستخدم لكل النماذج
 const articleSchema = {
   type: "OBJECT",
   properties: {
@@ -52,61 +63,48 @@ const articleSchema = {
   required: ['title', 'content', 'summaryPoints', 'keywords', 'sources', 'socialMediaPosts']
 };
 
-// ✅ صياغة الـ prompt بشكل يجبر Gemini يكتب بالعربية
-const getPromptParts = (inputType: ArticleInputType, data: string | ImageFile): Part[] => {
-  const parts: Part[] = [];
+// ✅ نفس دالة توليد الـ prompt (لكلاهما)
+const getPrompt = (inputType: ArticleInputType, data: string | ImageFile): string => {
   let textPrompt = "";
 
   switch (inputType) {
     case ArticleInputType.TITLE:
-      textPrompt = `اكتب مقالاً إخبارياً مفصلاً. ⚠️ النص يجب أن يكون بالعربية الفصحى فقط بدون أي كلمة إنجليزية.
+      textPrompt = `اكتب مقالاً إخبارياً مفصلاً. ⚠️ النص يجب أن يكون بالعربية الفصحى فقط.
 العنوان: "${data as string}"`;
       break;
     case ArticleInputType.TEXT:
-      textPrompt = `قم بتوسيع النص التالي وتحويله إلى مقال إخباري متكامل. ⚠️ النص يجب أن يكون بالعربية الفصحى فقط:
+      textPrompt = `قم بتوسيع النص التالي وتحويله إلى مقال إخباري متكامل بالعربية الفصحى:
 ---
 ${data as string}
 ---`;
       break;
     case ArticleInputType.URL:
-      textPrompt = `لخص المحتوى من الرابط التالي ثم أنشئ مقالاً إخبارياً باللغة العربية الفصحى فقط. ⚠️ ممنوع استخدام الإنجليزية أو النسخ الحرفي. الرابط: ${data as string}`;
+      textPrompt = `لخص المحتوى من الرابط التالي ثم أنشئ مقالاً إخبارياً بالعربية الفصحى فقط. ممنوع النسخ الحرفي.
+الرابط: ${data as string}`;
       break;
     case ArticleInputType.IMAGE:
-      const imageFile = data as ImageFile;
-      parts.push({
-        inlineData: {
-          mimeType: imageFile.mimeType,
-          data: imageFile.base64
-        }
-      });
-      textPrompt = "حلل الصورة المرفقة وأنشئ مقالاً إخبارياً بالعربية الفصحى فقط يصف الحدث أو المشهد الظاهر فيها.";
+      textPrompt = "حلل الصورة المرفقة وأنشئ مقالاً إخبارياً بالعربية الفصحى يصف الحدث أو المشهد.";
       break;
   }
 
-  const fullPrompt = `${textPrompt}
+  return `${textPrompt}
 
 مهم جداً:
-- يجب أن يكون الإخراج عبارة عن كائن JSON واحد فقط يتوافق تماماً مع المخطط التالي.
-- لا تضف أي شروح أو نصوص أخرى أو أكواد Markdown مثل \`\`\`json.
+- يجب أن يكون الإخراج كائن JSON واحد فقط يتوافق مع هذا المخطط:
+${JSON.stringify(articleSchema, null, 2)}
 
-المخطط (JSON Schema):
-${JSON.stringify(articleSchema, null, 2)}`;
-
-  parts.unshift({ text: fullPrompt });
-
-  return parts;
+- لا تضف أي نصوص أو شروحات إضافية.`;
 };
 
-/**
- * ✅ توليد مقال بالعربية من Gemini
- */
+// ----------------------------
+// ✅ Gemini
+// ----------------------------
 export const generateArticleWithGemini = async (
   inputType: ArticleInputType,
   data: string | ImageFile,
 ): Promise<Omit<GeneratedArticle, 'imageUrl'>> => {
-
   if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key is not configured. Please set VITE_GEMINI_API_KEY in your environment.");
+    throw new Error("Gemini API key is not configured.");
   }
 
   const model = genAI.getGenerativeModel({ 
@@ -114,36 +112,59 @@ export const generateArticleWithGemini = async (
     systemInstruction: `
       أنت صحفي محترف. 
       ❌ لا تستخدم أي لغة غير العربية.
-      ✅ جميع المخرجات (العنوان، المحتوى، الملخص، الكلمات المفتاحية، المصادر، منشورات السوشيال ميديا) يجب أن تكون بالعربية الفصحى فقط.
-      دائماً أعد النتيجة بصيغة JSON صحيحة فقط، بدون أي نصوص إضافية أو Markdown.
+      ✅ جميع المخرجات يجب أن تكون بالعربية الفصحى فقط.
+      دائماً أعد النتيجة بصيغة JSON فقط.
     `
   });
 
-  const promptParts = getPromptParts(inputType, data);
+  const prompt = getPrompt(inputType, data);
 
   const result = await model.generateContent({
-    contents: [{ role: "user", parts: promptParts }],
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
       responseMimeType: 'application/json',
-      language: "ar" // ✅ محاولة إجبار اللغة لو مدعومة
     }
   });
 
-  try {
-    const response = result.response;
-    const jsonString = response.text();
-    const parsedJson = JSON.parse(jsonString);
-    return parsedJson as Omit<GeneratedArticle, 'imageUrl'>;
-  } catch (e) {
-    console.error("⚠️ Failed to parse Gemini response as JSON:", result.response.text());
-    throw new Error("فشل في معالجة استجابة الذكاء الاصطناعي. المخرجات لم تكن JSON صالح.");
-  }
+  const jsonString = result.response.text();
+  return JSON.parse(jsonString) as Omit<GeneratedArticle, 'imageUrl'>;
 };
 
-/**
- * ❌ توليد الصور غير مدعوم حالياً في @google/generative-ai
- */
+// ----------------------------
+// ✅ Claude
+// ----------------------------
+export const generateArticleWithClaude = async (
+  inputType: ArticleInputType,
+  data: string | ImageFile,
+): Promise<Omit<GeneratedArticle, 'imageUrl'>> => {
+  if (!CLAUDE_API_KEY) {
+    throw new Error("Claude API key is not configured.");
+  }
+
+  const prompt = getPrompt(inputType, data);
+
+  const msg = await anthropic.messages.create({
+    model: "claude-3-sonnet-20240229",
+    max_tokens: 1000,
+    temperature: 0.7,
+    system: `
+      أنت صحفي محترف. 
+      ❌ لا تستخدم أي لغة غير العربية.
+      ✅ جميع المخرجات يجب أن تكون بالعربية الفصحى فقط.
+      دائماً أعد النتيجة بصيغة JSON فقط.
+    `,
+    messages: [
+      { role: "user", content: prompt }
+    ]
+  });
+
+  const text = msg.content[0].text;
+  return JSON.parse(text) as Omit<GeneratedArticle, 'imageUrl'>;
+};
+
+// ----------------------------
+// ❌ الصور مش مدعومة
+// ----------------------------
 export const generateImageWithImagen = async (prompt: string): Promise<string> => {
-  console.warn('Attempted to call generateImageWithImagen with prompt:', prompt);
-  throw new Error("توليد الصور غير مدعوم حالياً. هذه الميزة تحتاج Backend مختلف.");
+  throw new Error("توليد الصور غير مدعوم حالياً.");
 };
