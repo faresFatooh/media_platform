@@ -1,6 +1,5 @@
 
 import { getStyles } from './services/apiService';   
-import { EditorialStyle } from './types';             
 import React, { useState, useCallback, useEffect } from 'react';
 import { InputType, BreakingNewsItem, GeneratedArticle, EditorialStyle, CustomNewsSource, MonitoredSource, MonitoredContentItem } from './types';
 import { generateNewsArticle, fetchBreakingNews, generateImageForArticle, fetchAllMonitoredContent } from './services/geminiService';
