@@ -1,26 +1,26 @@
 services:
+  # 1. الخادم الخلفي (Backend) - لا تغيير
   - type: web
     name: backend
     plan: starter
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    healthCheckPath: /health 
+    healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: markaz-media-db 
+          name: news-db-fresh 
           property: connectionString
       - key: GEMINI_API_KEY
-        sync: false 
+        sync: false
       - key: CLAUDE_API_KEY
-        sync: false 
-      - key: RENDER_EXTERNAL_URL 
-        fromService:
-          type: web 
-          name: frontend
-          property: host
+        sync: false
+      # نستخدم الرابط النهائي والمباشر للواجهة الأمامية لضمان الاستقرار
+      - key: RENDER_FRONTEND_URL
+        value: https://ghazimortaja.com
 
+  # 2. الواجهة الأمامية الرئيسية (Frontend) - لا تغيير
   - type: web
     name: frontend
     plan: starter
@@ -28,8 +28,22 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     envVars:
-      - key: NEXT_PUBLIC_API_URL 
-        fromService:
-          type: web
-          name: backend
-          property: host
+      # نستخدم الرابط النهائي والمباشر للخادم لضمان الاستقرار
+      - key: NEXT_PUBLIC_API_URL
+        value: https://backend.ghazimortaja.com
+  
+  # --- ✅ 3. خدمة مولد الأخبار الجديدة ---
+  - type: web
+    name: ai-news-generator-service
+    plan: starter
+    env: docker
+    # تأكد من أن اسم المجلد صحيح
+    dockerfilePath: ./services/ai-news-generator-service/Dockerfile
+    dockerContext: ./services/ai-news-generator-service
+    envVars:
+      # يمرر رابط الخادم الخلفي للتطبيق الجديد
+      - key: VITE_MAIN_BACKEND_URL 
+        value: https://backend.ghazimortaja.com
+      # يجب أن يبدأ بـ VITE_ ليعمل مع Vite
+      - key: VITE_GEMINI_API_KEY
+        sync: false # ستقوم بإضافته يدويًا
