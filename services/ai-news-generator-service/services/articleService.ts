@@ -29,7 +29,8 @@ export const generateArticle = async (
   if (!API_URL) {
     throw new Error("VITE_MAIN_BACKEND_URL environment variable is not set.");
   }
-  const response = await fetch(`${API_URL}/api/generate-article/`, {
+  // FIX: Re-added the 'news_generator' namespace to the URL path to match standard Django namespacing.
+  const response = await fetch(`${API_URL}/api/news_generator/generate-article/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -56,7 +57,8 @@ export const generateImage = async (prompt: string, token: string): Promise<stri
     if (!API_URL) {
     throw new Error("VITE_MAIN_BACKEND_URL environment variable is not set.");
   }
-  const response = await fetch(`${API_URL}/api/generate-image/`, {
+  // FIX: Re-added the 'news_generator' namespace to the URL path to match standard Django namespacing.
+  const response = await fetch(`${API_URL}/api/news_generator/generate-image/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
