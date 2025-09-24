@@ -28,7 +28,7 @@ const App: React.FC = () => {
     // مستمع المصادقة (صندوق البريد)
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
-            if (event.origin !== "https://ghazimortaja.com/") { // تذكر التحقق من هذا الرابط
+            if (event.origin !== "https://ghazimortaja.com") { // تذكر التحقق من هذا الرابط
                 return;
             }
             if (event.data && event.data.type === 'AUTH_TOKEN') {
