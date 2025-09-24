@@ -21,6 +21,8 @@ export default function AppDetails() {
     '7': { url: 'https://style-editor-service.onrender.com', name: 'محرر-الأسلوب-الشخصي' },
     '8': { url: 'https://infographic-service.onrender.com', name: 'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
     '10': { url: 'https://discovery-script-service.onrender.com', name: 'محرر الاسلوب جديد' },
+    '11': { url: 'https://ai-news-generator-service.onrender.com', name: ' محرر الاسلوب جديد جديد' },
+
 
   };
 
