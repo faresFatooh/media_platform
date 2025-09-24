@@ -7,11 +7,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // يبدأ بحالة التحميل
 
+  // ✅ هذا هو المنطق الجديد والصحيح لتطبيق يعمل داخل إطار
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
-      // ✅ Security: Only accept messages from your main dashboard
+      // للأمان: اقبل الرسائل فقط من لوحة التحكم الرئيسية
       if (event.origin !== "https://ghazimortaja.com") { 
         return;
       }
@@ -20,15 +21,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const receivedToken = event.data.token;
         if (receivedToken) {
           try {
+            // 1. جلب بيانات المستخدم باستخدام التوكن المستلم
             const userData = await getCurrentUser(receivedToken);
+            
+            // 2. إذا نجحت العملية، قم بتحديث الحالة و localStorage
             setUser(userData);
             setToken(receivedToken);
             localStorage.setItem('access_token', receivedToken);
           } catch (error) {
             console.error("Authentication failed with received token:", error);
-            logout();
+            logout(); // مسح أي حالة سيئة إذا كان التوكن غير صالح
           } finally {
-            setIsLoading(false);
+            setIsLoading(false); // إيقاف التحميل بعد المحاولة
           }
         }
       }
@@ -36,17 +40,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     window.addEventListener('message', handleMessage);
 
+    // إيقاف التحميل بعد 5 ثوانٍ إذا لم تصل أي رسالة
     const timeoutId = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-      }
+        if (isLoading) {
+            setIsLoading(false);
+        }
     }, 5000); 
 
     return () => {
       window.removeEventListener('message', handleMessage);
       clearTimeout(timeoutId);
     };
-  }, [isLoading]);
+  }, [isLoading]); // مصفوفة الاعتمادية
 
   const logout = () => {
     setUser(null);
