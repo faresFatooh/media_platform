@@ -11,6 +11,9 @@ class EditorialStyle(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['-updated_at']
+
 class CustomNewsSource(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     url = models.URLField(max_length=500)
@@ -19,6 +22,9 @@ class CustomNewsSource(models.Model):
     def __str__(self):
         return self.url
 
+    class Meta:
+        ordering = ['-created_at']
+
 class MonitoredSource(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     url = models.URLField(max_length=500)
@@ -26,3 +32,6 @@ class MonitoredSource(models.Model):
 
     def __str__(self):
         return self.url
+        
+    class Meta:
+        ordering = ['-created_at']
