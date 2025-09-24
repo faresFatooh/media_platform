@@ -12,16 +12,7 @@ export default function AppDetails() {
 
 
   const services = {
-    '1': { url: 'https://news-refine-service.onrender.com', name: 'تطبيق الأخبار وتحريرها' },
-    '2': { url: 'https://video-sync-service.onrender.com', name: 'مزامنة الفيديو والترجمة' },
-    '3': { url: 'https://avatar-service.onrender.com', name: 'مولد الأفاتار الديناميكي' },
-    '4': { url: 'https://chatbot-service-jjas.onrender.com', name: 'بوت النجاح الإخباري' },
-    '5': { url: 'https://asharq-service.onrender.com', name: 'أتمتة أخبار الشرق' },
-    '6': { url: 'https://podcast-service.onrender.com', name: 'مساعد أتمتة البودكاست' },
-    '7': { url: 'https://style-editor-service.onrender.com', name: 'محرر-الأسلوب-الشخصي' },
-    '8': { url: 'https://infographic-service.onrender.com', name: 'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
-    '10': { url: 'https://discovery-script-service.onrender.com', name: 'محرر الاسلوب جديد' },
-    '11': { url: 'https://ai-news-generator-service.onrender.com', name: ' محرر الاسلوب جديد جديد' },
+    '1': { url: 'https://ai-news-generator-service.onrender.com', name:'مولد-الأخبار-بالذكاء-الاصطناعي' },
 
 
   };
