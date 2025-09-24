@@ -18,5 +18,5 @@ urlpatterns = [
     # --- روابط التطبيقات التي أبقينا عليها ---
     path('api/applications/', include('applications.urls')),
     path('api/tasks/', include('tasks.urls')),
-    path('api/news-generator/', include('news_generator.urls')),
+    path("api/news_generator/", include("news_generator.urls")),
 ]
