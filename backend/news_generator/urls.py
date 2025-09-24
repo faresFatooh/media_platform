@@ -14,6 +14,6 @@ urlpatterns = [
     path('', include(router.urls)),
     
     # Manually add the paths for the new generation views
-    path('generate-article/', views.GenerateArticleView.as_view(), name='generate-article'),
+    path("api/news_generator/generate-article/", views.generate_article, name="generate_article")
     path('generate-image/', views.GenerateImageView.as_view(), name='generate-image'),
 ]
