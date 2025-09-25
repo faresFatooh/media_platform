@@ -1,70 +1,68 @@
-// ✅ تعريف متغيرات البيئة لـ Gemini
+// ✅ تعريف متغيرات البيئة
 declare global {
   interface ImportMetaEnv {
     readonly VITE_GEMINI_API_KEY: string;
-    readonly VITE_CLAUDE_API_KEY: string;
+    readonly VITE_CLAUDE_PROXY_URL: string; // بدل المفتاح المباشر: نحط رابط السيرفر
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv;
   }
 }
 
-import { GoogleGenerativeAI, Part } from "@google/generative-ai";
-import Anthropic from "@anthropic-ai/sdk"; // ✅ Claude SDK
-import { ArticleInputType, type GeneratedArticle, type ImageFile } from '../types';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { ArticleInputType, type GeneratedArticle, type ImageFile } from "../types";
 
 // ----------------------------
 // 🔑 مفاتيح الـ APIs
 // ----------------------------
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const CLAUDE_API_KEY = import.meta.env.VITE_CLAUDE_API_KEY;
+const CLAUDE_PROXY_URL = import.meta.env.VITE_CLAUDE_PROXY_URL;
 
 if (!GEMINI_API_KEY) {
-  console.error("VITE_GEMINI_API_KEY is not set. Frontend Gemini calls will fail.");
+  console.error("VITE_GEMINI_API_KEY is not set. Gemini calls will fail.");
+}
+if (!CLAUDE_PROXY_URL) {
+  console.error("VITE_CLAUDE_PROXY_URL is not set. Claude calls will fail.");
 }
 
-if (!CLAUDE_API_KEY) {
-  console.error("Claude API key is not set. Calls will fail.");
-}
-
-// ✅ إنشاء الكلاسات
+// ✅ إنشاء كائن Gemini
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const anthropic = new Anthropic({ apiKey: CLAUDE_API_KEY });
 
-// ✅ نفس المخطط (Schema) مستخدم لكل النماذج
+// ✅ نفس المخطط (Schema)
 const articleSchema = {
   type: "OBJECT",
   properties: {
-    title: { type: "STRING", description: 'عنوان جذاب للمقال الإخباري (بالعربية الفصحى).' },
-    content: { type: "STRING", description: 'النص الكامل للمقال مكتوب بالعربية الفصحى فقط.' },
+    title: { type: "STRING", description: "عنوان جذاب للمقال الإخباري (بالعربية الفصحى)." },
+    content: { type: "STRING", description: "النص الكامل للمقال مكتوب بالعربية الفصحى فقط." },
     summaryPoints: {
       type: "ARRAY",
       items: { type: "STRING" },
-      description: 'قائمة بأهم النقاط الملخصة من المقال مكتوبة بالعربية.'
+      description: "قائمة بأهم النقاط الملخصة من المقال مكتوبة بالعربية.",
     },
     keywords: {
       type: "ARRAY",
       items: { type: "STRING" },
-      description: 'كلمات مفتاحية مناسبة للمقال بالعربية.'
+      description: "كلمات مفتاحية مناسبة للمقال بالعربية.",
     },
     sources: {
       type: "ARRAY",
       items: { type: "STRING" },
-      description: 'المصادر المحتملة للمعلومات. إذا كانت من رابط، اذكر الرابط. إذا لا، اكتب "محتوى أصلي".'
+      description:
+        'المصادر المحتملة للمعلومات. إذا كانت من رابط، اذكر الرابط. إذا لا، اكتب "محتوى أصلي".',
     },
     socialMediaPosts: {
       type: "OBJECT",
       properties: {
-        twitter: { type: "STRING", description: 'منشور قصير وجذاب لتويتر/X مكتوب بالعربية.' },
-        facebook: { type: "STRING", description: 'منشور أطول قليلاً لفيسبوك مكتوب بالعربية.' }
+        twitter: { type: "STRING", description: "منشور قصير وجذاب لتويتر/X مكتوب بالعربية." },
+        facebook: { type: "STRING", description: "منشور أطول قليلاً لفيسبوك مكتوب بالعربية." },
       },
-      required: ['twitter', 'facebook']
-    }
+      required: ["twitter", "facebook"],
+    },
   },
-  required: ['title', 'content', 'summaryPoints', 'keywords', 'sources', 'socialMediaPosts']
+  required: ["title", "content", "summaryPoints", "keywords", "sources", "socialMediaPosts"],
 };
 
-// ✅ نفس دالة توليد الـ prompt (لكلاهما)
+// ✅ دالة توليد الـ prompt
 const getPrompt = (inputType: ArticleInputType, data: string | ImageFile): string => {
   let textPrompt = "";
 
@@ -84,7 +82,8 @@ ${data as string}
 الرابط: ${data as string}`;
       break;
     case ArticleInputType.IMAGE:
-      textPrompt = "حلل الصورة المرفقة وأنشئ مقالاً إخبارياً بالعربية الفصحى يصف الحدث أو المشهد.";
+      textPrompt =
+        "حلل الصورة المرفقة وأنشئ مقالاً إخبارياً بالعربية الفصحى يصف الحدث أو المشهد.";
       break;
   }
 
@@ -102,70 +101,63 @@ ${JSON.stringify(articleSchema, null, 2)}
 // ----------------------------
 export const generateArticleWithGemini = async (
   inputType: ArticleInputType,
-  data: string | ImageFile,
-): Promise<Omit<GeneratedArticle, 'imageUrl'>> => {
+  data: string | ImageFile
+): Promise<Omit<GeneratedArticle, "imageUrl">> => {
   if (!GEMINI_API_KEY) {
     throw new Error("Gemini API key is not configured.");
   }
 
-  const model = genAI.getGenerativeModel({ 
+  const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash-latest",
     systemInstruction: `
       أنت صحفي محترف. 
       ❌ لا تستخدم أي لغة غير العربية.
       ✅ جميع المخرجات يجب أن تكون بالعربية الفصحى فقط.
       دائماً أعد النتيجة بصيغة JSON فقط.
-    `
+    `,
   });
 
   const prompt = getPrompt(inputType, data);
 
   const result = await model.generateContent({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: {
-      responseMimeType: 'application/json',
-    }
+    generationConfig: { responseMimeType: "application/json" },
   });
 
   const jsonString = result.response.text();
-  return JSON.parse(jsonString) as Omit<GeneratedArticle, 'imageUrl'>;
+  return JSON.parse(jsonString) as Omit<GeneratedArticle, "imageUrl">;
 };
 
 // ----------------------------
-// ✅ Claude
+// ✅ Claude (عبر Proxy Backend)
 // ----------------------------
 export const generateArticleWithClaude = async (
   inputType: ArticleInputType,
-  data: string | ImageFile,
-): Promise<Omit<GeneratedArticle, 'imageUrl'>> => {
-  if (!CLAUDE_API_KEY) {
-    throw new Error("Claude API key is not configured.");
+  data: string | ImageFile
+): Promise<Omit<GeneratedArticle, "imageUrl">> => {
+  if (!CLAUDE_PROXY_URL) {
+    throw new Error("Claude proxy URL is not configured.");
   }
 
   const prompt = getPrompt(inputType, data);
 
-  const msg = await anthropic.messages.create({
-    model: "claude-3-sonnet-20240229",
-    max_tokens: 1000,
-    temperature: 0.7,
-    system: `
-      أنت صحفي محترف. 
-      ❌ لا تستخدم أي لغة غير العربية.
-      ✅ جميع المخرجات يجب أن تكون بالعربية الفصحى فقط.
-      دائماً أعد النتيجة بصيغة JSON فقط.
-    `,
-    messages: [
-      { role: "user", content: prompt }
-    ]
+  const res = await fetch(`${CLAUDE_PROXY_URL}/api/claude/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt }),
   });
 
-  const text = msg.content[0].text;
-  return JSON.parse(text) as Omit<GeneratedArticle, 'imageUrl'>;
+  if (!res.ok) {
+    throw new Error(`Claude proxy error: ${res.statusText}`);
+  }
+
+  const dataRes = await res.json();
+  return JSON.parse(dataRes.text) as Omit<GeneratedArticle, "imageUrl">;
 };
 
 // ----------------------------
 // ❌ الصور مش مدعومة
 // ----------------------------
-export const generateImageWithImagen = async (prompt: string): Promise<string> => {
+export const generateImageWithImagen = async (_prompt: string): Promise<string> => {
   throw new Error("توليد الصور غير مدعوم حالياً.");
 };
