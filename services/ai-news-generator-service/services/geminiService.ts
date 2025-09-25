@@ -28,32 +28,41 @@ if (!CLAUDE_PROXY_URL) {
 // ✅ إنشاء كائن Gemini
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// ----------------------------
-// 🛠️ Utility: Safe JSON Extractor
-// ----------------------------
-function extractJsonSafe(text: string): any {
-  if (!text) throw new Error("Claude/Gemini response is empty.");
+// ✅ نفس المخطط (Schema)
+const articleSchema = {
+  type: "OBJECT",
+  properties: {
+    title: { type: "STRING", description: "عنوان جذاب للمقال الإخباري (بالعربية الفصحى)." },
+    content: { type: "STRING", description: "النص الكامل للمقال مكتوب بالعربية الفصحى فقط." },
+    summaryPoints: {
+      type: "ARRAY",
+      items: { type: "STRING" },
+      description: "قائمة بأهم النقاط الملخصة من المقال مكتوبة بالعربية.",
+    },
+    keywords: {
+      type: "ARRAY",
+      items: { type: "STRING" },
+      description: "كلمات مفتاحية مناسبة للمقال بالعربية.",
+    },
+    sources: {
+      type: "ARRAY",
+      items: { type: "STRING" },
+      description:
+        'المصادر المحتملة للمعلومات. إذا كانت من رابط، اذكر الرابط. إذا لا، اكتب "محتوى أصلي".',
+    },
+    socialMediaPosts: {
+      type: "OBJECT",
+      properties: {
+        twitter: { type: "STRING", description: "منشور قصير وجذاب لتويتر/X مكتوب بالعربية." },
+        facebook: { type: "STRING", description: "منشور أطول قليلاً لفيسبوك مكتوب بالعربية." },
+      },
+      required: ["twitter", "facebook"],
+    },
+  },
+  required: ["title", "content", "summaryPoints", "keywords", "sources", "socialMediaPosts"],
+};
 
-  // 1️⃣ نظف ```json و ```
-  let cleaned = text.replace(/```json|```/g, "").trim();
-
-  // 2️⃣ قص لآخر "}" عشان نضمن JSON مكتمل
-  const lastBrace = cleaned.lastIndexOf("}");
-  if (lastBrace !== -1) {
-    cleaned = cleaned.slice(0, lastBrace + 1);
-  }
-
-  // 3️⃣ حاول parse
-  try {
-    return JSON.parse(cleaned);
-  } catch (err) {
-    throw new Error("❌ JSON parse error حتى بعد التنظيف:\n" + cleaned);
-  }
-}
-
-// ----------------------------
 // ✅ دالة توليد الـ prompt
-// ----------------------------
 const getPrompt = (inputType: ArticleInputType, data: string | ImageFile): string => {
   let textPrompt = "";
 
@@ -100,7 +109,50 @@ ${data as string}
 };
 
 // ----------------------------
-// ✅ Gemini (مع Safe Parsing)
+// 🛠️ دالة Safe JSON Parse
+// ----------------------------
+function safeJsonParse(text: string): any {
+  if (!text) throw new Error("Claude/Gemini response is empty.");
+
+  // 1️⃣ شيل ```json و ```
+  let cleaned = text.replace(/```json|```/g, "").trim();
+
+  // 2️⃣ جرّب مباشرة
+  try {
+    return JSON.parse(cleaned);
+  } catch {}
+
+  // 3️⃣ قص لآخر }
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (lastBrace !== -1) {
+    cleaned = cleaned.slice(0, lastBrace + 1);
+  }
+
+  // 4️⃣ إذا ما في } مسكّرة، ضيف وحدة
+  if (!cleaned.endsWith("}")) {
+    cleaned += "}";
+  }
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {}
+
+  // 5️⃣ fallback JSON
+  return {
+    title: "مقال غير مكتمل",
+    content: cleaned,
+    summaryPoints: [],
+    keywords: [],
+    sources: ["محتوى أصلي"],
+    socialMediaPosts: {
+      twitter: "",
+      facebook: "",
+    },
+  };
+}
+
+// ----------------------------
+// ✅ Gemini
 // ----------------------------
 export const generateArticleWithGemini = async (
   inputType: ArticleInputType,
@@ -130,11 +182,11 @@ export const generateArticleWithGemini = async (
   const raw = result.response.text();
   console.log("Gemini raw output:", raw);
 
-  return extractJsonSafe(raw) as Omit<GeneratedArticle, "imageUrl">;
+  return safeJsonParse(raw) as Omit<GeneratedArticle, "imageUrl">;
 };
 
 // ----------------------------
-// ✅ Claude (مع Safe Parsing)
+// ✅ Claude
 // ----------------------------
 export const generateArticleWithClaude = async (
   inputType: ArticleInputType,
@@ -166,9 +218,8 @@ export const generateArticleWithClaude = async (
     throw new Error("Claude proxy did not return valid JSON. Raw output:\n" + raw);
   }
 
-  // ✅ النص موجود في content[0].text
   const outputText = dataRes.content?.[0]?.text || "";
-  return extractJsonSafe(outputText) as Omit<GeneratedArticle, "imageUrl">;
+  return safeJsonParse(outputText) as Omit<GeneratedArticle, "imageUrl">;
 };
 
 // ----------------------------
