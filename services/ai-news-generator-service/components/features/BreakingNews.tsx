@@ -13,7 +13,7 @@ const TopicCard: React.FC<{ topic: BreakingNewsTopic; onGenerate: (topic: Breaki
     <div>
       <h3 className="text-xl font-bold text-cyan-400 mb-2">{topic.title}</h3>
       <p className="text-gray-300 text-sm mb-4">{topic.summary}</p>
-      {topic.sources && topic.sources.length > 0 && (
+      {Array.isArray(topic.sources) && topic.sources.length > 0 && (
         <div className="mb-4">
           <h4 className="text-xs font-semibold text-gray-400 mb-2">المصادر:</h4>
           <div className="flex flex-wrap gap-2">
@@ -44,7 +44,7 @@ const TopicCard: React.FC<{ topic: BreakingNewsTopic; onGenerate: (topic: Breaki
 );
 
 export const BreakingNews: React.FC = () => {
-  const [sources, setSources] = useState<NewsSource[] | null>(null);
+  const [sources, setSources] = useState<NewsSource[]>([]);
   const [topics, setTopics] = useState<BreakingNewsTopic[]>([]);
   const [loadingStep, setLoadingStep] = useState<LoadingStep>('sources');
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export const BreakingNews: React.FC = () => {
         setError(null);
         setLoadingStep('sources');
         const fetchedSources = await get<NewsSource[]>('/monitored-sources/');
-        setSources(fetchedSources);
+        setSources(fetchedSources || []);
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'فشل في جلب مصادر الأخبار.');
         setLoadingStep('idle');
@@ -68,25 +68,24 @@ export const BreakingNews: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (sources === null) return; // Wait for sources to be fetched
-
-    if (sources.length > 0) {
-      const fetchNews = async () => {
-        try {
-          setError(null);
-          setLoadingStep('news');
-          const fetchedTopics = await getBreakingNewsFromSources(sources);
-          setTopics(fetchedTopics);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع أثناء جلب الأخبار.');
-        } finally {
-          setLoadingStep('idle');
-        }
-      };
-      fetchNews();
-    } else {
+    if (!Array.isArray(sources) || sources.length === 0) {
       setLoadingStep('idle');
+      return;
     }
+
+    const fetchNews = async () => {
+      try {
+        setError(null);
+        setLoadingStep('news');
+        const fetchedTopics = await getBreakingNewsFromSources(sources);
+        setTopics(fetchedTopics || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع أثناء جلب الأخبار.');
+      } finally {
+        setLoadingStep('idle');
+      }
+    };
+    fetchNews();
   }, [sources]);
 
   const handleGenerateArticle = async (topic: BreakingNewsTopic) => {
@@ -95,7 +94,6 @@ export const BreakingNews: React.FC = () => {
     setError(null);
 
     try {
-      // حالياً نستخدم Gemini بشكل افتراضي
       const articleTextData = await generateArticleWithGemini(ArticleInputType.TITLE, topic.title);
       setGenerationMessage('تم إنشاء المقال، جاري توليد صورة مرتبطة...');
 
@@ -151,14 +149,14 @@ export const BreakingNews: React.FC = () => {
   return (
     <div>
       <h2 className="text-3xl font-bold text-cyan-400 mb-6">أخبار عاجلة من مصادرك</h2>
-      {sources && sources.length === 0 ? (
+      {Array.isArray(sources) && sources.length === 0 ? (
         <div className="text-center text-gray-400 p-8 bg-gray-800/50 rounded-lg">
           <h3 className="text-2xl font-bold mb-3">لم يتم العثور على مصادر إخبارية</h3>
           <p>
             الرجاء إضافة بعض المصادر في صفحة "مراقبة المصادر" أولاً لتتمكن من رؤية الأخبار العاجلة المخصصة لك.
           </p>
         </div>
-      ) : topics.length > 0 ? (
+      ) : Array.isArray(topics) && topics.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {topics.map((topic, i) => (
             <TopicCard key={i} topic={topic} onGenerate={handleGenerateArticle} />
