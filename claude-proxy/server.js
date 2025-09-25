@@ -1,18 +1,20 @@
 import express from "express";
 import bodyParser from "body-parser";
-import Anthropic from "@anthropic-ai/sdk";
 import cors from "cors";
+import Anthropic from "@anthropic-ai/sdk";
 
 const app = express();
-
-// ✅ CORS
-app.use(cors({
-  origin: "https://ai-news-generator-service.onrender.com",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
 app.use(bodyParser.json());
+
+// ✅ تفعيل CORS
+app.use(cors({
+  origin: [
+    "https://ai-news-generator-service.onrender.com", // مسموح من خدمة الذكاء الاصطناعي
+    "https://ghazimortaja.com", // مسموح من الموقع الرئيسي
+  ],
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
 const client = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
