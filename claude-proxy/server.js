@@ -37,7 +37,7 @@ app.post("/api/claude/generate", async (req, res) => {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-3-opus-latest",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 300,
         messages: [{ role: "user", content: req.body.prompt }],
       }),
