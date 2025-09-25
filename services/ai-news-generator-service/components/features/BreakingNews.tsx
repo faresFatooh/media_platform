@@ -123,17 +123,17 @@ export const BreakingNews: React.FC = () => {
 const handleAddSource = async () => {
   if (!newSourceUrl.trim()) return;
   try {
-    console.debug('[UI] adding source, newSourceUrl=', newSourceUrl);
+    // أرسل الطلب للسيرفر
     await post('/news_generator/monitored-sources/', { url: newSourceUrl });
 
-    // ✅ بعد الإضافة اعمل re-fetch
+    // ✅ بعد الإضافة، أعمل refresh للمصادر
     const refreshedSources = await get<NewsSource[]>('/news_generator/monitored-sources/');
     setSources(refreshedSources || []);
 
     setNewSourceUrl('');
   } catch (err) {
-    console.error('[UI] Error adding source:', err);
-    setError(err instanceof ApiError ? err.message : (err as Error).message || 'فشل في إضافة المصدر.');
+    console.error("Error adding source:", err);
+    setError(err instanceof ApiError ? err.message : 'فشل في إضافة المصدر.');
   }
 };
 
