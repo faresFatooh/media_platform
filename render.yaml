@@ -16,11 +16,10 @@ services:
         sync: false
       - key: CLAUDE_API_KEY
         sync: false
-      # نستخدم الرابط النهائي والمباشر للواجهة الأمامية لضمان الاستقرار
       - key: RENDER_FRONTEND_URL
         value: https://ghazimortaja.com
 
-  # 2. الواجهة الأمامية الرئيسية (Frontend) - لا تغيير
+  # 2. الواجهة الأمامية الرئيسية (Frontend)
   - type: web
     name: frontend
     plan: starter
@@ -28,7 +27,6 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     envVars:
-      # نستخدم الرابط النهائي والمباشر للخادم لضمان الاستقرار
       - key: NEXT_PUBLIC_API_URL
         value: https://backend.ghazimortaja.com
   
@@ -37,13 +35,22 @@ services:
     name: ai-news-generator-service
     plan: starter
     env: docker
-    # تأكد من أن اسم المجلد صحيح
     dockerfilePath: ./services/ai-news-generator-service/Dockerfile
     dockerContext: ./services/ai-news-generator-service
+
+    build:
+      envVars:
+        - key: VITE_MAIN_BACKEND_URL 
+          value: https://backend.ghazimortaja.com
+        - key: VITE_GEMINI_API_KEY
+          sync: false
+        - key: VITE_CLAUDE_PROXY_URL
+          value: https://ai-news-generator-service.onrender.com
+
     envVars:
-      # يمرر رابط الخادم الخلفي للتطبيق الجديد
       - key: VITE_MAIN_BACKEND_URL 
         value: https://backend.ghazimortaja.com
-      # يجب أن يبدأ بـ VITE_ ليعمل مع Vite
       - key: VITE_GEMINI_API_KEY
-        sync: false # ستقوم بإضافته يدويًا
+        sync: false
+      - key: VITE_CLAUDE_PROXY_URL
+        value: https://ai-news-generator-service.onrender.com

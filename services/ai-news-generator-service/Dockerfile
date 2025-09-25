@@ -3,19 +3,20 @@ FROM node:18 AS builder
 
 WORKDIR /app
 
-# ننسخ package.json و package-lock.json
+# ننسخ package.json
 COPY package*.json ./
 
-# نثبت dependencies كاملة (تشمل devDependencies للبناء)
+# نثبت dependencies (مع devDependencies للبناء)
 RUN npm install
 
 # ننسخ باقي الملفات
 COPY . .
 
-# ⚡ نولّد ملف .env.production من env vars اللي تبدأ بـ VITE_
+# 🔑 نحفظ متغيرات البيئة اللي جايه من Render داخل .env.production
+# هادا بيساعد Vite يلقطها وقت build
 RUN printenv | grep ^VITE_ > .env.production || true
 
-# 🪵 Debug: اطبع محتويات .env.production عشان نتأكد
+# ✅ نطبع عشان نتأكد
 RUN echo "📄 محتويات .env.production:" && cat .env.production
 
 # نعمل build
@@ -27,18 +28,18 @@ FROM node:18 AS runner
 
 WORKDIR /app
 
-# ننسخ فقط package.json و package-lock.json
+# ننسخ package.json
 COPY package*.json ./
 
-# نثبت dependencies الخاصة بالـ production
+# نثبت فقط production dependencies
 RUN npm install --only=production
 
-# ننسخ ملفات build والـ server.js
+# ننسخ build output + server.js
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server.js ./server.js
 
-# نحدد المنفذ
+# نفتح المنفذ
 EXPOSE 3000
 
-# نشغل الـ server.js
+# نشغل السيرفر
 CMD ["node", "server.js"]
