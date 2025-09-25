@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import EditorialStyle, CustomNewsSource, MonitoredSource
+
 from .serializers import (
     EditorialStyleSerializer,
     CustomNewsSourceSerializer,
@@ -40,6 +41,10 @@ class MonitoredSourceViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+class MonitoredSourceListCreateView(generics.ListCreateAPIView):
+    queryset = MonitoredSource.objects.all()
+    serializer_class = MonitoredSourceSerializer
 
 
 # 🔹 إضافة GenerateArticleView
