@@ -1,5 +1,5 @@
 services:
-  # 1. الخادم الخلفي (Backend)
+  # 1. الخادم الخلفي
   - type: web
     name: backend
     plan: starter
@@ -19,7 +19,7 @@ services:
       - key: RENDER_FRONTEND_URL
         value: https://ghazimortaja.com
 
-  # 2. الواجهة الأمامية الرئيسية (Frontend)
+  # 2. الواجهة الأمامية الرئيسية
   - type: web
     name: frontend
     plan: starter
@@ -29,7 +29,7 @@ services:
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://backend.ghazimortaja.com
-  
+
   # 3. خدمة مولد الأخبار الجديدة
   - type: web
     name: ai-news-generator-service
@@ -37,20 +37,13 @@ services:
     env: docker
     dockerfilePath: ./services/ai-news-generator-service/Dockerfile
     dockerContext: ./services/ai-news-generator-service
-
-    build:
-      envVars:
-        - key: VITE_MAIN_BACKEND_URL 
-          value: https://backend.ghazimortaja.com
-        - key: VITE_GEMINI_API_KEY
-          sync: false
-        - key: VITE_CLAUDE_PROXY_URL
-          value: https://ai-news-generator-service.onrender.com
-
     envVars:
-      - key: VITE_MAIN_BACKEND_URL 
+      - key: VITE_MAIN_BACKEND_URL
         value: https://backend.ghazimortaja.com
+        build: true
       - key: VITE_GEMINI_API_KEY
         sync: false
+        build: true
       - key: VITE_CLAUDE_PROXY_URL
         value: https://ai-news-generator-service.onrender.com
+        build: true

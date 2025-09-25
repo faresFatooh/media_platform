@@ -1,45 +1,40 @@
-# ---- Build Stage ----
-FROM node:18 AS builder
+# ---- Build stage ----
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# ننسخ package.json
 COPY package*.json ./
-
-# نثبت dependencies (مع devDependencies للبناء)
 RUN npm install
 
-# ننسخ باقي الملفات
 COPY . .
 
-# 🔑 نحفظ متغيرات البيئة اللي جايه من Render داخل .env.production
-# هادا بيساعد Vite يلقطها وقت build
-RUN printenv | grep ^VITE_ > .env.production || true
+# 👇 استلام الـ build args من Render
+ARG VITE_MAIN_BACKEND_URL
+ARG VITE_GEMINI_API_KEY
+ARG VITE_CLAUDE_PROXY_URL
 
-# ✅ نطبع عشان نتأكد
-RUN echo "📄 محتويات .env.production:" && cat .env.production
+# 👇 تحويل الـ args لبيئة مرئية عند Vite
+ENV VITE_MAIN_BACKEND_URL=$VITE_MAIN_BACKEND_URL
+ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
+ENV VITE_CLAUDE_PROXY_URL=$VITE_CLAUDE_PROXY_URL
 
-# نعمل build
+# 👇 بناء المشروع (Vite يشوف env هنا)
 RUN npm run build
 
 
-# ---- Production Stage ----
-FROM node:18 AS runner
+# ---- Production stage ----
+FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-# ننسخ package.json
+# نثبت فقط الـ dependencies اللازمة للتشغيل
 COPY package*.json ./
-
-# نثبت فقط production dependencies
 RUN npm install --only=production
 
-# ننسخ build output + server.js
+# ننسخ الملفات المبنية من الستيج الأول
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/server.js ./server.js
 
-# نفتح المنفذ
-EXPOSE 3000
+EXPOSE 10000
 
-# نشغل السيرفر
-CMD ["node", "server.js"]
+# تشغيل Vite preview
+CMD ["npm", "run", "preview", "--", "--port", "10000", "--host"]
