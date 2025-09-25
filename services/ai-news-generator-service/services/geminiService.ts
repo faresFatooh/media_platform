@@ -2,6 +2,7 @@
 declare global {
   interface ImportMetaEnv {
     readonly VITE_GEMINI_API_KEY: string;
+    readonly VITE_CLAUDE_API_KEY: string;
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv;
@@ -16,7 +17,7 @@ import { ArticleInputType, type GeneratedArticle, type ImageFile } from '../type
 // 🔑 مفاتيح الـ APIs
 // ----------------------------
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const CLAUDE_API_KEY = "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"; // ⚠️ مؤقت: بدّله لاحقاً بـ env
+const CLAUDE_API_KEY = import.meta.env.VITE_CLAUDE_API_KEY;
 
 if (!GEMINI_API_KEY) {
   console.error("VITE_GEMINI_API_KEY is not set. Frontend Gemini calls will fail.");
