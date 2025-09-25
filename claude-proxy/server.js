@@ -24,21 +24,36 @@ const client = new Anthropic({
 // ✅ راوت للتوليد
 app.post("/api/claude/generate", async (req, res) => {
   try {
-    const { prompt } = req.body;
-
-    const completion = await client.messages.create({
-      model: "claude-3-sonnet-20240229",
-      max_tokens: 1000,
-      messages: [{ role: "user", content: prompt }],
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.CLAUDE_API_KEY,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: "claude-3-opus-20240229",
+        max_tokens: 300,
+        messages: [{ role: "user", content: req.body.prompt }]
+      })
     });
 
-    const text = completion.content[0].text;
-    res.json({ text });
-  } catch (err) {
-    console.error("Claude error:", err);
-    res.status(500).json({ error: "Claude failed" });
+    const text = await response.text();
+
+    if (!response.ok) {
+      console.error("Claude API error:", response.status, text);
+      return res.status(500).json({ error: "Claude API failed", details: text });
+    }
+
+    const data = JSON.parse(text);
+    res.json(data);
+
+  } catch (error) {
+    console.error("Server error:", error);
+    res.status(500).json({ error: "Claude proxy crashed", details: error.message });
   }
 });
+
 
 // ✅ health check
 app.get("/health", (req, res) => {
