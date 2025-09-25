@@ -1,18 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { ArticleGenerator } from './components/features/ArticleGenerator';
 import { BreakingNews } from './components/features/BreakingNews';
 import { SourceMonitor } from './components/features/SourceMonitor';
+import { TrainingExamples } from './components/features/TrainingExamples';
 import type { View } from './types';
-import { useAuth } from './context/AuthContext';
-import { LoginScreen } from './components/auth/LoginScreen';
-import { Spinner } from './components/common/Spinner';
 
 const App: React.FC = () => {
-  const [activeView, setActiveView] = React.useState<View>('generator');
-  const { isAuthenticated, isLoading } = useAuth();
+  const [activeView, setActiveView] = useState<View>('generator');
 
   const renderContent = () => {
     switch (activeView) {
@@ -22,22 +19,12 @@ const App: React.FC = () => {
         return <BreakingNews />;
       case 'monitor':
         return <SourceMonitor />;
+      case 'trainingExamples':
+        return <TrainingExamples />;
       default:
         return <ArticleGenerator />;
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-900">
-        <Spinner />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <LoginScreen />;
-  }
 
   return (
     <div className="flex h-screen bg-gray-900 text-gray-100">

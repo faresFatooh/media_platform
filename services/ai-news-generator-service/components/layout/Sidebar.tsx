@@ -1,7 +1,7 @@
 
 import React from 'react';
 import type { View } from '../../types';
-import { NewspaperIcon, SparklesIcon, EyeIcon } from '../icons/Icons';
+import { NewspaperIcon, SparklesIcon, EyeIcon, BookOpenIcon } from '../icons/Icons';
 
 
 interface SidebarProps {
@@ -14,6 +14,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) =
     { id: 'generator', label: 'توليد مقال', icon: <SparklesIcon className="w-6 h-6" /> },
     { id: 'breakingNews', label: 'أخبار عاجلة', icon: <NewspaperIcon className="w-6 h-6" /> },
     { id: 'monitor', label: 'مراقبة المصادر', icon: <EyeIcon className="w-6 h-6" /> },
+    { id: 'trainingExamples', label: 'أمثلة التدريب', icon: <BookOpenIcon className="w-6 h-6" /> },
   ];
 
   return (
