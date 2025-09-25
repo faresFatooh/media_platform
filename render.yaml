@@ -29,7 +29,10 @@ services:
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://backend.ghazimortaja.com
+      - key: VITE_CLAUDE_PROXY_URL
+        value: https://claude-proxy.onrender.com
 
+  # 3. خدمة مولد الأخبار الجديدة
   - type: web
     name: ai-news-generator-service
     plan: starter
@@ -44,5 +47,16 @@ services:
         sync: false
         build: true
       - key: VITE_CLAUDE_PROXY_URL
-        value: https://ai-news-generator-service.onrender.com
+        value: https://claude-proxy.onrender.com
         build: true
+
+  # 4. خدمة بروكسي Claude
+  - type: web
+    name: claude-proxy
+    plan: starter
+    env: docker
+    dockerfilePath: ./claude-proxy/Dockerfile
+    dockerContext: ./claude-proxy
+    envVars:
+      - key: CLAUDE_API_KEY
+        sync: false

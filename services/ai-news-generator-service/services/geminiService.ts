@@ -90,11 +90,24 @@ ${data as string}
   return `${textPrompt}
 
 مهم جداً:
-- يجب أن يكون الإخراج كائن JSON واحد فقط يتوافق مع هذا المخطط:
-${JSON.stringify(articleSchema, null, 2)}
-
-- لا تضف أي نصوص أو شروحات إضافية.`;
+- أعد الناتج كـ JSON **صالح فقط**.
+- هيكل JSON يجب أن يحتوي فقط على:
+  {
+    "title": string,
+    "content": string,
+    "summaryPoints": string[],
+    "keywords": string[],
+    "sources": string[],
+    "socialMediaPosts": {
+      "twitter": string,
+      "facebook": string
+    }
+  }
+- لا تكرر المخطط.
+- لا تضع أي نصوص أو شروحات خارج JSON.
+`;
 };
+
 
 // ----------------------------
 // ✅ Gemini (مع Safe Parsing)
