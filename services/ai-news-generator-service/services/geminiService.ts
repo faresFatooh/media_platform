@@ -2,7 +2,7 @@
 declare global {
   interface ImportMetaEnv {
     readonly VITE_GEMINI_API_KEY: string;
-    readonly VITE_CLAUDE_PROXY_URL: string; // بدل المفتاح المباشر: نحط رابط السيرفر
+    readonly VITE_CLAUDE_PROXY_URL: string;
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv;
@@ -97,7 +97,7 @@ ${JSON.stringify(articleSchema, null, 2)}
 };
 
 // ----------------------------
-// ✅ Gemini
+// ✅ Gemini (مع Safe Parsing)
 // ----------------------------
 export const generateArticleWithGemini = async (
   inputType: ArticleInputType,
@@ -124,12 +124,18 @@ export const generateArticleWithGemini = async (
     generationConfig: { responseMimeType: "application/json" },
   });
 
-  const jsonString = result.response.text();
-  return JSON.parse(jsonString) as Omit<GeneratedArticle, "imageUrl">;
+  const raw = result.response.text();
+  console.log("Gemini raw output:", raw);
+
+  try {
+    return JSON.parse(raw) as Omit<GeneratedArticle, "imageUrl">;
+  } catch (err) {
+    throw new Error("Gemini JSON parse error: " + err + "\nRaw output:\n" + raw);
+  }
 };
 
 // ----------------------------
-// ✅ Claude (عبر Proxy Backend)
+// ✅ Claude (مع Safe Parsing)
 // ----------------------------
 export const generateArticleWithClaude = async (
   inputType: ArticleInputType,
@@ -147,12 +153,25 @@ export const generateArticleWithClaude = async (
     body: JSON.stringify({ prompt }),
   });
 
+  const raw = await res.text();
+  console.log("Claude raw output:", raw);
+
   if (!res.ok) {
-    throw new Error(`Claude proxy error: ${res.statusText}`);
+    throw new Error(`Claude proxy error: ${res.statusText}\nRaw response:\n${raw}`);
   }
 
-  const dataRes = await res.json();
-  return JSON.parse(dataRes.text) as Omit<GeneratedArticle, "imageUrl">;
+  let dataRes: any;
+  try {
+    dataRes = JSON.parse(raw);
+  } catch (err) {
+    throw new Error("Claude proxy did not return valid JSON. Raw output:\n" + raw);
+  }
+
+  try {
+    return JSON.parse(dataRes.text) as Omit<GeneratedArticle, "imageUrl">;
+  } catch (err) {
+    throw new Error("Claude JSON parse error: " + err + "\nRaw text field:\n" + dataRes.text);
+  }
 };
 
 // ----------------------------
@@ -161,6 +180,3 @@ export const generateArticleWithClaude = async (
 export const generateImageWithImagen = async (_prompt: string): Promise<string> => {
   throw new Error("توليد الصور غير مدعوم حالياً.");
 };
-console.log("Gemini key:", import.meta.env.VITE_GEMINI_API_KEY);
-console.log("Claude proxy:", import.meta.env.VITE_CLAUDE_PROXY_URL);
-console.log("Backend:", import.meta.env.VITE_MAIN_BACKEND_URL);
