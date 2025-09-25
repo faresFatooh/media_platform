@@ -1,25 +1,26 @@
 from rest_framework import serializers
 from .models import EditorialStyle, CustomNewsSource, MonitoredSource
 
+
 class EditorialStyleSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')
+    user = serializers.ReadOnlyField(source='user.id')
 
     class Meta:
         model = EditorialStyle
-        fields = '__all__'
+        fields = ['id', 'name', 'description', 'created_at', 'user']
 
 
 class CustomNewsSourceSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')
+    user = serializers.ReadOnlyField(source='user.id')
 
     class Meta:
         model = CustomNewsSource
-        fields = '__all__'
+        fields = ['id', 'url', 'created_at', 'user']
 
 
 class MonitoredSourceSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')
+    user = serializers.ReadOnlyField(source='user.id')
 
     class Meta:
         model = MonitoredSource
-        fields = '__all__'
+        fields = ['id', 'url', 'created_at', 'user']
