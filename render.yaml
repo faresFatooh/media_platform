@@ -47,7 +47,7 @@ services:
         sync: false
         build: true
       - key: VITE_CLAUDE_PROXY_URL
-        value: hhttps://claude-proxy-zjkv.onrender.com
+        value: https://claude-proxy-zjkv.onrender.com
         build: true
 
   # 4. خدمة بروكسي Claude
