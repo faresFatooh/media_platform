@@ -61,6 +61,7 @@ export const BreakingNews: React.FC = () => {
         const fetchedSources = await get<NewsSource[]>('/news_generator/monitored-sources/');
         setSources(fetchedSources || []);
       } catch (err) {
+          console.error("Error adding source:", err);
         setError(err instanceof ApiError ? err.message : 'فشل في جلب مصادر الأخبار.');
         setLoadingStep('idle');
       }
@@ -81,6 +82,7 @@ export const BreakingNews: React.FC = () => {
         const fetchedTopics = await getBreakingNewsFromSources(sources);
         setTopics(fetchedTopics || []);
       } catch (err) {
+          console.error("Error adding source:", err);
         setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع أثناء جلب الأخبار.');
       } finally {
         setLoadingStep('idle');
@@ -128,6 +130,7 @@ export const BreakingNews: React.FC = () => {
         setSources([...sources, newSource]);
       setNewSourceUrl('');
     } catch (err) {
+        console.error("Error adding source:", err);
       setError(err instanceof ApiError ? err.message : 'فشل في إضافة المصدر.');
     }
   };
