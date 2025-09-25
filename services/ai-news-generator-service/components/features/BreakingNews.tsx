@@ -121,7 +121,8 @@ export const BreakingNews: React.FC = () => {
   const handleAddSource = async () => {
     if (!newSourceUrl.trim()) return;
     try {
-      const newSource = await post<NewsSource>('/monitored-sources/', { url: newSourceUrl });
+      // ✅ تعديل: تمرير نوع الـ request body كـ Generic ثاني
+      const newSource = await post<NewsSource, { url: string }>('/monitored-sources/', { url: newSourceUrl });
       setSources([...sources, newSource]);
       setNewSourceUrl('');
     } catch (err) {
