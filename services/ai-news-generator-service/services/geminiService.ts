@@ -28,7 +28,32 @@ if (!CLAUDE_PROXY_URL) {
 // ✅ إنشاء كائن Gemini
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
+// ----------------------------
+// 🛠️ Utility: Safe JSON Extractor
+// ----------------------------
+function extractJsonSafe(text: string): any {
+  if (!text) throw new Error("Claude/Gemini response is empty.");
+
+  // 1️⃣ نظف ```json و ```
+  let cleaned = text.replace(/```json|```/g, "").trim();
+
+  // 2️⃣ قص لآخر "}" عشان نضمن JSON مكتمل
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (lastBrace !== -1) {
+    cleaned = cleaned.slice(0, lastBrace + 1);
+  }
+
+  // 3️⃣ حاول parse
+  try {
+    return JSON.parse(cleaned);
+  } catch (err) {
+    throw new Error("❌ JSON parse error حتى بعد التنظيف:\n" + cleaned);
+  }
+}
+
+// ----------------------------
 // ✅ دالة توليد الـ prompt
+// ----------------------------
 const getPrompt = (inputType: ArticleInputType, data: string | ImageFile): string => {
   let textPrompt = "";
 
@@ -105,11 +130,7 @@ export const generateArticleWithGemini = async (
   const raw = result.response.text();
   console.log("Gemini raw output:", raw);
 
-  try {
-    return JSON.parse(raw) as Omit<GeneratedArticle, "imageUrl">;
-  } catch (err) {
-    throw new Error("Gemini JSON parse error: " + err + "\nRaw output:\n" + raw);
-  }
+  return extractJsonSafe(raw) as Omit<GeneratedArticle, "imageUrl">;
 };
 
 // ----------------------------
@@ -147,13 +168,7 @@ export const generateArticleWithClaude = async (
 
   // ✅ النص موجود في content[0].text
   const outputText = dataRes.content?.[0]?.text || "";
-  const cleaned = outputText.replace(/```json|```/g, "").trim();
-
-  try {
-    return JSON.parse(cleaned) as Omit<GeneratedArticle, "imageUrl">;
-  } catch (err) {
-    throw new Error("Claude JSON parse error: " + err + "\nRaw text field:\n" + outputText);
-  }
+  return extractJsonSafe(outputText) as Omit<GeneratedArticle, "imageUrl">;
 };
 
 // ----------------------------
