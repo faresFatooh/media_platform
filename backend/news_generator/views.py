@@ -1,3 +1,4 @@
+import logging
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +11,7 @@ from .serializers import (
     CustomNewsSourceSerializer,
     MonitoredSourceSerializer,
 )
+logger = logging.getLogger(__name__)
 
 # --- Styles ---
 class EditorialStyleViewSet(viewsets.ModelViewSet):
@@ -45,6 +47,7 @@ class MonitoredSourceViewSet(NoCacheMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        logger.info(f"✅ MonitoredSource created: {obj.url} for user {self.request.user}")
 
 
 
