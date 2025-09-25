@@ -28,40 +28,6 @@ if (!CLAUDE_PROXY_URL) {
 // ✅ إنشاء كائن Gemini
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// ✅ نفس المخطط (Schema)
-const articleSchema = {
-  type: "OBJECT",
-  properties: {
-    title: { type: "STRING", description: "عنوان جذاب للمقال الإخباري (بالعربية الفصحى)." },
-    content: { type: "STRING", description: "النص الكامل للمقال مكتوب بالعربية الفصحى فقط." },
-    summaryPoints: {
-      type: "ARRAY",
-      items: { type: "STRING" },
-      description: "قائمة بأهم النقاط الملخصة من المقال مكتوبة بالعربية.",
-    },
-    keywords: {
-      type: "ARRAY",
-      items: { type: "STRING" },
-      description: "كلمات مفتاحية مناسبة للمقال بالعربية.",
-    },
-    sources: {
-      type: "ARRAY",
-      items: { type: "STRING" },
-      description:
-        'المصادر المحتملة للمعلومات. إذا كانت من رابط، اذكر الرابط. إذا لا، اكتب "محتوى أصلي".',
-    },
-    socialMediaPosts: {
-      type: "OBJECT",
-      properties: {
-        twitter: { type: "STRING", description: "منشور قصير وجذاب لتويتر/X مكتوب بالعربية." },
-        facebook: { type: "STRING", description: "منشور أطول قليلاً لفيسبوك مكتوب بالعربية." },
-      },
-      required: ["twitter", "facebook"],
-    },
-  },
-  required: ["title", "content", "summaryPoints", "keywords", "sources", "socialMediaPosts"],
-};
-
 // ✅ دالة توليد الـ prompt
 const getPrompt = (inputType: ArticleInputType, data: string | ImageFile): string => {
   let textPrompt = "";
@@ -107,7 +73,6 @@ ${data as string}
 - لا تضع أي نصوص أو شروحات خارج JSON.
 `;
 };
-
 
 // ----------------------------
 // ✅ Gemini (مع Safe Parsing)
@@ -180,7 +145,7 @@ export const generateArticleWithClaude = async (
     throw new Error("Claude proxy did not return valid JSON. Raw output:\n" + raw);
   }
 
-  // ✅ النص موجود جوّه content[0].text
+  // ✅ النص موجود في content[0].text
   const outputText = dataRes.content?.[0]?.text || "";
   const cleaned = outputText.replace(/```json|```/g, "").trim();
 
@@ -190,9 +155,6 @@ export const generateArticleWithClaude = async (
     throw new Error("Claude JSON parse error: " + err + "\nRaw text field:\n" + outputText);
   }
 };
-
-
-
 
 // ----------------------------
 // ❌ الصور مش مدعومة
