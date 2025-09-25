@@ -22,31 +22,36 @@ export class ApiError extends Error {
 }
 
 /**
+ * Get auth headers with token (from localStorage or sessionStorage).
+ */
+function getAuthHeaders() {
+  const token =
+    localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
  * Handles the response from a fetch request, throwing an ApiError for non-ok responses.
- * @param response The fetch Response object.
- * @returns A promise that resolves with the JSON data if the response is ok.
  */
 async function handleResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type');
-  
+
   if (response.ok) {
-     if (contentType && contentType.includes('application/json')) {
+    if (contentType && contentType.includes('application/json')) {
       return response.json() as Promise<T>;
     }
-    // Handle 204 No Content and other non-json success responses
-    return Promise.resolve(undefined as T);
+    return Promise.resolve(undefined as T); // e.g., 204 No Content
   }
 
   let errorData: ApiErrorData = {};
   let errorMessage = `HTTP Error: ${response.status} ${response.statusText}`;
-  
+
   if (contentType && contentType.includes('application/json')) {
     try {
       errorData = await response.json();
       errorMessage = errorData.detail || JSON.stringify(errorData);
-    } catch (e) {
-      // The body was not valid JSON
-      errorMessage = `HTTP Error: ${response.status} ${response.statusText}. Failed to parse error response body.`;
+    } catch {
+      errorMessage = `HTTP Error: ${response.status} ${response.statusText}. Failed to parse error body.`;
     }
   }
 
@@ -55,48 +60,41 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 /**
  * Performs a GET request.
- * @param endpoint The API endpoint to call (e.g., '/styles/').
- * @returns A promise that resolves with the fetched data.
  */
 export const get = <T>(endpoint: string): Promise<T> => {
-  return fetch(`${API_BASE_URL}${endpoint}`).then(handleResponse<T>);
+  return fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: { ...getAuthHeaders() },
+  }).then(handleResponse<T>);
 };
 
 /**
  * Performs a POST request.
- * @param endpoint The API endpoint.
- * @param body The data to send in the request body.
- * @returns A promise that resolves with the server's response data.
  */
 export const post = <T, U>(endpoint: string, body: U): Promise<T> => {
   return fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(body),
   }).then(handleResponse<T>);
 };
 
 /**
  * Performs a PUT request.
- * @param endpoint The API endpoint (e.g., '/styles/1/').
- * @param body The data to update.
- * @returns A promise that resolves with the server's response data.
  */
 export const put = <T, U>(endpoint: string, body: U): Promise<T> => {
   return fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(body),
   }).then(handleResponse<T>);
 };
 
 /**
  * Performs a DELETE request.
- * @param endpoint The API endpoint to call (e.g., '/styles/1/').
- * @returns A promise that resolves when the deletion is successful.
  */
 export const del = (endpoint: string): Promise<void> => {
   return fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'DELETE',
+    headers: { ...getAuthHeaders() },
   }).then(handleResponse<void>);
 };

@@ -18,6 +18,7 @@ class CustomNewsSourceSerializer(serializers.ModelSerializer):
 
 class MonitoredSourceSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
+    url = serializers.CharField(read_only=True)  # يضمن إرجاع url دايمًا
 
     class Meta:
         model = MonitoredSource
