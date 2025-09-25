@@ -120,20 +120,20 @@ export const BreakingNews: React.FC = () => {
     setError(null);
   };
 
-  const handleAddSource = async () => {
-    if (!newSourceUrl.trim()) return;
-    try {
-  const newSource = await post<NewsSource, { url: string }>(
-    '/news_generator/monitored-sources/',
-    { url: newSourceUrl }
-  );
-        setSources([...sources, newSource]);
-      setNewSourceUrl('');
-    } catch (err) {
-        console.error("Error adding source:", err);
-      setError(err instanceof ApiError ? err.message : 'فشل في إضافة المصدر.');
-    }
-  };
+const handleAddSource = async () => {
+  if (!newSourceUrl.trim()) return;
+  try {
+    console.debug('[UI] adding source, newSourceUrl=', newSourceUrl);
+    const newSource = await post<NewsSource, { url: string }>('/news_generator/monitored-sources/', { url: newSourceUrl });
+    console.debug('[UI] add source response:', newSource);
+    setSources(prev => [...prev, newSource]);
+    setNewSourceUrl('');
+  } catch (err) {
+    console.error('[UI] Error adding source:', err);
+    setError(err instanceof ApiError ? err.message : (err as Error).message || 'فشل في إضافة المصدر.');
+  }
+};
+
 
   const getLoadingMessage = () => {
     if (isGeneratingArticle) return generationMessage;

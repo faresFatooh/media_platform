@@ -1,18 +1,14 @@
-// A centralized service for making API calls to the Django backend.
-const API_BASE_URL = '/api'; // ⚠️ عدلها إذا السيرفر تبع Django مش شغال على نفس الدومين
+// services/apiService.ts
+const API_BASE_URL = '/api';
 
 interface ApiErrorData {
   detail?: string;
   [key: string]: any;
 }
 
-/**
- * A custom error class for API-related errors.
- */
 export class ApiError extends Error {
   public status: number;
   public data: ApiErrorData;
-
   constructor(message: string, status: number, data: ApiErrorData) {
     super(message);
     this.name = 'ApiError';
@@ -21,80 +17,77 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Get auth headers with token (from localStorage or sessionStorage).
- */
-function getAuthHeaders() {
-  const token =
-    localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+// حاول قراءة التوكن من مفاتيح محتملة (access_token أو access)
+function getAuthToken(): string | null {
+  return (
+    localStorage.getItem('access_token') ||
+    localStorage.getItem('access') ||
+    sessionStorage.getItem('access_token') ||
+    sessionStorage.getItem('access') ||
+    null
+  );
 }
 
-/**
- * Handles the response from a fetch request, throwing an ApiError for non-ok responses.
- */
+function getAuthHeaders(): Record<string, string> {
+  const token = getAuthToken();
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
-  const contentType = response.headers.get('content-type');
+  const contentType = response.headers.get('content-type') || '';
 
   if (response.ok) {
-    if (contentType && contentType.includes('application/json')) {
-      return response.json() as Promise<T>;
+    if (contentType.includes('application/json')) {
+      const json = await response.json();
+      console.debug('[API] response json:', json);
+      return json as T;
     }
-    return Promise.resolve(undefined as T); // e.g., 204 No Content
+    // no-json success (e.g. 204)
+    return Promise.resolve(undefined as unknown as T);
   }
+
+  // قراءة جسم الخطأ لو كان ممكن
+  let bodyText = '';
+  try { bodyText = await response.text(); } catch (e) { /* ignore */ }
 
   let errorData: ApiErrorData = {};
-  let errorMessage = `HTTP Error: ${response.status} ${response.statusText}`;
-
-  if (contentType && contentType.includes('application/json')) {
-    try {
-      errorData = await response.json();
-      errorMessage = errorData.detail || JSON.stringify(errorData);
-    } catch {
-      errorMessage = `HTTP Error: ${response.status} ${response.statusText}. Failed to parse error body.`;
-    }
+  try {
+    if (contentType.includes('application/json')) errorData = JSON.parse(bodyText);
+  } catch (e) {
+    errorData = { raw: bodyText };
   }
 
-  throw new ApiError(errorMessage, response.status, errorData);
+  const message = errorData.detail || bodyText || `HTTP ${response.status}`;
+  console.error('[API] error response', { status: response.status, message, url: response.url, body: errorData });
+  throw new ApiError(message, response.status, errorData);
 }
 
-/**
- * Performs a GET request.
- */
+// دوال HTTP مع طباعة تفصيلية لسهولة الديباغ
 export const get = <T>(endpoint: string): Promise<T> => {
-  return fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: { ...getAuthHeaders() },
-  }).then(handleResponse<T>);
+  const url = `${API_BASE_URL}${endpoint}`;
+  const headers = { ...getAuthHeaders() };
+  console.debug('[API] GET', url, headers);
+  return fetch(url, { headers }).then(handleResponse<T>);
 };
 
-/**
- * Performs a POST request.
- */
 export const post = <T, U>(endpoint: string, body: U): Promise<T> => {
-  return fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-    body: JSON.stringify(body),
-  }).then(handleResponse<T>);
+  const url = `${API_BASE_URL}${endpoint}`;
+  const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+  console.debug('[API] POST', url, headers, body);
+  return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) }).then(handleResponse<T>);
 };
 
-/**
- * Performs a PUT request.
- */
 export const put = <T, U>(endpoint: string, body: U): Promise<T> => {
-  return fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-    body: JSON.stringify(body),
-  }).then(handleResponse<T>);
+  const url = `${API_BASE_URL}${endpoint}`;
+  const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+  console.debug('[API] PUT', url, headers, body);
+  return fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) }).then(handleResponse<T>);
 };
 
-/**
- * Performs a DELETE request.
- */
 export const del = (endpoint: string): Promise<void> => {
-  return fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'DELETE',
-    headers: { ...getAuthHeaders() },
-  }).then(handleResponse<void>);
+  const url = `${API_BASE_URL}${endpoint}`;
+  const headers = { ...getAuthHeaders() };
+  console.debug('[API] DELETE', url, headers);
+  return fetch(url, { method: 'DELETE', headers }).then(handleResponse<void>);
 };
