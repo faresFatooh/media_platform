@@ -12,6 +12,12 @@ RUN npm install
 # ننسخ باقي الملفات
 COPY . .
 
+# ⚡ نولّد ملف .env.production من env vars اللي تبدأ بـ VITE_
+RUN printenv | grep ^VITE_ > .env.production || true
+
+# 🪵 Debug: اطبع محتويات .env.production عشان نتأكد
+RUN echo "📄 محتويات .env.production:" && cat .env.production
+
 # نعمل build
 RUN npm run build
 
