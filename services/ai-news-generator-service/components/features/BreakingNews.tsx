@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getBreakingNewsFromSources, generateArticleWithGemini, generateImageWithImagen } from '../../services/geminiService';
-import { get, ApiError } from '../../services/apiService';
+import { get, post, ApiError } from '../../services/apiService';
 import type { BreakingNewsTopic, GeneratedArticle, NewsSource } from '../../types';
 import { Spinner } from '../common/Spinner';
 import { ArticleDisplay } from './ArticleDisplay';
@@ -51,6 +51,7 @@ export const BreakingNews: React.FC = () => {
   const [generatedArticle, setGeneratedArticle] = useState<GeneratedArticle | null>(null);
   const [isGeneratingArticle, setIsGeneratingArticle] = useState(false);
   const [generationMessage, setGenerationMessage] = useState('');
+  const [newSourceUrl, setNewSourceUrl] = useState('');
 
   useEffect(() => {
     const fetchSources = async () => {
@@ -117,6 +118,17 @@ export const BreakingNews: React.FC = () => {
     setError(null);
   };
 
+  const handleAddSource = async () => {
+    if (!newSourceUrl.trim()) return;
+    try {
+      const newSource = await post<NewsSource>('/monitored-sources/', { url: newSourceUrl });
+      setSources([...sources, newSource]);
+      setNewSourceUrl('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'فشل في إضافة المصدر.');
+    }
+  };
+
   const getLoadingMessage = () => {
     if (isGeneratingArticle) return generationMessage;
     if (loadingStep === 'sources') return 'جاري جلب مصادرك الإخبارية...';
@@ -149,11 +161,29 @@ export const BreakingNews: React.FC = () => {
   return (
     <div>
       <h2 className="text-3xl font-bold text-cyan-400 mb-6">أخبار عاجلة من مصادرك</h2>
+
+      {/* ✅ إضافة مصدر جديد */}
+      <div className="mb-6 flex gap-2">
+        <input
+          type="url"
+          placeholder="أدخل رابط مصدر إخباري..."
+          value={newSourceUrl}
+          onChange={(e) => setNewSourceUrl(e.target.value)}
+          className="flex-1 px-3 py-2 rounded-md border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+        />
+        <button
+          onClick={handleAddSource}
+          className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-4 py-2 rounded-md"
+        >
+          ➕ إضافة مصدر
+        </button>
+      </div>
+
       {Array.isArray(sources) && sources.length === 0 ? (
         <div className="text-center text-gray-400 p-8 bg-gray-800/50 rounded-lg">
           <h3 className="text-2xl font-bold mb-3">لم يتم العثور على مصادر إخبارية</h3>
           <p>
-            الرجاء إضافة بعض المصادر في صفحة "مراقبة المصادر" أولاً لتتمكن من رؤية الأخبار العاجلة المخصصة لك.
+            الرجاء إضافة بعض المصادر أعلاه لتتمكن من رؤية الأخبار العاجلة المخصصة لك.
           </p>
         </div>
       ) : Array.isArray(topics) && topics.length > 0 ? (
