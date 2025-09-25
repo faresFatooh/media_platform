@@ -58,7 +58,7 @@ export const BreakingNews: React.FC = () => {
       try {
         setError(null);
         setLoadingStep('sources');
-        const fetchedSources = await get<NewsSource[]>('/monitored-sources/');
+        const fetchedSources = await get<NewsSource[]>('/news_generator/monitored-sources/');
         setSources(fetchedSources || []);
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'فشل في جلب مصادر الأخبار.');
@@ -121,8 +121,11 @@ export const BreakingNews: React.FC = () => {
   const handleAddSource = async () => {
     if (!newSourceUrl.trim()) return;
     try {
-      const newSource = await post<NewsSource, { url: string }>('/monitored-sources/', { url: newSourceUrl });
-      setSources([...sources, newSource]);
+  const newSource = await post<NewsSource, { url: string }>(
+    '/news_generator/monitored-sources/',
+    { url: newSourceUrl }
+  );
+        setSources([...sources, newSource]);
       setNewSourceUrl('');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'فشل في إضافة المصدر.');
