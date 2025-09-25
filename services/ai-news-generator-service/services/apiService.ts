@@ -1,5 +1,5 @@
 // A centralized service for making API calls to the Django backend.
-const API_BASE_URL = '/api'; // Adjust if your Django API is hosted elsewhere
+const API_BASE_URL = '/api'; // ⚠️ عدلها إذا السيرفر تبع Django مش شغال على نفس الدومين
 
 interface ApiErrorData {
   detail?: string;
