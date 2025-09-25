@@ -22,13 +22,6 @@ export default defineConfig(({ mode }) => {
       allowedHosts: [".onrender.com"],
     },
 
-    define: {
-      // ✅ نخليهم متاحين بالكود
-      "import.meta.env.VITE_GEMINI_API_KEY": JSON.stringify(env.VITE_GEMINI_API_KEY),
-      "import.meta.env.VITE_CLAUDE_PROXY_URL": JSON.stringify(env.VITE_CLAUDE_PROXY_URL),
-      "import.meta.env.VITE_MAIN_BACKEND_URL": JSON.stringify(env.VITE_MAIN_BACKEND_URL),
-    },
-
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "."),
