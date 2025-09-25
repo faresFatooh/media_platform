@@ -40,26 +40,27 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (response.ok) {
     if (contentType.includes('application/json')) {
       const json = await response.json();
-      console.debug('[API] response json:', json);
+      console.debug('[API] ✅ response json:', json);
       return json as T;
     }
-    // no-json success (e.g. 204)
-    return Promise.resolve(undefined as unknown as T);
+    console.debug('[API] ✅ no content');
+    // success بدون body (مثلاً 201 أو 204)
+    return {} as T; // ✅ رجع object فاضي بدل undefined
   }
 
-  // قراءة جسم الخطأ لو كان ممكن
+  // --- error handling ---
   let bodyText = '';
-  try { bodyText = await response.text(); } catch (e) { /* ignore */ }
+  try { bodyText = await response.text(); } catch { /* ignore */ }
 
   let errorData: ApiErrorData = {};
   try {
     if (contentType.includes('application/json')) errorData = JSON.parse(bodyText);
-  } catch (e) {
+  } catch {
     errorData = { raw: bodyText };
   }
 
   const message = errorData.detail || bodyText || `HTTP ${response.status}`;
-  console.error('[API] error response', { status: response.status, message, url: response.url, body: errorData });
+  console.error('[API] ❌ error response', { status: response.status, message, url: response.url, body: errorData });
   throw new ApiError(message, response.status, errorData);
 }
 
