@@ -10,7 +10,13 @@ declare global {
 }
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { ArticleInputType, type GeneratedArticle, type ImageFile } from "../types";
+import {
+  ArticleInputType,
+  type GeneratedArticle,
+  type ImageFile,
+  type NewsSource,
+  type BreakingNewsTopic,
+} from "../types";
 
 // ----------------------------
 // 🔑 مفاتيح الـ APIs
@@ -28,107 +34,23 @@ if (!CLAUDE_PROXY_URL) {
 // ✅ إنشاء كائن Gemini
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// ✅ نفس المخطط (Schema)
-const articleSchema = {
-  type: "OBJECT",
-  properties: {
-    title: { type: "STRING", description: "عنوان جذاب للمقال الإخباري (بالعربية الفصحى)." },
-    content: { type: "STRING", description: "النص الكامل للمقال مكتوب بالعربية الفصحى فقط." },
-    summaryPoints: {
-      type: "ARRAY",
-      items: { type: "STRING" },
-      description: "قائمة بأهم النقاط الملخصة من المقال مكتوبة بالعربية.",
-    },
-    keywords: {
-      type: "ARRAY",
-      items: { type: "STRING" },
-      description: "كلمات مفتاحية مناسبة للمقال بالعربية.",
-    },
-    sources: {
-      type: "ARRAY",
-      items: { type: "STRING" },
-      description:
-        'المصادر المحتملة للمعلومات. إذا كانت من رابط، اذكر الرابط. إذا لا، اكتب "محتوى أصلي".',
-    },
-    socialMediaPosts: {
-      type: "OBJECT",
-      properties: {
-        twitter: { type: "STRING", description: "منشور قصير وجذاب لتويتر/X مكتوب بالعربية." },
-        facebook: { type: "STRING", description: "منشور أطول قليلاً لفيسبوك مكتوب بالعربية." },
-      },
-      required: ["twitter", "facebook"],
-    },
-  },
-  required: ["title", "content", "summaryPoints", "keywords", "sources", "socialMediaPosts"],
-};
-
-// ✅ دالة توليد الـ prompt
-const getPrompt = (inputType: ArticleInputType, data: string | ImageFile): string => {
-  let textPrompt = "";
-
-  switch (inputType) {
-    case ArticleInputType.TITLE:
-      textPrompt = `اكتب مقالاً إخبارياً مفصلاً. ⚠️ النص يجب أن يكون بالعربية الفصحى فقط.
-العنوان: "${data as string}"`;
-      break;
-    case ArticleInputType.TEXT:
-      textPrompt = `قم بتوسيع النص التالي وتحويله إلى مقال إخباري متكامل بالعربية الفصحى:
----
-${data as string}
----`;
-      break;
-    case ArticleInputType.URL:
-      textPrompt = `لخص المحتوى من الرابط التالي ثم أنشئ مقالاً إخبارياً بالعربية الفصحى فقط. ممنوع النسخ الحرفي.
-الرابط: ${data as string}`;
-      break;
-    case ArticleInputType.IMAGE:
-      textPrompt =
-        "حلل الصورة المرفقة وأنشئ مقالاً إخبارياً بالعربية الفصحى يصف الحدث أو المشهد.";
-      break;
-  }
-
-  return `${textPrompt}
-
-مهم جداً:
-- أعد الناتج كـ JSON **صالح فقط**.
-- هيكل JSON يجب أن يحتوي فقط على:
-  {
-    "title": string,
-    "content": string,
-    "summaryPoints": string[],
-    "keywords": string[],
-    "sources": string[],
-    "socialMediaPosts": {
-      "twitter": string,
-      "facebook": string
-    }
-  }
-- لا تكرر المخطط.
-- لا تضع أي نصوص أو شروحات خارج JSON.
-`;
-};
-
 // ----------------------------
-// 🛠️ دالة Safe JSON Parse
+// 🛠️ Safe JSON Parse
 // ----------------------------
 function safeJsonParse(text: string): any {
   if (!text) throw new Error("Claude/Gemini response is empty.");
 
-  // 1️⃣ شيل ```json و ```
   let cleaned = text.replace(/```json|```/g, "").trim();
 
-  // 2️⃣ جرّب مباشرة
   try {
     return JSON.parse(cleaned);
   } catch {}
 
-  // 3️⃣ قص لآخر }
   const lastBrace = cleaned.lastIndexOf("}");
   if (lastBrace !== -1) {
     cleaned = cleaned.slice(0, lastBrace + 1);
   }
 
-  // 4️⃣ إذا ما في } مسكّرة، ضيف وحدة
   if (!cleaned.endsWith("}")) {
     cleaned += "}";
   }
@@ -137,7 +59,6 @@ function safeJsonParse(text: string): any {
     return JSON.parse(cleaned);
   } catch {}
 
-  // 5️⃣ fallback JSON
   return {
     title: "مقال غير مكتمل",
     content: cleaned,
@@ -152,15 +73,56 @@ function safeJsonParse(text: string): any {
 }
 
 // ----------------------------
+// 📝 توليد الـ Prompt
+// ----------------------------
+const getPrompt = (inputType: ArticleInputType, data: string | ImageFile): string => {
+  let textPrompt = "";
+
+  switch (inputType) {
+    case ArticleInputType.TITLE:
+      textPrompt = `اكتب مقالاً إخبارياً مفصلاً بالعربية الفصحى.
+العنوان: "${data as string}"`;
+      break;
+    case ArticleInputType.TEXT:
+      textPrompt = `قم بتوسيع النص التالي وتحويله إلى مقال إخباري متكامل بالعربية الفصحى:
+---
+${data as string}
+---`;
+      break;
+    case ArticleInputType.URL:
+      textPrompt = `لخص المحتوى من الرابط التالي ثم أنشئ مقالاً إخبارياً بالعربية الفصحى فقط. ممنوع النسخ الحرفي.
+الرابط: ${data as string}`;
+      break;
+    case ArticleInputType.IMAGE:
+      textPrompt = "حلل الصورة المرفقة وأنشئ مقالاً إخبارياً بالعربية الفصحى يصف الحدث أو المشهد.";
+      break;
+  }
+
+  return `${textPrompt}
+
+مهم جداً:
+- أعد الناتج كـ JSON صالح فقط.
+{
+  "title": string,
+  "content": string,
+  "summaryPoints": string[],
+  "keywords": string[],
+  "sources": string[],
+  "socialMediaPosts": {
+    "twitter": string,
+    "facebook": string
+  }
+}`;
+};
+
+// ----------------------------
 // ✅ Gemini
 // ----------------------------
 export const generateArticleWithGemini = async (
   inputType: ArticleInputType,
   data: string | ImageFile
 ): Promise<Omit<GeneratedArticle, "imageUrl">> => {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key is not configured.");
-  }
+  if (!GEMINI_API_KEY) throw new Error("Gemini API key is not configured.");
 
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash-latest",
@@ -192,9 +154,7 @@ export const generateArticleWithClaude = async (
   inputType: ArticleInputType,
   data: string | ImageFile
 ): Promise<Omit<GeneratedArticle, "imageUrl">> => {
-  if (!CLAUDE_PROXY_URL) {
-    throw new Error("Claude proxy URL is not configured.");
-  }
+  if (!CLAUDE_PROXY_URL) throw new Error("Claude proxy URL is not configured.");
 
   const prompt = getPrompt(inputType, data);
 
@@ -214,7 +174,7 @@ export const generateArticleWithClaude = async (
   let dataRes: any;
   try {
     dataRes = JSON.parse(raw);
-  } catch (err) {
+  } catch {
     throw new Error("Claude proxy did not return valid JSON. Raw output:\n" + raw);
   }
 
@@ -223,7 +183,80 @@ export const generateArticleWithClaude = async (
 };
 
 // ----------------------------
-// ❌ الصور مش مدعومة
+// ✅ Breaking News
+// ----------------------------
+export const getBreakingNewsFromSources = async (
+  sources: NewsSource[]
+): Promise<BreakingNewsTopic[]> => {
+  if (sources.length === 0) return [];
+
+  try {
+    const sourceUrls = sources.map((s) => new URL(s.url).hostname).join(", ");
+    const prompt = `بصفتك محرر أخبار، قم بمراجعة المواقع الإخبارية التالية: ${sourceUrls}.
+أوجد أهم 5 قصص إخبارية عاجلة ومهمة منها حالياً.
+لكل خبر:
+العنوان: [عنوان الخبر هنا]
+الملخص: [ملخص من جملتين إلى ثلاث جمل هنا]
+---`;
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const response = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+
+    const text = response.response.text();
+    const groundingChunks =
+      response.response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+    const topics: Omit<BreakingNewsTopic, "sources">[] = text
+      .split("---")
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0)
+      .map((part) => {
+        const titleMatch = part.match(/العنوان: (.*)/);
+        const summaryMatch = part.match(/الملخص: ([\s\S]*)/);
+        return {
+          title: titleMatch ? titleMatch[1].trim() : "لم يتم العثور على عنوان",
+          summary: summaryMatch ? summaryMatch[1].trim() : "لم يتم العثور على ملخص.",
+        };
+      });
+
+    const topicsWithSources: BreakingNewsTopic[] = topics.map((topic, index) => {
+      const sourcesPerTopic = Math.ceil(groundingChunks.length / topics.length);
+      const startIndex = index * sourcesPerTopic;
+      const endIndex = startIndex + sourcesPerTopic;
+      const assignedSources = groundingChunks
+        .slice(startIndex, endIndex)
+        .map((chunk) => chunk.web);
+
+      return {
+        ...topic,
+        sources: assignedSources.filter((s) => s) as { uri: string; title: string }[],
+      };
+    });
+
+    if (topicsWithSources.length === 0 && text.length > 0) {
+      return [
+        {
+          title: "مستجدات الأخبار",
+          summary: text,
+          sources: groundingChunks
+            .map((c) => c.web)
+            .filter((s) => s) as { uri: string; title: string }[],
+        },
+      ];
+    }
+
+    return topicsWithSources;
+  } catch (error) {
+    console.error("Error fetching breaking news:", error);
+    throw new Error("فشل في جلب الأخبار العاجلة.");
+  }
+};
+
+// ----------------------------
+// 🚫 الصور غير مدعومة
 // ----------------------------
 export const generateImageWithImagen = async (_prompt: string): Promise<string> => {
   throw new Error("توليد الصور غير مدعوم حالياً.");

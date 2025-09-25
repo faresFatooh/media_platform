@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ArticleInputType } from '../../types';
 import type { GeneratedArticle, ImageFile } from '../../types';
-import { generateArticle, generateArticleWithClaude, generateImage } from '../../services/geminiService';
+import { generateArticleWithGemini, generateArticleWithClaude, generateImageWithImagen } from '../../services/geminiService';
 import { ArticleDisplay } from './ArticleDisplay';
 import { Spinner } from '../common/Spinner';
 
@@ -35,11 +35,10 @@ export const ArticleGenerator: React.FC = () => {
 
   // Reset input type if it becomes unavailable for the selected model
   useEffect(() => {
-      if(selectedModel === 'claude' && inputType === ArticleInputType.IMAGE) {
-          setInputType(ArticleInputType.TITLE);
-      }
+    if (selectedModel === 'claude' && inputType === ArticleInputType.IMAGE) {
+      setInputType(ArticleInputType.TITLE);
+    }
   }, [selectedModel, inputType]);
-
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -56,7 +55,10 @@ export const ArticleGenerator: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((inputType !== ArticleInputType.IMAGE && !inputValue.trim()) || (inputType === ArticleInputType.IMAGE && !selectedFile)) {
+    if (
+      (inputType !== ArticleInputType.IMAGE && !inputValue.trim()) ||
+      (inputType === ArticleInputType.IMAGE && !selectedFile)
+    ) {
       setError('يرجى تقديم مدخلات صالحة.');
       return;
     }
@@ -69,30 +71,28 @@ export const ArticleGenerator: React.FC = () => {
     try {
       const data = inputType === ArticleInputType.IMAGE ? selectedFile! : inputValue;
 
-      const generateFunction = selectedModel === 'claude' 
-        ? generateArticleWithClaude 
-        : generateArticle;
+      const generateFunction =
+        selectedModel === 'claude'
+          ? generateArticleWithClaude
+          : generateArticleWithGemini;
 
       const articleTextData = await generateFunction(inputType, data);
-      
+
       let finalArticle: GeneratedArticle;
 
-      if (articleTextData.title !== "فشل تحليل المقال") {
+      if (articleTextData.title !== 'فشل تحليل المقال') {
         setLoadingMessage('تم إنشاء المقال، جاري توليد صورة مرتبطة...');
         let imageUrl = '';
         try {
-            imageUrl = await generateImage(articleTextData.title);
+          imageUrl = await generateImageWithImagen(articleTextData.title);
         } catch (imageError) {
-            console.warn("Image generation failed, proceeding without image:", imageError);
-            // The article will be displayed without an image.
+          console.warn('Image generation failed, proceeding without image:', imageError);
         }
         finalArticle = { ...articleTextData, imageUrl };
       } else {
-        // If parsing failed, show the raw content without trying to generate an image.
         finalArticle = { ...articleTextData, imageUrl: '' };
       }
       setGeneratedArticle(finalArticle);
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع.');
     } finally {
@@ -104,16 +104,49 @@ export const ArticleGenerator: React.FC = () => {
   const renderInput = useCallback(() => {
     switch (inputType) {
       case ArticleInputType.TITLE:
-        return <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="مثال: اكتشاف كوكب جديد صالح للحياة" className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-cyan-500 focus:outline-none" />;
+        return (
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="مثال: اكتشاف كوكب جديد صالح للحياة"
+            className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+          />
+        );
       case ArticleInputType.TEXT:
-        return <textarea value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="الصق النص هنا..." rows={8} className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-cyan-500 focus:outline-none"></textarea>;
+        return (
+          <textarea
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="الصق النص هنا..."
+            rows={8}
+            className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+          ></textarea>
+        );
       case ArticleInputType.URL:
-        return <input type="url" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="https://example.com/news/story" className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-cyan-500 focus:outline-none" />;
+        return (
+          <input
+            type="url"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="https://example.com/news/story"
+            className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-cyan-500 focus:outline-none"
+          />
+        );
       case ArticleInputType.IMAGE:
         return (
           <div className="w-full p-3 bg-gray-800 border-2 border-dashed border-gray-700 rounded-md text-center">
-            <input type="file" id="file-upload" accept="image/*" onChange={handleFileChange} className="hidden" />
-            <label htmlFor="file-upload" className="cursor-pointer text-cyan-400 hover:text-cyan-300">
+            <input
+              type="file"
+              id="file-upload"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <label
+              htmlFor="file-upload"
+              className="cursor-pointer text-cyan-400 hover:text-cyan-300"
+            >
               اختر ملف صورة
             </label>
             {fileName && <p className="mt-2 text-sm text-gray-400">{fileName}</p>}
@@ -123,14 +156,14 @@ export const ArticleGenerator: React.FC = () => {
         return null;
     }
   }, [inputType, inputValue, fileName]);
-  
+
   const handleReset = () => {
     setGeneratedArticle(null);
     setInputValue('');
     setSelectedFile(null);
     setFileName('');
     setError(null);
-  }
+  };
 
   if (isLoading) {
     return (
@@ -140,7 +173,7 @@ export const ArticleGenerator: React.FC = () => {
       </div>
     );
   }
-  
+
   if (generatedArticle) {
     return <ArticleDisplay article={generatedArticle} onReset={handleReset} />;
   }
@@ -149,32 +182,36 @@ export const ArticleGenerator: React.FC = () => {
     <div className="max-w-4xl mx-auto">
       <form onSubmit={handleSubmit}>
         <div className="bg-gray-800/50 p-6 rounded-lg shadow-lg border border-gray-700">
-            <div className="flex items-center justify-center gap-4 mb-6">
-                <span className="text-gray-300 font-medium">اختر محرك الذكاء الاصطناعي:</span>
-                <div className="flex rounded-md bg-gray-900 p-1">
-                    <button
-                        type="button"
-                        onClick={() => setSelectedModel('gemini')}
-                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
-                            selectedModel === 'gemini' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:bg-gray-700'
-                        }`}
-                    >
-                        Gemini
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setSelectedModel('claude')}
-                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
-                            selectedModel === 'claude' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:bg-gray-700'
-                        }`}
-                    >
-                        Claude
-                    </button>
-                </div>
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <span className="text-gray-300 font-medium">اختر محرك الذكاء الاصطناعي:</span>
+            <div className="flex rounded-md bg-gray-900 p-1">
+              <button
+                type="button"
+                onClick={() => setSelectedModel('gemini')}
+                className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+                  selectedModel === 'gemini'
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-gray-400 hover:bg-gray-700'
+                }`}
+              >
+                Gemini
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedModel('claude')}
+                className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+                  selectedModel === 'claude'
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-gray-400 hover:bg-gray-700'
+                }`}
+              >
+                Claude
+              </button>
             </div>
+          </div>
 
           <div className="flex border-b border-gray-700 mb-4">
-            {inputOptions.map(opt => (
+            {inputOptions.map((opt) => (
               <button
                 key={opt.id}
                 type="button"
@@ -189,9 +226,7 @@ export const ArticleGenerator: React.FC = () => {
               </button>
             ))}
           </div>
-          <div className="mb-4">
-            {renderInput()}
-          </div>
+          <div className="mb-4">{renderInput()}</div>
           {error && <p className="text-red-400 mb-4">{error}</p>}
           <button
             type="submit"
