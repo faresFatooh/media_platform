@@ -188,10 +188,24 @@ export const generateArticleWithClaude = async (
 export const getBreakingNewsFromSources = async (
   sources: NewsSource[]
 ): Promise<BreakingNewsTopic[]> => {
-  if (sources.length === 0) return [];
+  if (!sources || sources.length === 0) return [];
+
+  // ✅ فلترة المصادر
+  const validSources = sources.filter((s) => s && s.url);
+  if (validSources.length === 0) return [];
 
   try {
-    const sourceUrls = sources.map((s) => new URL(s.url).hostname).join(", ");
+    const sourceUrls = validSources
+      .map((s) => {
+        try {
+          return new URL(s.url).hostname;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .join(", ");
+
     const prompt = `بصفتك محرر أخبار، قم بمراجعة المواقع الإخبارية التالية: ${sourceUrls}.
 أوجد أهم 5 قصص إخبارية عاجلة ومهمة منها حالياً.
 لكل خبر:
@@ -206,8 +220,6 @@ export const getBreakingNewsFromSources = async (
     });
 
     const text = response.response.text();
-
-    // ✅ تجاوز مشكلة TS2339 باستخدام casting
     const candidate = response.response.candidates?.[0] as any;
     const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
 
@@ -256,6 +268,7 @@ export const getBreakingNewsFromSources = async (
     throw new Error("فشل في جلب الأخبار العاجلة.");
   }
 };
+
 
 
 // ----------------------------
