@@ -45,6 +45,11 @@ class MonitoredSourceViewSet(viewsets.ModelViewSet):
 class MonitoredSourceListCreateView(generics.ListCreateAPIView):
     queryset = MonitoredSource.objects.all()
     serializer_class = MonitoredSourceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    serializer_class = MonitoredSourceSerializer
 
 
 # 🔹 إضافة GenerateArticleView
