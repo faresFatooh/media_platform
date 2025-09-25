@@ -206,8 +206,10 @@ export const getBreakingNewsFromSources = async (
     });
 
     const text = response.response.text();
-    const groundingChunks =
-      response.response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+    // ✅ تجاوز مشكلة TS2339 باستخدام casting
+    const candidate = response.response.candidates?.[0] as any;
+    const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
 
     const topics: Omit<BreakingNewsTopic, "sources">[] = text
       .split("---")
@@ -228,11 +230,11 @@ export const getBreakingNewsFromSources = async (
       const endIndex = startIndex + sourcesPerTopic;
       const assignedSources = groundingChunks
         .slice(startIndex, endIndex)
-        .map((chunk) => chunk.web);
+        .map((chunk: any) => chunk.web);
 
       return {
         ...topic,
-        sources: assignedSources.filter((s) => s) as { uri: string; title: string }[],
+        sources: assignedSources.filter((s: any) => s) as { uri: string; title: string }[],
       };
     });
 
@@ -242,8 +244,8 @@ export const getBreakingNewsFromSources = async (
           title: "مستجدات الأخبار",
           summary: text,
           sources: groundingChunks
-            .map((c) => c.web)
-            .filter((s) => s) as { uri: string; title: string }[],
+            .map((c: any) => c.web)
+            .filter((s: any) => s) as { uri: string; title: string }[],
         },
       ];
     }
@@ -254,6 +256,7 @@ export const getBreakingNewsFromSources = async (
     throw new Error("فشل في جلب الأخبار العاجلة.");
   }
 };
+
 
 // ----------------------------
 // 🚫 الصور غير مدعومة
