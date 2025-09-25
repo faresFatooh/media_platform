@@ -1,40 +1,34 @@
-# ---- Build stage ----
-FROM node:18-alpine AS builder
+# ---- Build Stage ----
+FROM node:18 AS builder
 
 WORKDIR /app
 
+# ننسخ package.json و package-lock.json
 COPY package*.json ./
+
+# تثبيت كل الـ dependencies (بما فيها devDependencies)
 RUN npm install
 
+# ننسخ باقي الملفات
 COPY . .
 
-# 👇 استلام الـ build args من Render
-ARG VITE_MAIN_BACKEND_URL
-ARG VITE_GEMINI_API_KEY
-ARG VITE_CLAUDE_PROXY_URL
-
-# 👇 تحويل الـ args لبيئة مرئية عند Vite
-ENV VITE_MAIN_BACKEND_URL=$VITE_MAIN_BACKEND_URL
-ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
-ENV VITE_CLAUDE_PROXY_URL=$VITE_CLAUDE_PROXY_URL
-
-# 👇 بناء المشروع (Vite يشوف env هنا)
+# نعمل build
 RUN npm run build
 
 
-# ---- Production stage ----
-FROM node:18-alpine AS runner
+# ---- Production Stage ----
+FROM node:18 AS runner
 
 WORKDIR /app
 
-# نثبت فقط الـ dependencies اللازمة للتشغيل
-COPY package*.json ./
-RUN npm install --only=production
+# نثبت serve فقط (لتقديم الملفات)
+RUN npm install -g serve
 
-# ننسخ الملفات المبنية من الستيج الأول
+# ننسخ ملفات build فقط
 COPY --from=builder /app/dist ./dist
 
+# نحدد المنفذ (Render يستخدم 10000 بشكل افتراضي)
 EXPOSE 10000
 
-# تشغيل Vite preview
-CMD ["npm", "run", "preview", "--", "--port", "10000", "--host"]
+# نشغل السيرفر
+CMD ["serve", "-s", "dist", "-l", "10000"]
