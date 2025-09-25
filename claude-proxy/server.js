@@ -29,30 +29,33 @@ app.post("/api/claude/generate", async (req, res) => {
       headers: {
         "Content-Type": "application/json",
         "x-api-key": process.env.CLAUDE_API_KEY,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
         model: "claude-3-opus-20240229",
         max_tokens: 300,
-        messages: [{ role: "user", content: req.body.prompt }]
-      })
+        messages: [{ role: "user", content: req.body.prompt }],
+      }),
     });
 
     const text = await response.text();
 
     if (!response.ok) {
       console.error("Claude API error:", response.status, text);
-      return res.status(500).json({ error: "Claude API failed", details: text });
+      return res
+        .status(response.status)
+        .json({ error: "Claude API failed", details: text });
     }
 
-    const data = JSON.parse(text);
-    res.json(data);
-
+    res.json(JSON.parse(text));
   } catch (error) {
     console.error("Server error:", error);
-    res.status(500).json({ error: "Claude proxy crashed", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Claude proxy crashed", details: error.message });
   }
 });
+
 
 
 // ✅ health check
