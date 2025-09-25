@@ -24,6 +24,8 @@ console.log(
   "Claude API Key:",
   process.env.CLAUDE_API_KEY ? "Loaded ✅" : "Missing ❌"
 );
+console.log("Claude API Key (first 6 chars):", process.env.CLAUDE_API_KEY?.slice(0, 6));
+
 // ✅ راوت للتوليد
 app.post("/api/claude/generate", async (req, res) => {
   try {
