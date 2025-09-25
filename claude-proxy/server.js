@@ -20,7 +20,10 @@ app.use(cors({
 const client = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
-
+console.log(
+  "Claude API Key:",
+  process.env.CLAUDE_API_KEY ? "Loaded ✅" : "Missing ❌"
+);
 // ✅ راوت للتوليد
 app.post("/api/claude/generate", async (req, res) => {
   try {
