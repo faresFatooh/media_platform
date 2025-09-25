@@ -5,24 +5,23 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const app = express();
 
-// ✅ لازم cors يكون قبل أي routes
+// ✅ ميدل وير
+app.use(bodyParser.json());
 app.use(cors({
   origin: [
-    "https://ai-news-generator-service.onrender.com",
     "https://ghazimortaja.com",
+    "https://ai-news-generator-service.onrender.com",
+    "https://frontend-rgr7.onrender.com"
   ],
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 }));
 
-app.use(bodyParser.json());
-
+// ✅ عميل Claude
 const client = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
 
-app.options("*", cors()); // ✅ مهم عشان preflight يرد بشكل صحيح
-
+// ✅ راوت للتوليد
 app.post("/api/claude/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -35,10 +34,19 @@ app.post("/api/claude/generate", async (req, res) => {
 
     const text = completion.content[0].text;
     res.json({ text });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Claude error:", err);
     res.status(500).json({ error: "Claude failed" });
   }
 });
 
-export default app;
+// ✅ health check
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+// ✅ شغل السيرفر
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Claude proxy running on port ${PORT}`);
+});
