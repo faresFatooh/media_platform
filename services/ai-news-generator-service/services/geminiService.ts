@@ -125,7 +125,7 @@ export const generateArticleWithGemini = async (
   if (!GEMINI_API_KEY) throw new Error("Gemini API key is not configured.");
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash-latest",
+    model: "gemini-1.5-flash",
     systemInstruction: `
       أنت صحفي محترف. 
       ❌ لا تستخدم أي لغة غير العربية.
