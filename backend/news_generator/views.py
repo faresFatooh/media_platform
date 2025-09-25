@@ -2,6 +2,8 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
+from .mixins import NoCacheMixin  # ✅ استورد الميكسين
+
 from .models import EditorialStyle, CustomNewsSource, MonitoredSource
 from .serializers import (
     EditorialStyleSerializer,
@@ -34,7 +36,7 @@ class CustomNewsSourceViewSet(viewsets.ModelViewSet):
 
 
 # --- Monitored sources ---
-class MonitoredSourceViewSet(viewsets.ModelViewSet):
+class MonitoredSourceViewSet(NoCacheMixin, viewsets.ModelViewSet):
     serializer_class = MonitoredSourceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -43,6 +45,7 @@ class MonitoredSourceViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
 
 
 # --- Generate Article ---
