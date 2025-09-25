@@ -30,7 +30,6 @@ services:
       - key: NEXT_PUBLIC_API_URL
         value: https://backend.ghazimortaja.com
 
-  # 3. خدمة مولد الأخبار الجديدة
   - type: web
     name: ai-news-generator-service
     plan: starter

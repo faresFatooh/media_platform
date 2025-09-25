@@ -3,16 +3,21 @@ FROM node:18 AS builder
 
 WORKDIR /app
 
-# ننسخ package.json و package-lock.json
-COPY package*.json ./
+# نستقبل env vars من Render أثناء الـ build
+ARG VITE_MAIN_BACKEND_URL
+ARG VITE_GEMINI_API_KEY
+ARG VITE_CLAUDE_PROXY_URL
 
-# تثبيت كل الـ dependencies (بما فيها devDependencies)
+# نحولهم إلى ENV عشان vite يشوفهم
+ENV VITE_MAIN_BACKEND_URL=${VITE_MAIN_BACKEND_URL}
+ENV VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
+ENV VITE_CLAUDE_PROXY_URL=${VITE_CLAUDE_PROXY_URL}
+
+COPY package*.json ./
 RUN npm install
 
-# ننسخ باقي الملفات
 COPY . .
 
-# نعمل build
 RUN npm run build
 
 
@@ -21,14 +26,10 @@ FROM node:18 AS runner
 
 WORKDIR /app
 
-# نثبت serve فقط (لتقديم الملفات)
 RUN npm install -g serve
 
-# ننسخ ملفات build فقط
 COPY --from=builder /app/dist ./dist
 
-# نحدد المنفذ (Render يستخدم 10000 بشكل افتراضي)
 EXPOSE 10000
 
-# نشغل السيرفر
 CMD ["serve", "-s", "dist", "-l", "10000"]
