@@ -1,6 +1,7 @@
 # views.py
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from .models import EditorialStyle, CustomNewsSource, MonitoredSource
 from .serializers import (
     EditorialStyleSerializer,
@@ -8,7 +9,6 @@ from .serializers import (
     MonitoredSourceSerializer,
 )
 
-# --- Styles ---
 class EditorialStyleViewSet(viewsets.ModelViewSet):
     serializer_class = EditorialStyleSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -25,9 +25,6 @@ class EditorialStyleViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-# --- Custom sources ---
 class CustomNewsSourceViewSet(viewsets.ModelViewSet):
     serializer_class = CustomNewsSourceSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -43,9 +40,6 @@ class CustomNewsSourceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-# --- Monitored sources ---
 class MonitoredSourceViewSet(viewsets.ModelViewSet):
     serializer_class = MonitoredSourceSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -61,3 +55,30 @@ class MonitoredSourceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    # --- Generate Article ---
+class GenerateArticleView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        title = request.data.get("title")
+        if not title:
+            return Response({"error": "العنوان مطلوب"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ⚡ منطق التوليد (مؤقتاً static)
+        article = {
+            "title": title,
+            "content": f"هذا مقال تم توليده تلقائياً حول: {title}"
+        }
+        return Response(article, status=status.HTTP_200_OK)
+class GenerateImageView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        prompt = request.data.get("prompt")
+        if not prompt:
+            return Response({"error": "الوصف مطلوب"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ⚡ منطق التوليد (مؤقتاً URL وهمي)
+        image_url = f"https://via.placeholder.com/600x400.png?text={prompt.replace(' ', '+')}"
+        return Response({"url": image_url}, status=status.HTTP_200_OK)
