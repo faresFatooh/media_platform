@@ -40,7 +40,9 @@ class CustomNewsSourceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
 class MonitoredSourceViewSet(viewsets.ModelViewSet):
+    queryset = MonitoredSource.objects.all()
     serializer_class = MonitoredSourceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
