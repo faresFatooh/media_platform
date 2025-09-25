@@ -161,3 +161,6 @@ export const generateArticleWithClaude = async (
 export const generateImageWithImagen = async (_prompt: string): Promise<string> => {
   throw new Error("توليد الصور غير مدعوم حالياً.");
 };
+console.log("Gemini key:", import.meta.env.VITE_GEMINI_API_KEY);
+console.log("Claude proxy:", import.meta.env.VITE_CLAUDE_PROXY_URL);
+console.log("Backend:", import.meta.env.VITE_MAIN_BACKEND_URL);
