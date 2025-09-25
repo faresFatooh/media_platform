@@ -47,10 +47,13 @@ services:
         - key: VITE_CLAUDE_PROXY_URL
           value: https://ai-news-generator-service.onrender.com
 
-    envVars:
-      - key: VITE_MAIN_BACKEND_URL 
-        value: https://backend.ghazimortaja.com
-      - key: VITE_GEMINI_API_KEY
-        sync: false
-      - key: VITE_CLAUDE_PROXY_URL
-        value: https://ai-news-generator-service.onrender.com
+envVars:
+  - key: VITE_MAIN_BACKEND_URL 
+    value: https://backend.ghazimortaja.com
+    build: true
+  - key: VITE_GEMINI_API_KEY
+    sync: false
+    build: true
+  - key: VITE_CLAUDE_PROXY_URL
+    value: https://ai-news-generator-service.onrender.com
+    build: true
