@@ -1,11 +1,17 @@
 import express from "express";
 import bodyParser from "body-parser";
-import dotenv from "dotenv";
 import Anthropic from "@anthropic-ai/sdk";
-
-dotenv.config();
+import cors from "cors";
 
 const app = express();
+
+// ✅ CORS
+app.use(cors({
+  origin: "https://ai-news-generator-service.onrender.com",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 app.use(bodyParser.json());
 
 const client = new Anthropic({
@@ -24,14 +30,10 @@ app.post("/api/claude/generate", async (req, res) => {
 
     const text = completion.content[0].text;
     res.json({ text });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Claude error:", err);
     res.status(500).json({ error: "Claude failed" });
   }
 });
 
-// ✅ عند النشر على Render بيشتغل على البورت من متغير البيئة
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-  console.log(`Claude proxy running on port ${PORT}`);
-});
+export default app;
