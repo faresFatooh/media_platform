@@ -4,21 +4,24 @@ import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
 
 const app = express();
-app.use(bodyParser.json());
 
-// ✅ تفعيل CORS
+// ✅ لازم cors يكون قبل أي routes
 app.use(cors({
   origin: [
-    "https://ai-news-generator-service.onrender.com", // مسموح من خدمة الذكاء الاصطناعي
-    "https://ghazimortaja.com", // مسموح من الموقع الرئيسي
+    "https://ai-news-generator-service.onrender.com",
+    "https://ghazimortaja.com",
   ],
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
+app.use(bodyParser.json());
+
 const client = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
+
+app.options("*", cors()); // ✅ مهم عشان preflight يرد بشكل صحيح
 
 app.post("/api/claude/generate", async (req, res) => {
   try {
