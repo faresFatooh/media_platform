@@ -123,29 +123,30 @@ export const BreakingNews: React.FC = () => {
 const handleAddSource = async () => {
   if (!newSourceUrl.trim()) {
     console.warn("⚠️ ما دخلت أي رابط");
-    setError("الرجاء إدخال رابط مصدر.");
     return;
   }
-
-  console.log("🟢 محاولة إضافة مصدر جديد:", newSourceUrl);
-
   try {
-    // أرسل الطلب للسيرفر
-    const response = await post('/news_generator/monitored-sources/', { url: newSourceUrl });
-    console.log("✅ تم إرسال المصدر للسيرفر ورجع:", response);
+    console.log("🟢 محاولة إضافة مصدر جديد:", newSourceUrl);
 
-    // ✅ بعد الإضافة، أعمل refresh للمصادر
-    const refreshedSources = await get<NewsSource[]>('/news_generator/monitored-sources/');
+    const addedSource = await post<NewsSource, { url: string }>(
+      "/news_generator/monitored-sources/",
+      { url: newSourceUrl }
+    );
+    console.log("✅ تم إرسال المصدر للسيرفر ورجع:", addedSource);
+
+    // بعد الإضافة رجّع كل المصادر
+    const refreshedSources = await get<NewsSource[]>(
+      "/news_generator/monitored-sources/"
+    );
     console.log("🔄 المصادر بعد التحديث:", refreshedSources);
-
     setSources(refreshedSources || []);
-    setNewSourceUrl('');
-
+    setNewSourceUrl("");
   } catch (err) {
     console.error("❌ خطأ أثناء إضافة المصدر:", err);
-    setError(err instanceof ApiError ? err.message : 'فشل في إضافة المصدر.');
+    setError(err instanceof ApiError ? err.message : "فشل في إضافة المصدر.");
   }
 };
+
 
 
 
