@@ -180,12 +180,19 @@ export const generateArticleWithClaude = async (
     throw new Error("Claude proxy did not return valid JSON. Raw output:\n" + raw);
   }
 
+  // ✅ النص موجود جوّه content[0].text
+  const outputText = dataRes.content?.[0]?.text || "";
+  const cleaned = outputText.replace(/```json|```/g, "").trim();
+
   try {
-    return JSON.parse(dataRes.text) as Omit<GeneratedArticle, "imageUrl">;
+    return JSON.parse(cleaned) as Omit<GeneratedArticle, "imageUrl">;
   } catch (err) {
-    throw new Error("Claude JSON parse error: " + err + "\nRaw text field:\n" + dataRes.text);
+    throw new Error("Claude JSON parse error: " + err + "\nRaw text field:\n" + outputText);
   }
 };
+
+
+
 
 // ----------------------------
 // ❌ الصور مش مدعومة
