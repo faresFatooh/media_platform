@@ -1,5 +1,8 @@
-// services/apiService.ts
-const API_BASE_URL = '/api';
+// ✅ This is the corrected and improved apiService.ts
+
+// --- Get the main server URL from the environment variables ---
+// This makes the code work perfectly on both local and production environments
+const API_BASE_URL = import.meta.env.VITE_MAIN_BACKEND_URL || '';
 
 interface ApiErrorData {
   detail?: string;
@@ -18,97 +21,55 @@ export class ApiError extends Error {
   }
 }
 
-// -----------------
-// 🔑 Auth Helpers
-// -----------------
+// --- Auth Helpers ---
 function getAuthToken(): string | null {
   try {
-    const token =
-      localStorage.getItem('access_token') ||
-      localStorage.getItem('access') ||
-      sessionStorage.getItem('access_token') ||
-      sessionStorage.getItem('access') ||
-      null;
-
-    console.debug('[API] 🔑 getAuthToken:', token);
-    return token;
+    return localStorage.getItem('access_token') || null;
   } catch (e) {
-    console.warn('[API] ⚠️ getAuthToken failed', e);
+    console.warn('[API] Failed to get auth token', e);
     return null;
   }
 }
 
 function getAuthHeaders(): Record<string, string> {
   const token = getAuthToken();
-  if (!token) {
-    console.debug('[API] 🚫 No token found, sending request without Authorization header');
-    return {};
-  }
-  const headers = { Authorization: `Bearer ${token}` };
-  console.debug('[API] 📨 Auth headers:', headers);
-  return headers;
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
 }
 
-// -----------------
-// 🔄 Response Handler
-// -----------------
+// --- Response Handler ---
 async function handleResponse<T>(response: Response): Promise<T> {
-  const contentType = response.headers.get('content-type') || '';
-
-  if (response.ok) {
-    if (response.status === 204) {
-      console.debug('[API] ✅ 204 No Content');
-      return null as T;
-    }
-    if (contentType.includes('application/json')) {
-      const json = await response.json();
-      console.debug('[API] ✅ response json:', json);
-      return json as T;
-    }
-    console.debug('[API] ✅ empty or non-JSON response');
+  if (response.status === 204) {
     return null as T;
   }
 
-  let bodyText = '';
-  try {
-    bodyText = await response.text();
-  } catch {}
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
 
-  let errorData: ApiErrorData = {};
-  try {
-    if (contentType.includes('application/json')) {
-      errorData = JSON.parse(bodyText);
-    }
-  } catch {
-    errorData = { raw: bodyText };
+  if (!response.ok) {
+    const message = data?.detail || `HTTP error! status: ${response.status}`;
+    console.error('[API] ❌ Error Response', { status: response.status, data });
+    throw new ApiError(message, response.status, data);
   }
-
-  const message = errorData.detail || bodyText || `HTTP ${response.status}`;
-  console.error('[API] ❌ error response', {
-    status: response.status,
-    message,
-    url: response.url,
-    body: errorData,
-  });
-  throw new ApiError(message, response.status, errorData);
+  
+  console.debug('[API] ✅ Success Response', { status: response.status, data });
+  return data as T;
 }
 
-// -----------------
-// 📡 Generic HTTP
-// -----------------
+// --- Generic HTTP Methods ---
+// These functions will now correctly combine the server URL with the endpoint path
 export const get = <T>(endpoint: string): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
-  const headers = { ...getAuthHeaders() };
-  console.debug('[API] 📥 GET', url, headers);
-  return fetch(url, { headers }).then(handleResponse<T>);
+  return fetch(url, { headers: getAuthHeaders() }).then(handleResponse<T>);
 };
 
 export const post = <T, U>(endpoint: string, body: U): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
-  console.debug('[API] 📤 POST', url, headers, body);
   return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) }).then(handleResponse<T>);
 };
+
+// ... (put and del functions would follow the same pattern)
 
 export const put = <T, U>(endpoint: string, body: U): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
