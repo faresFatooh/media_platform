@@ -158,7 +158,6 @@ export const generateArticleWithClaude = async (
 
   const prompt = getPrompt(inputType, data);
 
-  // 🔑 نرسل Claude نفس التعليمات مثل Gemini
   const body = {
     system: `
       أنت صحفي محترف. 
@@ -179,7 +178,7 @@ export const generateArticleWithClaude = async (
       }
     `,
     prompt,
-    response_mime_type: "application/json", // ✅ زي Gemini
+    response_mime_type: "application/json",
   };
 
   const res = await fetch(`${CLAUDE_PROXY_URL}/api/claude/generate`, {
@@ -195,15 +194,18 @@ export const generateArticleWithClaude = async (
     throw new Error(`Claude proxy error: ${res.statusText}\nRaw response:\n${raw}`);
   }
 
+  // 🔥 تنظيف الرد
+  let cleaned = raw.replace(/```json|```/g, "").trim();
+
+  // بعض البروكسيات ترجّع JSON مغلف، فنجرب نفكه
   let parsed: any;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error("Claude proxy did not return valid JSON. Raw output:\n" + raw);
+    throw new Error("Claude proxy did not return valid JSON. Raw output:\n" + cleaned);
   }
 
-  // ✅ بعض بروكسيات Claude ترجع JSON مغلف، فنجرب نطلع منه
-  const outputText = parsed.content?.[0]?.text || raw;
+  const outputText = parsed.content?.[0]?.text || cleaned;
 
   return safeJsonParse(outputText) as Omit<GeneratedArticle, "imageUrl">;
 };
