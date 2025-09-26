@@ -59,9 +59,9 @@ function safeJsonParse(text: string): any {
 
   // 🟢 4. إصلاح سريع: لو في سترينغ مش مسكّر → سكّره يدوياً
   if (cleaned.match(/"content":\s*".*$/s)) {
-    cleaned = cleaned.replace(/"content":\s*"([^"]*)$/, `"content": "$1"`); // سكّر النص
+    cleaned = cleaned.replace(/"content":\s*"([^"]*)$/, `"content": "$1"`);
     if (!cleaned.trim().endsWith("}")) {
-      cleaned += "}"; // سكّر القوس الناقص
+      cleaned += "}";
     }
     try {
       return JSON.parse(cleaned);
@@ -76,7 +76,7 @@ function safeJsonParse(text: string): any {
     content: cleaned,
     summaryPoints: [],
     keywords: [],
-    sources: ["Claude أرجع JSON غير مكتمل"],
+    sources: ["Claude/Gemini أرجع JSON غير مكتمل"],
     socialMediaPosts: { twitter: "", facebook: "" },
   };
 }
@@ -157,7 +157,7 @@ export const generateArticleWithGemini = async (
 };
 
 // ----------------------------
-// ✅ Claude (مطابق لطريقة Gemini)
+// ✅ Claude
 // ----------------------------
 export const generateArticleWithClaude = async (
   inputType: ArticleInputType,
@@ -188,6 +188,7 @@ export const generateArticleWithClaude = async (
     `,
     prompt,
     response_mime_type: "application/json",
+    max_tokens: 2000, // ⬅️ منع القطع
   };
 
   const res = await fetch(`${CLAUDE_PROXY_URL}/api/claude/generate`, {
@@ -203,22 +204,18 @@ export const generateArticleWithClaude = async (
     throw new Error(`Claude proxy error: ${res.statusText}\nRaw response:\n${raw}`);
   }
 
-  // 🔥 تنظيف الرد
-  let cleaned = raw.replace(/```json|```/g, "").trim();
-
-  // بعض البروكسيات ترجّع JSON مغلف، فنجرب نفكه
+  // 🔥 بعض البروكسيات ترجّع { content: [{ text: "..."}] }
   let parsed: any;
   try {
-    parsed = JSON.parse(cleaned);
+    parsed = JSON.parse(raw);
   } catch {
-    throw new Error("Claude proxy did not return valid JSON. Raw output:\n" + cleaned);
+    return safeJsonParse(raw) as Omit<GeneratedArticle, "imageUrl">;
   }
 
-  const outputText = parsed.content?.[0]?.text || cleaned;
+  const outputText = parsed.content?.[0]?.text || raw;
 
   return safeJsonParse(outputText) as Omit<GeneratedArticle, "imageUrl">;
 };
-
 
 // ----------------------------
 // ✅ Breaking News
@@ -228,7 +225,6 @@ export const getBreakingNewsFromSources = async (
 ): Promise<BreakingNewsTopic[]> => {
   if (!sources || sources.length === 0) return [];
 
-  // ✅ فلترة المصادر
   const validSources = sources.filter((s) => s && s.url);
   if (validSources.length === 0) return [];
 
@@ -244,7 +240,6 @@ export const getBreakingNewsFromSources = async (
       .filter(Boolean)
       .join(", ");
 
-    // ✅ Prompt مضبوط
     const prompt = `أنت مساعد صحفي محترف.
 اعرض أهم 5 أخبار عاجلة من المواقع التالية: ${sourceUrls}.
 مهم جداً:
@@ -262,13 +257,11 @@ export const getBreakingNewsFromSources = async (
 
     const text = response.response.text();
 
-    // ✅ تنظيف أي مقدمات غير مرغوبة
     let cleanedText = text
       .replace(/^.*بصفتي محرر أخبار.*$/gmi, "")
       .replace(/^.*As a news editor.*$/gmi, "")
       .trim();
 
-    // ✅ استخراج الأخبار
     const topics: Omit<BreakingNewsTopic, "sources">[] = cleanedText
       .split("---")
       .map((part) => part.trim())
@@ -285,11 +278,9 @@ export const getBreakingNewsFromSources = async (
         };
       });
 
-    // ✅ محاولة جلب المصادر من Gemini grounding
     const candidate = response.response.candidates?.[0] as any;
     const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
 
-    // ✅ fallback sources (لو ما في grounding)
     const fallbackSources = validSources.map((s) => ({
       uri: s.url,
       title: new URL(s.url).hostname,
@@ -303,7 +294,6 @@ export const getBreakingNewsFromSources = async (
         .slice(startIndex, endIndex)
         .map((chunk: any) => chunk.web);
 
-      // ✅ إذا ما في sources من Gemini، رجع fallback
       const finalSources =
         assignedSources.length > 0
           ? (assignedSources.filter((s: any) => s) as { uri: string; title: string }[])
@@ -331,10 +321,6 @@ export const getBreakingNewsFromSources = async (
     throw new Error("فشل في جلب الأخبار العاجلة.");
   }
 };
-
-
-
-
 
 // ----------------------------
 // 🚫 الصور غير مدعومة
