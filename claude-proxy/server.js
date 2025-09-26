@@ -6,9 +6,8 @@ import Anthropic from "@anthropic-ai/sdk";
 const app = express();
 
 // --- Middleware ---
-app.use(bodyParser.json({ limit: '10mb' })); // زيادة الحد الأقصى لحجم الطلب
+app.use(bodyParser.json({ limit: '10mb' }));
 app.use(cors({
-  // تأكد من وجود رابط واجهتك الأمامية هنا
   origin: [
     "https://ghazimortaja.com",
     "https://ai-news-generator-service.onrender.com",
@@ -17,12 +16,12 @@ app.use(cors({
   credentials: true,
 }));
 
-// --- عميل Claude ---
+// --- Claude Client ---
 const client = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
 
-// --- مسار التوليد ---
+// --- Generation Route ---
 app.post("/api/claude/generate", async (req, res) => {
   try {
     const { prompt, system } = req.body;
@@ -30,15 +29,20 @@ app.post("/api/claude/generate", async (req, res) => {
     if (!prompt) {
       return res.status(400).json({ error: "Prompt is required" });
     }
+
     const msg = await client.messages.create({
-      model: "claude-3-5-haiku-20241022", // استخدام نموذج Haiku الأسرع والأكثر توافرًا
-      max_tokens: 4096, // ✅ تم زيادة حد التوكنز لمنع انقطاع الرد
-      system: system, // تمرير التعليمات النظامية من الواجهة الأمامية
+      model: "claude-3-5-haiku-20241022",
+      max_tokens: 4096,
+      system: system,
       messages: [{ role: "user", content: prompt }],
     });
 
-    // المكتبة توفر المحتوى النظيف تلقائيًا
-    res.json(msg.content[0].text);
+    // ✅ --- THIS IS THE FIX ---
+    // We manually set the header and send the raw JSON string
+    // instead of letting express re-encode it.
+    res.setHeader('Content-Type', 'application/json');
+    res.send(msg.content[0].text);
+    // -------------------------
 
   } catch (error) {
     console.error("Server error calling Claude:", error);
@@ -46,12 +50,12 @@ app.post("/api/claude/generate", async (req, res) => {
   }
 });
 
-// --- فحص السلامة ---
+// --- Health Check ---
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-// --- تشغيل الخادم ---
+// --- Start Server ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Claude proxy running on port ${PORT}`);
