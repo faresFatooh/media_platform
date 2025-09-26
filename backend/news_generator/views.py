@@ -7,6 +7,8 @@ from .serializers import (
     CustomNewsSourceSerializer,
     MonitoredSourceSerializer,
 )
+print(">>> PINK STICKER TEST: The new views.py file is running!!")
+
 
 # This custom permission is important for security
 class IsOwner(permissions.BasePermission):
