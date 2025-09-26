@@ -125,7 +125,7 @@ export const generateArticleWithGemini = async (
   if (!GEMINI_API_KEY) throw new Error("Gemini API key is not configured.");
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     systemInstruction: `
       أنت صحفي محترف. 
       ❌ لا تستخدم أي لغة غير العربية.
@@ -224,7 +224,7 @@ export const getBreakingNewsFromSources = async (
 
     const text = response.response.text();
 
-    // ✅ فلترة أي مقدمات غير مرغوبة
+    // ✅ تنظيف أي مقدمات غير مرغوبة
     let cleanedText = text
       .replace(/^.*بصفتي محرر أخبار.*$/gmi, "")
       .replace(/^.*As a news editor.*$/gmi, "")
@@ -247,9 +247,15 @@ export const getBreakingNewsFromSources = async (
         };
       });
 
-    // ✅ توزيع المصادر (لو فيه grounding)
+    // ✅ محاولة جلب المصادر من Gemini grounding
     const candidate = response.response.candidates?.[0] as any;
     const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
+
+    // ✅ fallback sources (لو ما في grounding)
+    const fallbackSources = validSources.map((s) => ({
+      uri: s.url,
+      title: new URL(s.url).hostname,
+    }));
 
     const topicsWithSources: BreakingNewsTopic[] = topics.map((topic, index) => {
       const sourcesPerTopic = Math.ceil(groundingChunks.length / topics.length);
@@ -259,9 +265,15 @@ export const getBreakingNewsFromSources = async (
         .slice(startIndex, endIndex)
         .map((chunk: any) => chunk.web);
 
+      // ✅ إذا ما في sources من Gemini، رجع fallback
+      const finalSources =
+        assignedSources.length > 0
+          ? (assignedSources.filter((s: any) => s) as { uri: string; title: string }[])
+          : fallbackSources;
+
       return {
         ...topic,
-        sources: assignedSources.filter((s: any) => s) as { uri: string; title: string }[],
+        sources: finalSources,
       };
     });
 
@@ -270,9 +282,7 @@ export const getBreakingNewsFromSources = async (
         {
           title: "مستجدات الأخبار",
           summary: cleanedText,
-          sources: groundingChunks
-            .map((c: any) => c.web)
-            .filter((s: any) => s) as { uri: string; title: string }[],
+          sources: fallbackSources,
         },
       ];
     }
@@ -283,6 +293,7 @@ export const getBreakingNewsFromSources = async (
     throw new Error("فشل في جلب الأخبار العاجلة.");
   }
 };
+
 
 
 

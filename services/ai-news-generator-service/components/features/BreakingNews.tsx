@@ -20,24 +20,23 @@ const TopicCard: React.FC<{ topic: BreakingNewsTopic; onGenerate: (topic: Breaki
     <div>
       <h3 className="text-xl font-bold text-cyan-400 mb-2">{topic.title}</h3>
       <p className="text-gray-300 text-sm mb-4">{topic.summary}</p>
+
+      {/* ✅ عرض المصادر */}
       {Array.isArray(topic.sources) && topic.sources.length > 0 && (
         <div className="mb-4">
           <h4 className="text-xs font-semibold text-gray-400 mb-2">المصادر:</h4>
           <div className="flex flex-wrap gap-2">
-            {topic.sources.map(
-              (source, i) =>
-                source.uri && (
-                  <a
-                    href={source.uri}
-                    key={i}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs bg-gray-700 text-cyan-300 px-2 py-1 rounded hover:bg-gray-600 truncate max-w-full"
-                  >
-                    {source.title || new URL(source.uri).hostname}
-                  </a>
-                )
-            )}
+            {topic.sources.map((source, i) => (
+              <a
+                href={source.uri}
+                key={i}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs bg-gray-700 text-cyan-300 px-2 py-1 rounded hover:bg-gray-600 truncate max-w-full"
+              >
+                {source.title || new URL(source.uri).hostname}
+              </a>
+            ))}
           </div>
         </div>
       )}
@@ -50,6 +49,7 @@ const TopicCard: React.FC<{ topic: BreakingNewsTopic; onGenerate: (topic: Breaki
     </button>
   </div>
 );
+
 
 export const BreakingNews: React.FC = () => {
   const [sources, setSources] = useState<NewsSource[]>([]);
