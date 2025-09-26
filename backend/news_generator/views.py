@@ -61,16 +61,17 @@ class MonitoredSourceViewSet(viewsets.ModelViewSet):
         # قراءة RSS باستخدام feedparser
         feed = feedparser.parse(source.url)
         articles = []
-        for entry in feed.entries[:10]:  # نجيب آخر 10 مقالات فقط
+        for i, entry in enumerate(feed.entries[:10]):  # آخر 10 مقالات
             articles.append({
-                "id": entry.get("id", entry.get("link", "")),
+                "id": entry.get("id", entry.get("link", f"{source.id}-{i}")),
                 "title": entry.get("title", "بدون عنوان"),
                 "link": entry.get("link", ""),
-                "snippet": entry.get("summary", "")[:300],  # ملخص صغير
-                "publishedDate": entry.get("published", ""),
+                "snippet": entry.get("summary", entry.get("description", ""))[:300],
+                "publishedDate": entry.get("published", entry.get("updated", "")),
             })
 
         return Response(articles, status=status.HTTP_200_OK)
+
 
 
 # --- باقي الـ Views ---
