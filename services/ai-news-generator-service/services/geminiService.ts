@@ -40,24 +40,25 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 function safeJsonParse(text: string): any {
   if (!text) throw new Error("Claude/Gemini response is empty.");
 
+  // 🟢 تنظيف النص من أي ```json أو ```
   let cleaned = text.replace(/```json|```/g, "").trim();
 
   try {
     return JSON.parse(cleaned);
   } catch {}
 
+  // fallback إذا فيه زيادة بالنص
+  const firstBrace = cleaned.indexOf("{");
   const lastBrace = cleaned.lastIndexOf("}");
-  if (lastBrace !== -1) {
-    cleaned = cleaned.slice(0, lastBrace + 1);
-  }
-
-  if (!cleaned.endsWith("}")) {
-    cleaned += "}";
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
   }
 
   try {
     return JSON.parse(cleaned);
-  } catch {}
+  } catch (e) {
+    console.error("❌ safeJsonParse failed:", e, "raw:", text);
+  }
 
   return {
     title: "مقال غير مكتمل",
@@ -65,10 +66,7 @@ function safeJsonParse(text: string): any {
     summaryPoints: [],
     keywords: [],
     sources: ["محتوى أصلي"],
-    socialMediaPosts: {
-      twitter: "",
-      facebook: "",
-    },
+    socialMediaPosts: { twitter: "", facebook: "" },
   };
 }
 
