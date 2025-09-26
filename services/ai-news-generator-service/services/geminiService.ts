@@ -40,32 +40,43 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 function safeJsonParse(text: string): any {
   if (!text) throw new Error("Claude/Gemini response is empty.");
 
-  // 🟢 تنظيف النص من أي ```json أو ```
+  // 🟢 1. تنظيف من ```json و ```
   let cleaned = text.replace(/```json|```/g, "").trim();
 
-  try {
-    return JSON.parse(cleaned);
-  } catch {}
-
-  // fallback إذا فيه زيادة بالنص
+  // 🟢 2. قص على أول { وآخر } فقط
   const firstBrace = cleaned.indexOf("{");
   const lastBrace = cleaned.lastIndexOf("}");
   if (firstBrace !== -1 && lastBrace !== -1) {
     cleaned = cleaned.slice(firstBrace, lastBrace + 1);
   }
 
+  // 🟢 3. محاولة parse طبيعي
   try {
     return JSON.parse(cleaned);
   } catch (e) {
-    console.error("❌ safeJsonParse failed:", e, "raw:", text);
+    console.warn("❌ JSON.parse failed, trying repair:", e);
   }
 
+  // 🟢 4. إصلاح سريع: لو في سترينغ مش مسكّر → سكّره يدوياً
+  if (cleaned.match(/"content":\s*".*$/s)) {
+    cleaned = cleaned.replace(/"content":\s*"([^"]*)$/, `"content": "$1"`); // سكّر النص
+    if (!cleaned.trim().endsWith("}")) {
+      cleaned += "}"; // سكّر القوس الناقص
+    }
+    try {
+      return JSON.parse(cleaned);
+    } catch (e2) {
+      console.error("❌ JSON repair failed:", e2, "raw:", text);
+    }
+  }
+
+  // 🟢 5. fallback → رجّع object ناقص
   return {
     title: "مقال غير مكتمل",
     content: cleaned,
     summaryPoints: [],
     keywords: [],
-    sources: ["محتوى أصلي"],
+    sources: ["Claude أرجع JSON غير مكتمل"],
     socialMediaPosts: { twitter: "", facebook: "" },
   };
 }
