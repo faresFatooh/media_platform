@@ -224,17 +224,18 @@ export const getBreakingNewsFromSources = async (
     const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
 
     const topics: Omit<BreakingNewsTopic, "sources">[] = text
-      .split("---")
-      .map((part) => part.trim())
-      .filter((part) => part.length > 0)
-      .map((part) => {
-        const titleMatch = part.match(/العنوان: (.*)/);
-        const summaryMatch = part.match(/الملخص: ([\s\S]*)/);
-        return {
-          title: titleMatch ? titleMatch[1].trim() : "لم يتم العثور على عنوان",
-          summary: summaryMatch ? summaryMatch[1].trim() : "لم يتم العثور على ملخص.",
-        };
-      });
+  .split("---")
+  .map((part) => part.trim())
+  .filter((part) => part.length > 0)
+  .map((part) => {
+    const titleMatch = part.match(/(?:العنوان|Title)\s*[:：]\s*(.+)/);
+    const summaryMatch = part.match(/(?:الملخص|Summary)\s*[:：]\s*([\s\S]+)/);
+
+    return {
+      title: titleMatch ? titleMatch[1].trim() : part.split("\n")[0].trim(),
+      summary: summaryMatch ? summaryMatch[1].trim() : part.replace(/(?:العنوان|Title)\s*[:：].*/, "").trim(),
+    };
+  });
 
     const topicsWithSources: BreakingNewsTopic[] = topics.map((topic, index) => {
       const sourcesPerTopic = Math.ceil(groundingChunks.length / topics.length);
