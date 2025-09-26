@@ -47,6 +47,7 @@ class MonitoredSourceViewSet(viewsets.ModelViewSet):
         return MonitoredSource.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        print(">>> PINK STICKER TEST: The new views.py file is running!")
         serializer.save(user=self.request.user)
     
     # The redundant 'create' method has been removed.
