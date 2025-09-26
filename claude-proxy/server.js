@@ -33,7 +33,7 @@ app.post("/api/claude/generate", async (req, res) => {
     }
 
     const msg = await client.messages.create({
-      model: "claude-3-sonnet-20240229", // A powerful and stable model
+      model: "claude-2.1", // A powerful and stable model
       max_tokens: 4096, // ✅ Increased token limit to prevent cut-offs
       system: system, // Pass the system prompt from the frontend
       messages: [{ role: "user", content: prompt }],
