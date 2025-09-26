@@ -40,15 +40,15 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 function safeJsonParse(text: string): any {
   if (!text || typeof text !== 'string') {
       console.error("safeJsonParse received invalid input:", text);
-      throw new Error("Claude/Gemini response is empty or not a string.");
+      throw new Error("رد Claude/Gemini فارغ أو ليس نصًا.");
   }
   try {
-    // Try to parse it directly first, as the new proxy should return clean JSON text
+    // حاول تحليله مباشرة أولاً، حيث يجب أن يعيد الوكيل الجديد نص JSON نظيفًا
     return JSON.parse(text);
   } catch (e) {
     console.warn("Direct JSON.parse failed, cleaning and retrying:", e);
     
-    // Fallback cleaning logic
+    // منطق تنظيف احتياطي
     let cleaned = text.replace(/```json|```/g, "").trim();
     const firstBrace = cleaned.indexOf("{");
     const lastBrace = cleaned.lastIndexOf("}");
@@ -59,8 +59,8 @@ function safeJsonParse(text: string): any {
     try {
       return JSON.parse(cleaned);
     } catch (e2) {
-      console.error("❌ JSON cleaning failed:", e2, "raw:", text);
-      throw new Error("Failed to parse the article data from the AI.");
+      console.error("❌ فشل تنظيف JSON:", e2, "الرد الخام:", text);
+      throw new Error("فشل في تحليل بيانات المقال من الذكاء الاصطناعي.");
     }
   }
 }
@@ -151,11 +151,11 @@ export const generateArticleWithClaude = async (
 
   const prompt = getPrompt(inputType, data);
   const system = `
-      You are a professional journalist.
-      ❌ Do not use any language other than Arabic.
-      ✅ All output must be in Modern Standard Arabic only.
-      Always return the result in JSON format only.
-      The required JSON structure is:
+      أنت صحفي محترف. 
+      ❌ لا تستخدم أي لغة غير العربية.
+      ✅ جميع المخرجات يجب أن تكون بالعربية الفصحى فقط.
+      دائماً أعد النتيجة بصيغة JSON فقط.
+      هيكل JSON المطلوب:
       {
         "title": string,
         "content": string,

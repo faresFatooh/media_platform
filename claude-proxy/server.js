@@ -8,7 +8,7 @@ const app = express();
 // --- Middleware ---
 app.use(bodyParser.json());
 app.use(cors({
-  // Ensure your frontend service URL is listed here
+  // تأكد من وجود رابط واجهتك الأمامية هنا
   origin: [
     "https://ghazimortaja.com",
     "https://ai-news-generator-service.onrender.com",
@@ -17,13 +17,13 @@ app.use(cors({
   credentials: true,
 }));
 
-// --- Claude Client ---
-// The SDK is more robust than a direct fetch call
+// --- عميل Claude ---
+// المكتبة الرسمية أكثر استقرارًا
 const client = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
 
-// --- Generation Route ---
+// --- مسار التوليد ---
 app.post("/api/claude/generate", async (req, res) => {
   try {
     const { prompt, system } = req.body;
@@ -33,13 +33,13 @@ app.post("/api/claude/generate", async (req, res) => {
     }
 
     const msg = await client.messages.create({
-      model: "claude-sonnet-4-20250514", // A powerful and stable model
-      max_tokens: 4096, // ✅ Increased token limit to prevent cut-offs
-      system: system, // Pass the system prompt from the frontend
+      model: "claude-sonnet-4-20250514", // نموذج سريع وفعال
+      max_tokens: 4096, // ✅ تم زيادة حد التوكنز لمنع انقطاع الرد
+      system: system, // تمرير التعليمات النظامية من الواجهة الأمامية
       messages: [{ role: "user", content: prompt }],
     });
 
-    // The SDK automatically provides the clean content
+    // المكتبة توفر المحتوى النظيف تلقائيًا
     res.json(msg.content[0].text);
 
   } catch (error) {
@@ -48,12 +48,12 @@ app.post("/api/claude/generate", async (req, res) => {
   }
 });
 
-// --- Health Check ---
+// --- فحص السلامة ---
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-// --- Start Server ---
+// --- تشغيل الخادم ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Claude proxy running on port ${PORT}`);
