@@ -18,11 +18,9 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * 🔹 حاول قراءة التوكن من كل الأماكن المحتملة
- *  - localStorage: access_token أو access
- *  - sessionStorage: access_token أو access
- */
+// -----------------
+// 🔑 Auth Helpers
+// -----------------
 function getAuthToken(): string | null {
   try {
     const token =
@@ -40,9 +38,6 @@ function getAuthToken(): string | null {
   }
 }
 
-/**
- * 🔹 بناء الهيدر الخاص بالمصادقة
- */
 function getAuthHeaders(): Record<string, string> {
   const token = getAuthToken();
   if (!token) {
@@ -54,29 +49,30 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
-/**
- * 🔹 معالجة الرد من السيرفر
- */
+// -----------------
+// 🔄 Response Handler
+// -----------------
 async function handleResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type') || '';
 
   if (response.ok) {
+    if (response.status === 204) {
+      console.debug('[API] ✅ 204 No Content');
+      return null as T;
+    }
     if (contentType.includes('application/json')) {
       const json = await response.json();
       console.debug('[API] ✅ response json:', json);
       return json as T;
     }
-    console.debug('[API] ✅ no content');
-    return {} as T; // رجع object فاضي بدل undefined
+    console.debug('[API] ✅ empty or non-JSON response');
+    return null as T;
   }
 
-  // --- error handling ---
   let bodyText = '';
   try {
     bodyText = await response.text();
-  } catch {
-    /* ignore */
-  }
+  } catch {}
 
   let errorData: ApiErrorData = {};
   try {
@@ -97,10 +93,9 @@ async function handleResponse<T>(response: Response): Promise<T> {
   throw new ApiError(message, response.status, errorData);
 }
 
-/**
- * 🔹 دوال HTTP
- * كل وحدة منهم بتجيب التوكن من getAuthHeaders()
- */
+// -----------------
+// 📡 Generic HTTP
+// -----------------
 export const get = <T>(endpoint: string): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { ...getAuthHeaders() };
@@ -128,3 +123,48 @@ export const del = (endpoint: string): Promise<void> => {
   console.debug('[API] 🗑️ DELETE', url, headers);
   return fetch(url, { method: 'DELETE', headers }).then(handleResponse<void>);
 };
+
+// -----------------
+// 🎯 Specialized API Calls
+// -----------------
+
+// 📰 Monitored Sources
+export const getMonitoredSources = () =>
+  get<{ id: number; url: string; created_at: string }[]>('/news_generator/monitored-sources/');
+
+export const addMonitoredSource = (url: string) =>
+  post<{ id: number; url: string; created_at: string }, { url: string }>(
+    '/news_generator/monitored-sources/',
+    { url }
+  );
+
+export const deleteMonitoredSource = (id: number) =>
+  del(`/news_generator/monitored-sources/${id}/`);
+
+// 🌐 Custom Sources
+export const getCustomSources = () =>
+  get<{ id: number; url: string; created_at: string }[]>('/news_generator/custom-sources/');
+
+export const addCustomSource = (url: string) =>
+  post<{ id: number; url: string; created_at: string }, { url: string }>(
+    '/news_generator/custom-sources/',
+    { url }
+  );
+
+export const deleteCustomSource = (id: number) =>
+  del(`/news_generator/custom-sources/${id}/`);
+
+// ✍️ Editorial Styles
+export const getEditorialStyles = () =>
+  get<{ id: number; name: string; description: string; created_at: string }[]>(
+    '/news_generator/editorial-styles/'
+  );
+
+export const addEditorialStyle = (name: string, description: string) =>
+  post<{ id: number; name: string; description: string; created_at: string }, { name: string; description: string }>(
+    '/news_generator/editorial-styles/',
+    { name, description }
+  );
+
+export const deleteEditorialStyle = (id: number) =>
+  del(`/news_generator/editorial-styles/${id}/`);

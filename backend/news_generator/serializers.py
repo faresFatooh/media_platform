@@ -7,7 +7,7 @@ class EditorialStyleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EditorialStyle
-        fields = ['id', 'name', 'description', 'created_at', 'user']
+        fields = ['id', 'name', 'content', 'created_at', 'updated_at', 'user']
 
 
 class CustomNewsSourceSerializer(serializers.ModelSerializer):
