@@ -1,4 +1,4 @@
-// ✅ This is the corrected and improved apiService.ts
+// src/services/apiService.ts
 
 // --- Get the main server URL from the environment variables ---
 // This makes the code work perfectly on both local and production environments
@@ -44,7 +44,13 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: any = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (err) {
+    console.error('[API] ❌ Failed to parse JSON', text);
+    throw new ApiError('Invalid JSON response from server', response.status, { raw: text });
+  }
 
   if (!response.ok) {
     const message = data?.detail || `HTTP error! status: ${response.status}`;
@@ -57,7 +63,6 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 // --- Generic HTTP Methods ---
-// These functions will now correctly combine the server URL with the endpoint path
 export const get = <T>(endpoint: string): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   return fetch(url, { headers: getAuthHeaders() }).then(handleResponse<T>);
@@ -68,8 +73,6 @@ export const post = <T, U>(endpoint: string, body: U): Promise<T> => {
   const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
   return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) }).then(handleResponse<T>);
 };
-
-// ... (put and del functions would follow the same pattern)
 
 export const put = <T, U>(endpoint: string, body: U): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -122,10 +125,10 @@ export const getEditorialStyles = () =>
   );
 
 export const addEditorialStyle = (name: string, description: string) =>
-  post<{ id: number; name: string; description: string; created_at: string }, { name: string; description: string }>(
-    '/news_generator/editorial-styles/',
-    { name, description }
-  );
+  post<
+    { id: number; name: string; description: string; created_at: string },
+    { name: string; description: string }
+  >('/news_generator/editorial-styles/', { name, description });
 
 export const deleteEditorialStyle = (id: number) =>
   del(`/news_generator/editorial-styles/${id}/`);

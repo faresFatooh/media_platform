@@ -1,10 +1,16 @@
+// src/components/news/BreakingNews.tsx
+
 import React, { useState, useEffect } from 'react';
 import {
   getBreakingNewsFromSources,
   generateArticleWithGemini,
   generateImageWithImagen,
 } from '../../services/geminiService';
-import { get, post, ApiError } from '../../services/apiService';
+import {
+  getMonitoredSources,
+  addMonitoredSource,
+  ApiError,
+} from '../../services/apiService';
 import type { BreakingNewsTopic, GeneratedArticle, NewsSource } from '../../types';
 import { Spinner } from '../common/Spinner';
 import { ArticleDisplay } from './ArticleDisplay';
@@ -61,35 +67,27 @@ export const BreakingNews: React.FC = () => {
   const [generationMessage, setGenerationMessage] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
 
-  // 🔹 دالة موحدة لمعالجة sources
- const normalizeSources = (data: any): NewsSource[] => {
-  console.log("📌 normalizeSources raw data:", data);
+  // 🔹 Normalize sources from API
+  const normalizeSources = (data: any): NewsSource[] => {
+    console.log("📌 normalizeSources raw data:", data);
 
-  if (!data) return [];
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.results)) return data.results;
+    if (Array.isArray(data.sources)) return data.sources;
+    if (Array.isArray(data.items)) return data.items;
+    if (typeof data === "object") return Object.values(data);
 
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data.results)) return data.results;
-
-  // لو السيرفر برجع { sources: [...] }
-  if (Array.isArray(data.sources)) return data.sources;
-
-  // لو السيرفر برجع { items: [...] }
-  if (Array.isArray(data.items)) return data.items;
-
-  // آخر محاولة: حوله Array لو فيه مفاتيح
-  if (typeof data === "object") return Object.values(data);
-
-  console.warn("⚠️ Unknown sources format:", data);
-  return [];
-};
-
+    console.warn("⚠️ Unknown sources format:", data);
+    return [];
+  };
 
   useEffect(() => {
     const fetchSources = async () => {
       try {
         setError(null);
         setLoadingStep('sources');
-    const fetchedSources = await get<any>('/monitored-sources/');
+        const fetchedSources = await getMonitoredSources();
         console.log('✅ Sources fetched from API:', fetchedSources);
         setSources(normalizeSources(fetchedSources));
       } catch (err) {
@@ -160,14 +158,9 @@ export const BreakingNews: React.FC = () => {
     }
     try {
       console.log('🟢 محاولة إضافة مصدر جديد:', newSourceUrl);
+      await addMonitoredSource(newSourceUrl);
 
-  const addedSource = await post<any, { url: string }>(
-    '/monitored-sources/',
-    { url: newSourceUrl }
-    );
-      console.log('✅ السيرفر رجع بعد إضافة المصدر:', addedSource);
-
-const refreshedSources = await get<any>('/monitored-sources/');
+      const refreshedSources = await getMonitoredSources();
       console.log('🔄 المصادر بعد التحديث:', refreshedSources);
 
       setSources(normalizeSources(refreshedSources));
