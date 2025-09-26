@@ -1,16 +1,10 @@
-// src/components/news/BreakingNews.tsx
-
 import React, { useState, useEffect } from 'react';
 import {
   getBreakingNewsFromSources,
   generateArticleWithGemini,
   generateImageWithImagen,
 } from '../../services/geminiService';
-import {
-  getMonitoredSources,
-  addMonitoredSource,
-  ApiError,
-} from '../../services/apiService';
+import { get, post, ApiError } from '../../services/apiService';
 import type { BreakingNewsTopic, GeneratedArticle, NewsSource } from '../../types';
 import { Spinner } from '../common/Spinner';
 import { ArticleDisplay } from './ArticleDisplay';
@@ -67,28 +61,24 @@ export const BreakingNews: React.FC = () => {
   const [generationMessage, setGenerationMessage] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
 
-  // 🔹 Normalize sources from API
+  // 🔹 Normalize Sources
   const normalizeSources = (data: any): NewsSource[] => {
-    console.log("📌 normalizeSources raw data:", data);
-
     if (!data) return [];
     if (Array.isArray(data)) return data;
     if (Array.isArray(data.results)) return data.results;
     if (Array.isArray(data.sources)) return data.sources;
     if (Array.isArray(data.items)) return data.items;
-    if (typeof data === "object") return Object.values(data);
-
-    console.warn("⚠️ Unknown sources format:", data);
+    if (typeof data === 'object') return Object.values(data);
     return [];
   };
 
+  // 🔹 Fetch sources
   useEffect(() => {
     const fetchSources = async () => {
       try {
         setError(null);
         setLoadingStep('sources');
-        const fetchedSources = await getMonitoredSources();
-        console.log('✅ Sources fetched from API:', fetchedSources);
+        const fetchedSources = await get<any>('/api/news-generator/monitored-sources/');
         setSources(normalizeSources(fetchedSources));
       } catch (err) {
         console.error('Error fetching sources:', err);
@@ -99,9 +89,9 @@ export const BreakingNews: React.FC = () => {
     fetchSources();
   }, []);
 
+  // 🔹 Fetch news after sources
   useEffect(() => {
     if (!Array.isArray(sources) || sources.length === 0) {
-      console.warn('⚠️ No sources found, skipping news fetch.');
       setLoadingStep('idle');
       return;
     }
@@ -113,7 +103,6 @@ export const BreakingNews: React.FC = () => {
         const fetchedTopics = await getBreakingNewsFromSources(sources);
         setTopics(fetchedTopics || []);
       } catch (err) {
-        console.error('Error fetching news:', err);
         setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع أثناء جلب الأخبار.');
       } finally {
         setLoadingStep('idle');
@@ -122,6 +111,7 @@ export const BreakingNews: React.FC = () => {
     fetchNews();
   }, [sources]);
 
+  // 🔹 Generate article
   const handleGenerateArticle = async (topic: BreakingNewsTopic) => {
     setIsGeneratingArticle(true);
     setGenerationMessage('جاري تحليل الموضوع وتوليد المقال...');
@@ -135,7 +125,7 @@ export const BreakingNews: React.FC = () => {
       try {
         imageUrl = await generateImageWithImagen(articleTextData.title);
       } catch (imageError) {
-        console.warn('Image generation failed for breaking news, proceeding without image:', imageError);
+        console.warn('Image generation failed:', imageError);
       }
 
       setGeneratedArticle({ ...articleTextData, imageUrl });
@@ -146,27 +136,21 @@ export const BreakingNews: React.FC = () => {
     }
   };
 
+  // 🔹 Reset
   const handleReset = () => {
     setGeneratedArticle(null);
     setError(null);
   };
 
+  // 🔹 Add source
   const handleAddSource = async () => {
-    if (!newSourceUrl.trim()) {
-      console.warn('⚠️ ما دخلت أي رابط');
-      return;
-    }
+    if (!newSourceUrl.trim()) return;
     try {
-      console.log('🟢 محاولة إضافة مصدر جديد:', newSourceUrl);
-      await addMonitoredSource(newSourceUrl);
-
-      const refreshedSources = await getMonitoredSources();
-      console.log('🔄 المصادر بعد التحديث:', refreshedSources);
-
+      await post<any, { url: string }>('/api/news-generator/monitored-sources/', { url: newSourceUrl });
+      const refreshedSources = await get<any>('/api/news-generator/monitored-sources/');
       setSources(normalizeSources(refreshedSources));
       setNewSourceUrl('');
     } catch (err) {
-      console.error('❌ خطأ أثناء إضافة المصدر:', err);
       setError(err instanceof ApiError ? err.message : 'فشل في إضافة المصدر.');
     }
   };
@@ -174,10 +158,11 @@ export const BreakingNews: React.FC = () => {
   const getLoadingMessage = () => {
     if (isGeneratingArticle) return generationMessage;
     if (loadingStep === 'sources') return 'جاري جلب مصادرك الإخبارية...';
-    if (loadingStep === 'news') return 'جاري البحث عن آخر الأخبار من مصادرك...';
+    if (loadingStep === 'news') return 'جاري البحث عن آخر الأخبار...';
     return '';
   };
 
+  // 🔹 Render
   if (loadingStep !== 'idle' || isGeneratingArticle) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
@@ -204,7 +189,7 @@ export const BreakingNews: React.FC = () => {
     <div>
       <h2 className="text-3xl font-bold text-cyan-400 mb-6">أخبار عاجلة من مصادرك</h2>
 
-      {/* ✅ إضافة مصدر جديد */}
+      {/* إضافة مصدر جديد */}
       <div className="mb-6 flex gap-2">
         <input
           type="url"
@@ -223,8 +208,8 @@ export const BreakingNews: React.FC = () => {
 
       {Array.isArray(sources) && sources.length === 0 ? (
         <div className="text-center text-gray-400 p-8 bg-gray-800/50 rounded-lg">
-          <h3 className="text-2xl font-bold mb-3">لم يتم العثور على مصادر إخبارية</h3>
-          <p>الرجاء إضافة بعض المصادر أعلاه لتتمكن من رؤية الأخبار العاجلة المخصصة لك.</p>
+          <h3 className="text-2xl font-bold mb-3">لم يتم العثور على مصادر</h3>
+          <p>أضف بعض المصادر أعلاه لتظهر لك الأخبار.</p>
         </div>
       ) : Array.isArray(topics) && topics.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -234,7 +219,7 @@ export const BreakingNews: React.FC = () => {
         </div>
       ) : (
         <div className="text-center text-gray-500 p-8 bg-gray-800/50 rounded-lg">
-          <p>لم يتم العثور على أخبار عاجلة من مصادرك في الوقت الحالي.</p>
+          <p>لا توجد أخبار عاجلة حاليًا.</p>
         </div>
       )}
     </div>
