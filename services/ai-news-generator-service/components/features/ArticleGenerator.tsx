@@ -53,53 +53,55 @@ export const ArticleGenerator: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (
-      (inputType !== ArticleInputType.IMAGE && !inputValue.trim()) ||
-      (inputType === ArticleInputType.IMAGE && !selectedFile)
-    ) {
-      setError('يرجى تقديم مدخلات صالحة.');
-      return;
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (
+    (inputType !== ArticleInputType.IMAGE && !inputValue.trim()) ||
+    (inputType === ArticleInputType.IMAGE && !selectedFile)
+  ) {
+    setError('يرجى تقديم مدخلات صالحة.');
+    return;
+  }
+
+  setIsLoading(true);
+  setLoadingMessage('جاري تحليل المدخلات وتوليد المقال...');
+  setError(null);
+  setGeneratedArticle(null);
+
+  try {
+    const data = inputType === ArticleInputType.IMAGE ? selectedFile! : inputValue;
+
+    const generateFunction =
+      selectedModel === 'claude'
+        ? generateArticleWithClaude
+        : generateArticleWithGemini;
+
+    const articleTextData = await generateFunction(inputType, data);
+
+    // ✅ تحقق من أن النتيجة فيها البيانات الأساسية
+    if (!articleTextData || !articleTextData.title || !articleTextData.content) {
+      throw new Error("لم يتم استلام بيانات مكتملة من واجهة الذكاء الاصطناعي.");
     }
 
-    setIsLoading(true);
-    setLoadingMessage('جاري تحليل المدخلات وتوليد المقال...');
-    setError(null);
-    setGeneratedArticle(null);
-
+    let imageUrl = '';
     try {
-      const data = inputType === ArticleInputType.IMAGE ? selectedFile! : inputValue;
-
-      const generateFunction =
-        selectedModel === 'claude'
-          ? generateArticleWithClaude
-          : generateArticleWithGemini;
-
-      const articleTextData = await generateFunction(inputType, data);
-
-      let finalArticle: GeneratedArticle;
-
-      if (articleTextData.title !== 'فشل تحليل المقال') {
-        setLoadingMessage('تم إنشاء المقال، جاري توليد صورة مرتبطة...');
-        let imageUrl = '';
-        try {
-          imageUrl = await generateImageWithImagen(articleTextData.title);
-        } catch (imageError) {
-          console.warn('Image generation failed, proceeding without image:', imageError);
-        }
-        finalArticle = { ...articleTextData, imageUrl };
-      } else {
-        finalArticle = { ...articleTextData, imageUrl: '' };
-      }
-      setGeneratedArticle(finalArticle);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع.');
-    } finally {
-      setIsLoading(false);
-      setLoadingMessage('');
+      setLoadingMessage('تم إنشاء المقال، جاري توليد صورة مرتبطة...');
+      imageUrl = await generateImageWithImagen(articleTextData.title);
+    } catch (imageError) {
+      console.warn('Image generation failed, proceeding without image:', imageError);
     }
-  };
+
+    const finalArticle: GeneratedArticle = { ...articleTextData, imageUrl };
+    setGeneratedArticle(finalArticle); // ✅ هنا توصل ArticleDisplay داتا كاملة
+
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع.');
+  } finally {
+    setIsLoading(false);
+    setLoadingMessage('');
+  }
+};
+
 
   const renderInput = useCallback(() => {
     switch (inputType) {
