@@ -11,21 +11,22 @@ const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('generator');
 
   // ✅ استقبال التوكن من ghazimortaja.com
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== 'https://ghazimortaja.com') return;
+useEffect(() => {
+  const handleMessage = (event) => {
+    // أمان: تأكد من أن الرسالة قادمة من الداشبورد
+    if (event.origin !== "https://ghazimortaja.com") return;
 
-      const { access, refresh } = event.data || {};
-      if (access && refresh) {
-        localStorage.setItem('access_token', access);
-        localStorage.setItem('refresh_token', refresh);
-        console.log('✅ استلمت access & refresh tokens:', { access, refresh });
-      }
-    };
+    if (event.data && event.data.type === "AUTH_TOKEN") {
+      localStorage.setItem("access_token", event.data.token);
+      localStorage.setItem("refresh_token", event.data.refresh);
+      console.log("✅ Tokens received in iframe:", event.data);
+    }
+  };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  window.addEventListener("message", handleMessage);
+  return () => window.removeEventListener("message", handleMessage);
+}, []);
+
 
   const renderContent = () => {
     switch (activeView) {
