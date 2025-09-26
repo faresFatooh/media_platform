@@ -5,9 +5,10 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const app = express();
 
-// ✅ ميدل وير
+// --- Middleware ---
 app.use(bodyParser.json());
 app.use(cors({
+  // Ensure your frontend service URL is listed here
   origin: [
     "https://ghazimortaja.com",
     "https://ai-news-generator-service.onrender.com",
@@ -16,59 +17,43 @@ app.use(cors({
   credentials: true,
 }));
 
-// ✅ عميل Claude
+// --- Claude Client ---
+// The SDK is more robust than a direct fetch call
 const client = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
-console.log(
-  "Claude API Key:",
-  process.env.CLAUDE_API_KEY ? "Loaded ✅" : "Missing ❌"
-);
-console.log("Claude API Key (first 6 chars):", process.env.CLAUDE_API_KEY?.slice(0, 6));
 
-// ✅ راوت للتوليد
+// --- Generation Route ---
 app.post("/api/claude/generate", async (req, res) => {
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.CLAUDE_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
-        messages: [{ role: "user", content: req.body.prompt }],
-      }),
-    });
+    const { prompt, system } = req.body;
 
-    const text = await response.text();
-
-    if (!response.ok) {
-      console.error("Claude API error:", response.status, text);
-      return res
-        .status(response.status)
-        .json({ error: "Claude API failed", details: text });
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt is required" });
     }
 
-    res.json(JSON.parse(text));
+    const msg = await client.messages.create({
+      model: "claude-3-sonnet-20240229", // A powerful and stable model
+      max_tokens: 4096, // ✅ Increased token limit to prevent cut-offs
+      system: system, // Pass the system prompt from the frontend
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    // The SDK automatically provides the clean content
+    res.json(msg.content[0].text);
+
   } catch (error) {
-    console.error("Server error:", error);
-    res
-      .status(500)
-      .json({ error: "Claude proxy crashed", details: error.message });
+    console.error("Server error calling Claude:", error);
+    res.status(500).json({ error: "Claude proxy crashed", details: error.message });
   }
 });
 
-
-
-// ✅ health check
+// --- Health Check ---
 app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.status(200).json({ status: "ok" });
 });
 
-// ✅ شغل السيرفر
+// --- Start Server ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Claude proxy running on port ${PORT}`);

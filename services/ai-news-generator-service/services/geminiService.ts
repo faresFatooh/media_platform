@@ -38,47 +38,31 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 // 🛠️ Safe JSON Parse
 // ----------------------------
 function safeJsonParse(text: string): any {
-  if (!text) throw new Error("Claude/Gemini response is empty.");
-
-  // 🟢 1. تنظيف من ```json و ```
-  let cleaned = text.replace(/```json|```/g, "").trim();
-
-  // 🟢 2. قص على أول { وآخر } فقط
-  const firstBrace = cleaned.indexOf("{");
-  const lastBrace = cleaned.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace !== -1) {
-    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+  if (!text || typeof text !== 'string') {
+      console.error("safeJsonParse received invalid input:", text);
+      throw new Error("Claude/Gemini response is empty or not a string.");
   }
-
-  // 🟢 3. محاولة parse طبيعي
   try {
-    return JSON.parse(cleaned);
+    // Try to parse it directly first, as the new proxy should return clean JSON text
+    return JSON.parse(text);
   } catch (e) {
-    console.warn("❌ JSON.parse failed, trying repair:", e);
-  }
-
-  // 🟢 4. إصلاح سريع: لو في سترينغ مش مسكّر → سكّره يدوياً
-  if (cleaned.match(/"content":\s*".*$/s)) {
-    cleaned = cleaned.replace(/"content":\s*"([^"]*)$/, `"content": "$1"`);
-    if (!cleaned.trim().endsWith("}")) {
-      cleaned += "}";
+    console.warn("Direct JSON.parse failed, cleaning and retrying:", e);
+    
+    // Fallback cleaning logic
+    let cleaned = text.replace(/```json|```/g, "").trim();
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      cleaned = cleaned.slice(firstBrace, lastBrace + 1);
     }
+    
     try {
       return JSON.parse(cleaned);
     } catch (e2) {
-      console.error("❌ JSON repair failed:", e2, "raw:", text);
+      console.error("❌ JSON cleaning failed:", e2, "raw:", text);
+      throw new Error("Failed to parse the article data from the AI.");
     }
   }
-
-  // 🟢 5. fallback → رجّع object ناقص
-  return {
-    title: "مقال غير مكتمل",
-    content: cleaned,
-    summaryPoints: [],
-    keywords: [],
-    sources: ["Claude/Gemini أرجع JSON غير مكتمل"],
-    socialMediaPosts: { twitter: "", facebook: "" },
-  };
 }
 
 // ----------------------------
@@ -166,14 +150,12 @@ export const generateArticleWithClaude = async (
   if (!CLAUDE_PROXY_URL) throw new Error("Claude proxy URL is not configured.");
 
   const prompt = getPrompt(inputType, data);
-
-  const body = {
-    system: `
-      أنت صحفي محترف. 
-      ❌ لا تستخدم أي لغة غير العربية.
-      ✅ جميع المخرجات يجب أن تكون بالعربية الفصحى فقط.
-      دائماً أعد النتيجة بصيغة JSON فقط.
-      هيكل JSON المطلوب:
+  const system = `
+      You are a professional journalist.
+      ❌ Do not use any language other than Arabic.
+      ✅ All output must be in Modern Standard Arabic only.
+      Always return the result in JSON format only.
+      The required JSON structure is:
       {
         "title": string,
         "content": string,
@@ -185,36 +167,22 @@ export const generateArticleWithClaude = async (
           "facebook": string
         }
       }
-    `,
-    prompt,
-    response_mime_type: "application/json",
-    max_tokens: 2000, // ⬅️ منع القطع
-  };
+    `;
 
   const res = await fetch(`${CLAUDE_PROXY_URL}/api/claude/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ system, prompt }),
   });
 
-  const raw = await res.text();
-  console.log("Claude raw output:", raw);
+  const rawText = await res.text();
+  console.log("Claude raw output from proxy:", rawText);
 
   if (!res.ok) {
-    throw new Error(`Claude proxy error: ${res.statusText}\nRaw response:\n${raw}`);
+    throw new Error(`Claude proxy error: ${res.statusText}\nRaw response:\n${rawText}`);
   }
 
-  // 🔥 بعض البروكسيات ترجّع { content: [{ text: "..."}] }
-  let parsed: any;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return safeJsonParse(raw) as Omit<GeneratedArticle, "imageUrl">;
-  }
-
-  const outputText = parsed.content?.[0]?.text || raw;
-
-  return safeJsonParse(outputText) as Omit<GeneratedArticle, "imageUrl">;
+  return safeJsonParse(rawText) as Omit<GeneratedArticle, "imageUrl">;
 };
 
 // ----------------------------
