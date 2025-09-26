@@ -178,26 +178,29 @@ export const SourceMonitor: React.FC = () => {
             <p className="text-red-400 text-center">{error}</p>
           ) : articles.length > 0 ? (
             <ul className="space-y-4">
-              {articles.map((article) => (
-                <li
-                  key={article.id}
-                  className="p-4 bg-gray-900 rounded-md border border-gray-700 hover:border-cyan-500 transition"
+            {articles.map((article) => (
+              <li
+                key={article.id}
+                className="p-4 bg-gray-900 rounded-md border border-gray-700 hover:border-cyan-500 transition"
+              >
+                <a
+                  href={article.link}   // ← link بدل url
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-lg font-semibold text-cyan-400 hover:underline"
                 >
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-lg font-semibold text-cyan-400 hover:underline"
-                  >
-                    {article.title}
-                  </a>
-                  <p className="text-gray-400 text-sm mt-1 line-clamp-3">{article.summary}</p>
-                  <span className="text-xs text-gray-500 mt-2 block">
-                    {new Date(article.published_at).toLocaleString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                  {article.title}
+                </a>
+                <p className="text-gray-400 text-sm mt-1 line-clamp-3">
+                  {article.snippet}     // ← snippet بدل summary
+                </p>
+                <span className="text-xs text-gray-500 mt-2 block">
+                  {new Date(article.publishedDate).toLocaleString()} {/* ← publishedDate بدل published_at */}
+                </span>
+              </li>
+            ))}
+          </ul>
+
           ) : (
             <p className="text-center text-gray-500">لا توجد أخبار متاحة حالياً لهذا المصدر.</p>
           )}
