@@ -89,7 +89,7 @@ export const BreakingNews: React.FC = () => {
       try {
         setError(null);
         setLoadingStep('sources');
-    const fetchedSources = await get<any>('/api/news-generator/monitored-sources/');
+    const fetchedSources = await get<any>('/monitored-sources/');
         console.log('✅ Sources fetched from API:', fetchedSources);
         setSources(normalizeSources(fetchedSources));
       } catch (err) {
@@ -162,12 +162,12 @@ export const BreakingNews: React.FC = () => {
       console.log('🟢 محاولة إضافة مصدر جديد:', newSourceUrl);
 
   const addedSource = await post<any, { url: string }>(
-    '/api/news-generator/monitored-sources/',
+    '/monitored-sources/',
     { url: newSourceUrl }
     );
       console.log('✅ السيرفر رجع بعد إضافة المصدر:', addedSource);
 
-const refreshedSources = await get<any>('/api/news-generator/monitored-sources/');
+const refreshedSources = await get<any>('/monitored-sources/');
       console.log('🔄 المصادر بعد التحديث:', refreshedSources);
 
       setSources(normalizeSources(refreshedSources));
