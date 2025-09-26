@@ -1,3 +1,5 @@
+print(">>> VIEWS.PY: Level 0 - File is being loaded and parsed by Python.")
+
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,98 +9,101 @@ from .serializers import (
     CustomNewsSourceSerializer,
     MonitoredSourceSerializer,
 )
-print(">>> PINK STICKER TEST: The new views.py file is running!!")
+
+print(">>> VIEWS.PY: Level 1 - All imports are complete.")
 
 
-# This custom permission is important for security
 class IsOwner(permissions.BasePermission):
+    print(">>> VIEWS.PY: Level 2 - IsOwner permission class is being defined.")
     def has_object_permission(self, request, view, obj):
+        print(f">>> IsOwner: Checking permission for object {obj.id} for user {request.user.id}")
         return obj.user == request.user
 
 # --- Corrected ViewSets Below ---
 
 class EditorialStyleViewSet(viewsets.ModelViewSet):
+    print(">>> VIEWS.PY: Level 3 - EditorialStyleViewSet class is being defined.")
     serializer_class = EditorialStyleSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwner]
 
     def get_queryset(self):
+        print(f">>> EditorialStyleViewSet: get_queryset called for user {self.request.user.id}")
         return EditorialStyle.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        print(f">>> EditorialStyleViewSet: perform_create called for user {self.request.user.id}")
         serializer.save(user=self.request.user)
-    
-    # The redundant 'create' method has been removed.
 
 class CustomNewsSourceViewSet(viewsets.ModelViewSet):
+    print(">>> VIEWS.PY: Level 4 - CustomNewsSourceViewSet class is being defined.")
     serializer_class = CustomNewsSourceSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwner]
 
     def get_queryset(self):
+        print(f">>> CustomNewsSourceViewSet: get_queryset called for user {self.request.user.id}")
         return CustomNewsSource.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        print(f">>> CustomNewsSourceViewSet: perform_create called for user {self.request.user.id}")
         serializer.save(user=self.request.user)
-    
-    # The redundant 'create' method has been removed.
 
 class MonitoredSourceViewSet(viewsets.ModelViewSet):
+    print(">>> VIEWS.PY: Level 5 - MonitoredSourceViewSet class is being defined.")
     serializer_class = MonitoredSourceSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwner]
 
     def get_queryset(self):
+        print(f">>> MonitoredSourceViewSet: get_queryset called for user {self.request.user.id}")
         return MonitoredSource.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        print(">>> MonitoredSourceViewSet: STEP 5 - Calling perform_create to save to the database...")
         serializer.save(user=self.request.user)
-    
-    # --- ✅ Add this entire 'create' method for debugging ---
+        print(">>> MonitoredSourceViewSet: STEP 6 - perform_create has FINISHED.")
+
     def create(self, request, *args, **kwargs):
-        print("--- DEBUG: Inside CREATE method ---")
-        print("--- DEBUG: Received data:", request.data) # See what the frontend sent
-
+        print(">>> MonitoredSourceViewSet: STEP 1 - Entered the CREATE method.")
+        print(">>> MonitoredSourceViewSet: STEP 2 - Raw request data is:", request.data)
         serializer = self.get_serializer(data=request.data)
-        
-        if not serializer.is_valid():
-            print("--- DEBUG: Serializer is NOT valid. Errors:", serializer.errors) # See the validation errors
+        print(">>> MonitoredSourceViewSet: STEP 3 - Serializer has been initialized.")
+        if serializer.is_valid():
+            print(">>> MonitoredSourceViewSet: STEP 4 - Serializer validation SUCCEEDED.")
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            print(">>> MonitoredSourceViewSet: STEP 7 - Success headers have been generated.")
+            print(">>> MonitoredSourceViewSet: STEP 8 - Returning successful Response with data:", serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        else:
+            print(">>> MonitoredSourceViewSet: !!! STEP 4 FAILED: Serializer validation FAILED.")
+            print(">>> MonitoredSourceViewSet: !!! Validation Errors:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        print("--- DEBUG: Serializer IS valid. Calling perform_create...")
-        self.perform_create(serializer)
-        
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
-    # The redundant 'create' method has been removed.
-
 
 # --- These views below were already correct and remain unchanged ---
 
-# --- Generate Article ---
 class GenerateArticleView(APIView):
+    print(">>> VIEWS.PY: Level 6 - GenerateArticleView class is being defined.")
     permission_classes = [permissions.IsAuthenticated]
-
     def post(self, request, *args, **kwargs):
+        print(">>> GenerateArticleView: POST method entered.")
         title = request.data.get("title")
         if not title:
+            print(">>> GenerateArticleView: ERROR - Title is missing.")
             return Response({"error": "العنوان مطلوب"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # ⚡ Placeholder generation logic
-        article = {
-            "title": title,
-            "content": f"هذا مقال تم توليده تلقائياً حول: {title}"
-        }
+        print(f">>> GenerateArticleView: Generating article for title: {title}")
+        article = {"title": title, "content": f"هذا مقال تم توليده تلقائياً حول: {title}"}
         return Response(article, status=status.HTTP_200_OK)
 
-
-# --- Generate Image ---
 class GenerateImageView(APIView):
+    print(">>> VIEWS.PY: Level 7 - GenerateImageView class is being defined.")
     permission_classes = [permissions.IsAuthenticated]
-
     def post(self, request, *args, **kwargs):
+        print(">>> GenerateImageView: POST method entered.")
         prompt = request.data.get("prompt")
         if not prompt:
+            print(">>> GenerateImageView: ERROR - Prompt is missing.")
             return Response({"error": "الوصف مطلوب"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # ⚡ Placeholder image URL generation
+        print(f">>> GenerateImageView: Generating image for prompt: {prompt}")
         image_url = f"https://via.placeholder.com/600x400.png?text={prompt.replace(' ', '+')}"
         return Response({"url": image_url}, status=status.HTTP_200_OK)
+
+print(">>> VIEWS.PY: Level 8 - End of file reached.")
