@@ -6,7 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 const app = express();
 
 // --- Middleware ---
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' })); // زيادة الحد الأقصى لحجم الطلب
 app.use(cors({
   // تأكد من وجود رابط واجهتك الأمامية هنا
   origin: [
@@ -18,7 +18,6 @@ app.use(cors({
 }));
 
 // --- عميل Claude ---
-// المكتبة الرسمية أكثر استقرارًا
 const client = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
@@ -31,9 +30,8 @@ app.post("/api/claude/generate", async (req, res) => {
     if (!prompt) {
       return res.status(400).json({ error: "Prompt is required" });
     }
-
     const msg = await client.messages.create({
-      model: "claude-sonnet-4-20250514", // نموذج سريع وفعال
+      model: "claude-haiku-4-20250514", // استخدام نموذج Haiku الأسرع والأكثر توافرًا
       max_tokens: 4096, // ✅ تم زيادة حد التوكنز لمنع انقطاع الرد
       system: system, // تمرير التعليمات النظامية من الواجهة الأمامية
       messages: [{ role: "user", content: prompt }],
