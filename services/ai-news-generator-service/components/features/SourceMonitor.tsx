@@ -12,6 +12,10 @@ export const SourceMonitor: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // مقالات المصدر
+  const [articles, setArticles] = useState<SourceArticle[]>([]);
+  const [isLoadingArticles, setIsLoadingArticles] = useState(false);
+
   const fetchSources = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -20,6 +24,8 @@ export const SourceMonitor: React.FC = () => {
       setSources(data);
       if (data.length > 0 && !selectedSource) {
         setSelectedSource(data[0]);
+        // اجلب مقالات أول مصدر مباشرة
+        fetchArticles(data[0].id);
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'فشل في جلب قائمة المصادر.');
@@ -32,16 +38,29 @@ export const SourceMonitor: React.FC = () => {
     fetchSources();
   }, [fetchSources]);
 
+  const fetchArticles = async (sourceId: number) => {
+    setIsLoadingArticles(true);
+    setError(null);
+    try {
+      const data = await get<SourceArticle[]>(`/api/news-generator/monitored-sources/${sourceId}/articles/`);
+      setArticles(data);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'فشل في جلب المقالات من هذا المصدر.');
+      setArticles([]);
+    } finally {
+      setIsLoadingArticles(false);
+    }
+  };
+
   const handleSelectSource = (source: NewsSource) => {
     setSelectedSource(source);
-    // Article fetching from RSS is a backend task not yet implemented.
-    // This UI is ready for when that API exists.
+    fetchArticles(source.id);
   };
 
   const handleAddSource = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSourceUrl.trim()) return;
-    
+
     setIsAdding(true);
     setError(null);
     try {
@@ -49,27 +68,31 @@ export const SourceMonitor: React.FC = () => {
       setNewSourceUrl('');
       await fetchSources(); // Refresh list
     } catch (err) {
-      setError(err instanceof ApiError ? `فشل إضافة المصدر: ${Object.values(err.data).join(', ')}` : 'فشل إضافة المصدر.');
+      setError(
+        err instanceof ApiError
+          ? `فشل إضافة المصدر: ${Object.values(err.data).join(', ')}`
+          : 'فشل إضافة المصدر.'
+      );
     } finally {
       setIsAdding(false);
     }
   };
 
   const handleRemoveSource = async (sourceId: number) => {
-     if (window.confirm('هل أنت متأكد من أنك تريد حذف هذا المصدر؟')) {
-        try {
-            setError(null);
-            await del(`/api/news-generator/monitored-sources/${sourceId}/`);
-            if (selectedSource?.id === sourceId) {
-                setSelectedSource(sources.length > 1 ? sources.find(s => s.id !== sourceId) || null : null);
-            }
-            await fetchSources(); // Refresh list
-        } catch (err) {
-            setError(err instanceof ApiError ? err.message : 'فشل في حذف المصدر.');
+    if (window.confirm('هل أنت متأكد من أنك تريد حذف هذا المصدر؟')) {
+      try {
+        setError(null);
+        await del(`/api/news-generator/monitored-sources/${sourceId}/`);
+        if (selectedSource?.id === sourceId) {
+          setSelectedSource(sources.length > 1 ? sources.find((s) => s.id !== sourceId) || null : null);
         }
-     }
+        await fetchSources(); // Refresh list
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'فشل في حذف المصدر.');
+      }
+    }
   };
-  
+
   const getSourceName = (url: string) => {
     try {
       return new URL(url).hostname.replace(/^www\./, '');
@@ -92,7 +115,11 @@ export const SourceMonitor: React.FC = () => {
             className="flex-grow p-2 bg-gray-900 border border-gray-600 rounded-md focus:ring-2 focus:ring-cyan-500 focus:outline-none text-sm"
             required
           />
-          <button type="submit" disabled={isAdding} className="p-2 bg-cyan-600 hover:bg-cyan-700 rounded-md text-white flex-shrink-0 disabled:bg-gray-500">
+          <button
+            type="submit"
+            disabled={isAdding}
+            className="p-2 bg-cyan-600 hover:bg-cyan-700 rounded-md text-white flex-shrink-0 disabled:bg-gray-500"
+          >
             {isAdding ? <Spinner /> : <PlusIcon className="w-5 h-5" />}
           </button>
         </form>
@@ -101,9 +128,11 @@ export const SourceMonitor: React.FC = () => {
 
         <div className="flex-grow overflow-y-auto pr-2">
           {isLoading ? (
-             <div className="flex justify-center items-center h-full"><Spinner /></div>
+            <div className="flex justify-center items-center h-full">
+              <Spinner />
+            </div>
           ) : sources.length > 0 ? (
-            sources.map(source => (
+            sources.map((source) => (
               <div
                 key={source.id}
                 onClick={() => handleSelectSource(source)}
@@ -115,7 +144,13 @@ export const SourceMonitor: React.FC = () => {
                   <GlobeAltIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
                   <span className="font-medium text-gray-200 truncate">{getSourceName(source.url)}</span>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); handleRemoveSource(source.id); }} className="p-1 text-gray-500 hover:text-red-400">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveSource(source.id);
+                  }}
+                  className="p-1 text-gray-500 hover:text-red-400"
+                >
                   <TrashIcon className="w-4 h-4" />
                 </button>
               </div>
@@ -131,21 +166,41 @@ export const SourceMonitor: React.FC = () => {
         <h2 className="text-xl font-bold text-cyan-400 mb-4">
           {selectedSource ? `آخر الأخبار من ${getSourceName(selectedSource.url)}` : 'الرجاء اختيار مصدر'}
         </h2>
-        <div className="flex-grow overflow-y-auto pr-2 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-              <GlobeAltIcon className="w-16 h-16 mx-auto mb-4" />
-              {selectedSource ? (
-                <>
-                    <h3 className="text-lg text-gray-400">ميزة عرض المقالات قيد التطوير</h3>
-                    <p className="max-w-md mx-auto">
-                        لعرض المقالات هنا، يتطلب الأمر تطوير الواجهة الخلفية لتتمكن من قراءة وتحليل روابط RSS.
-                        حالياً، يمكنك إدارة مصادرك واستخدامها في صفحة "الأخبار العاجلة".
-                    </p>
-                </>
-              ) : (
-                <p>اختر مصدراً من القائمة لعرض آخر الأخبار.</p>
-              )}
-          </div>
+
+        <div className="flex-grow overflow-y-auto pr-2">
+          {!selectedSource ? (
+            <p className="text-center text-gray-500">اختر مصدراً من القائمة لعرض آخر الأخبار.</p>
+          ) : isLoadingArticles ? (
+            <div className="flex justify-center items-center h-full">
+              <Spinner />
+            </div>
+          ) : error ? (
+            <p className="text-red-400 text-center">{error}</p>
+          ) : articles.length > 0 ? (
+            <ul className="space-y-4">
+              {articles.map((article) => (
+                <li
+                  key={article.id}
+                  className="p-4 bg-gray-900 rounded-md border border-gray-700 hover:border-cyan-500 transition"
+                >
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-lg font-semibold text-cyan-400 hover:underline"
+                  >
+                    {article.title}
+                  </a>
+                  <p className="text-gray-400 text-sm mt-1 line-clamp-3">{article.summary}</p>
+                  <span className="text-xs text-gray-500 mt-2 block">
+                    {new Date(article.published_at).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-center text-gray-500">لا توجد أخبار متاحة حالياً لهذا المصدر.</p>
+          )}
         </div>
       </div>
     </div>
