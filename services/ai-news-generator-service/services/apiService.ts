@@ -9,6 +9,7 @@ interface ApiErrorData {
 export class ApiError extends Error {
   public status: number;
   public data: ApiErrorData;
+
   constructor(message: string, status: number, data: ApiErrorData) {
     super(message);
     this.name = 'ApiError';
@@ -24,13 +25,15 @@ export class ApiError extends Error {
  */
 function getAuthToken(): string | null {
   try {
-    return (
+    const token =
       localStorage.getItem('access_token') ||
       localStorage.getItem('access') ||
       sessionStorage.getItem('access_token') ||
       sessionStorage.getItem('access') ||
-      null
-    );
+      null;
+
+    console.debug('[API] 🔑 getAuthToken:', token);
+    return token;
   } catch (e) {
     console.warn('[API] ⚠️ getAuthToken failed', e);
     return null;
@@ -42,8 +45,13 @@ function getAuthToken(): string | null {
  */
 function getAuthHeaders(): Record<string, string> {
   const token = getAuthToken();
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}` };
+  if (!token) {
+    console.debug('[API] 🚫 No token found, sending request without Authorization header');
+    return {};
+  }
+  const headers = { Authorization: `Bearer ${token}` };
+  console.debug('[API] 📨 Auth headers:', headers);
+  return headers;
 }
 
 /**
@@ -96,31 +104,27 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export const get = <T>(endpoint: string): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { ...getAuthHeaders() };
-  console.debug('[API] GET', url, headers);
+  console.debug('[API] 📥 GET', url, headers);
   return fetch(url, { headers }).then(handleResponse<T>);
 };
 
 export const post = <T, U>(endpoint: string, body: U): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
-  console.debug('[API] POST', url, headers, body);
-  return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) }).then(
-    handleResponse<T>
-  );
+  console.debug('[API] 📤 POST', url, headers, body);
+  return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) }).then(handleResponse<T>);
 };
 
 export const put = <T, U>(endpoint: string, body: U): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
-  console.debug('[API] PUT', url, headers, body);
-  return fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) }).then(
-    handleResponse<T>
-  );
+  console.debug('[API] ✏️ PUT', url, headers, body);
+  return fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) }).then(handleResponse<T>);
 };
 
 export const del = (endpoint: string): Promise<void> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { ...getAuthHeaders() };
-  console.debug('[API] DELETE', url, headers);
+  console.debug('[API] 🗑️ DELETE', url, headers);
   return fetch(url, { method: 'DELETE', headers }).then(handleResponse<void>);
 };
