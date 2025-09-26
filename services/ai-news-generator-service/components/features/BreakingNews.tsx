@@ -62,12 +62,27 @@ export const BreakingNews: React.FC = () => {
   const [newSourceUrl, setNewSourceUrl] = useState('');
 
   // 🔹 دالة موحدة لمعالجة sources
-  const normalizeSources = (data: any): NewsSource[] => {
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.results)) return data.results;
-    console.warn('⚠️ Unexpected sources format:', data);
-    return [];
-  };
+ const normalizeSources = (data: any): NewsSource[] => {
+  console.log("📌 normalizeSources raw data:", data);
+
+  if (!data) return [];
+
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.results)) return data.results;
+
+  // لو السيرفر برجع { sources: [...] }
+  if (Array.isArray(data.sources)) return data.sources;
+
+  // لو السيرفر برجع { items: [...] }
+  if (Array.isArray(data.items)) return data.items;
+
+  // آخر محاولة: حوله Array لو فيه مفاتيح
+  if (typeof data === "object") return Object.values(data);
+
+  console.warn("⚠️ Unknown sources format:", data);
+  return [];
+};
+
 
   useEffect(() => {
     const fetchSources = async () => {
