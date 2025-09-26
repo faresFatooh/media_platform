@@ -148,7 +148,7 @@ export const generateArticleWithGemini = async (
 };
 
 // ----------------------------
-// ✅ Claude
+// ✅ Claude (مطابق لطريقة Gemini)
 // ----------------------------
 export const generateArticleWithClaude = async (
   inputType: ArticleInputType,
@@ -158,10 +158,34 @@ export const generateArticleWithClaude = async (
 
   const prompt = getPrompt(inputType, data);
 
+  // 🔑 نرسل Claude نفس التعليمات مثل Gemini
+  const body = {
+    system: `
+      أنت صحفي محترف. 
+      ❌ لا تستخدم أي لغة غير العربية.
+      ✅ جميع المخرجات يجب أن تكون بالعربية الفصحى فقط.
+      دائماً أعد النتيجة بصيغة JSON فقط.
+      هيكل JSON المطلوب:
+      {
+        "title": string,
+        "content": string,
+        "summaryPoints": string[],
+        "keywords": string[],
+        "sources": string[],
+        "socialMediaPosts": {
+          "twitter": string,
+          "facebook": string
+        }
+      }
+    `,
+    prompt,
+    response_mime_type: "application/json", // ✅ زي Gemini
+  };
+
   const res = await fetch(`${CLAUDE_PROXY_URL}/api/claude/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(body),
   });
 
   const raw = await res.text();
@@ -171,16 +195,19 @@ export const generateArticleWithClaude = async (
     throw new Error(`Claude proxy error: ${res.statusText}\nRaw response:\n${raw}`);
   }
 
-  let dataRes: any;
+  let parsed: any;
   try {
-    dataRes = JSON.parse(raw);
+    parsed = JSON.parse(raw);
   } catch {
     throw new Error("Claude proxy did not return valid JSON. Raw output:\n" + raw);
   }
 
-  const outputText = dataRes.content?.[0]?.text || "";
+  // ✅ بعض بروكسيات Claude ترجع JSON مغلف، فنجرب نطلع منه
+  const outputText = parsed.content?.[0]?.text || raw;
+
   return safeJsonParse(outputText) as Omit<GeneratedArticle, "imageUrl">;
 };
+
 
 // ----------------------------
 // ✅ Breaking News
