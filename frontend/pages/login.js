@@ -36,6 +36,11 @@ export default function Login() {
         storage.setItem('access_token', data.access);
         storage.setItem('refresh_token', data.refresh);
 
+      window.frames[0]?.postMessage(
+        { access: data.access, refresh: data.refresh },
+        "https://ai-news-generator-service.onrender.com"
+          );
+
         setMessage('تم تسجيل الدخول بنجاح! جاري التحويل...');
         router.push('/dashboard');
       } else {

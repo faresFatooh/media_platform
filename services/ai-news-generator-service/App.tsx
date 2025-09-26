@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { ArticleGenerator } from './components/features/ArticleGenerator';
@@ -10,6 +9,23 @@ import type { View } from './types';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('generator');
+
+  // ✅ استقبال التوكن من ghazimortaja.com
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://ghazimortaja.com') return;
+
+      const { access, refresh } = event.data || {};
+      if (access && refresh) {
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('refresh_token', refresh);
+        console.log('✅ استلمت access & refresh tokens:', { access, refresh });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const renderContent = () => {
     switch (activeView) {
