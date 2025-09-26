@@ -49,8 +49,24 @@ class MonitoredSourceViewSet(viewsets.ModelViewSet):
         return MonitoredSource.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        print(">>> PINK STICKER TEST: The new views.py file is running!!")
         serializer.save(user=self.request.user)
+    
+    # --- ✅ Add this entire 'create' method for debugging ---
+    def create(self, request, *args, **kwargs):
+        print("--- DEBUG: Inside CREATE method ---")
+        print("--- DEBUG: Received data:", request.data) # See what the frontend sent
+
+        serializer = self.get_serializer(data=request.data)
+        
+        if not serializer.is_valid():
+            print("--- DEBUG: Serializer is NOT valid. Errors:", serializer.errors) # See the validation errors
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        print("--- DEBUG: Serializer IS valid. Calling perform_create...")
+        self.perform_create(serializer)
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
     # The redundant 'create' method has been removed.
 
