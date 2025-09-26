@@ -12,44 +12,52 @@ import { ArticleInputType } from '../../types';
 
 type LoadingStep = 'idle' | 'sources' | 'news';
 
+// ✅ الكارد الآن بيدعم Placeholder
 const TopicCard: React.FC<{ topic: BreakingNewsTopic; onGenerate: (topic: BreakingNewsTopic) => void }> = ({
   topic,
   onGenerate,
-}) => (
-  <div className="bg-gray-800/70 p-5 rounded-lg shadow-lg border border-gray-700 flex flex-col justify-between animate-fade-in">
-    <div>
-      <h3 className="text-xl font-bold text-cyan-400 mb-2">{topic.title}</h3>
-      <p className="text-gray-300 text-sm mb-4">{topic.summary}</p>
-      {Array.isArray(topic.sources) && topic.sources.length > 0 && (
-        <div className="mb-4">
-          <h4 className="text-xs font-semibold text-gray-400 mb-2">المصادر:</h4>
-          <div className="flex flex-wrap gap-2">
-            {topic.sources.map(
-              (source, i) =>
-                source.uri && (
-                  <a
-                    href={source.uri}
-                    key={i}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs bg-gray-700 text-cyan-300 px-2 py-1 rounded hover:bg-gray-600 truncate max-w-full"
-                  >
-                    {source.title || new URL(source.uri).hostname}
-                  </a>
-                )
-            )}
+}) => {
+  return (
+    <div className="bg-gray-800/70 p-5 rounded-lg shadow-lg border border-gray-700 flex flex-col justify-between animate-fade-in">
+      <div>
+        <h3 className="text-xl font-bold text-cyan-400 mb-2">
+          {topic.title || "🔎 لم يتم العثور على عنوان"}
+        </h3>
+        <p className="text-gray-300 text-sm mb-4">
+          {topic.summary || "📄 لم يتم العثور على ملخص"}
+        </p>
+
+        {Array.isArray(topic.sources) && topic.sources.length > 0 && (
+          <div className="mb-4">
+            <h4 className="text-xs font-semibold text-gray-400 mb-2">المصادر:</h4>
+            <div className="flex flex-wrap gap-2">
+              {topic.sources.map(
+                (source, i) =>
+                  source.uri && (
+                    <a
+                      href={source.uri}
+                      key={i}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs bg-gray-700 text-cyan-300 px-2 py-1 rounded hover:bg-gray-600 truncate max-w-full"
+                    >
+                      {source.title || new URL(source.uri).hostname}
+                    </a>
+                  )
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+      <button
+        onClick={() => onGenerate(topic)}
+        className="w-full mt-auto bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition duration-300"
+      >
+        🚀 توليد مقال كامل
+      </button>
     </div>
-    <button
-      onClick={() => onGenerate(topic)}
-      className="w-full mt-auto bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition duration-300"
-    >
-      🚀 توليد مقال كامل
-    </button>
-  </div>
-);
+  );
+};
 
 export const BreakingNews: React.FC = () => {
   const [sources, setSources] = useState<NewsSource[]>([]);
@@ -62,34 +70,28 @@ export const BreakingNews: React.FC = () => {
   const [newSourceUrl, setNewSourceUrl] = useState('');
 
   // 🔹 دالة موحدة لمعالجة sources
- const normalizeSources = (data: any): NewsSource[] => {
-  console.log("📌 normalizeSources raw data:", data);
+  const normalizeSources = (data: any): NewsSource[] => {
+    console.log("📌 normalizeSources raw data:", data);
 
-  if (!data) return [];
+    if (!data) return [];
 
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data.results)) return data.results;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.results)) return data.results;
+    if (Array.isArray(data.sources)) return data.sources;
+    if (Array.isArray(data.items)) return data.items;
 
-  // لو السيرفر برجع { sources: [...] }
-  if (Array.isArray(data.sources)) return data.sources;
+    if (typeof data === "object") return Object.values(data);
 
-  // لو السيرفر برجع { items: [...] }
-  if (Array.isArray(data.items)) return data.items;
-
-  // آخر محاولة: حوله Array لو فيه مفاتيح
-  if (typeof data === "object") return Object.values(data);
-
-  console.warn("⚠️ Unknown sources format:", data);
-  return [];
-};
-
+    console.warn("⚠️ Unknown sources format:", data);
+    return [];
+  };
 
   useEffect(() => {
     const fetchSources = async () => {
       try {
         setError(null);
         setLoadingStep('sources');
-    const fetchedSources = await get<any>('/monitored-sources/');
+        const fetchedSources = await get<any>('/monitored-sources/');
         console.log('✅ Sources fetched from API:', fetchedSources);
         setSources(normalizeSources(fetchedSources));
       } catch (err) {
@@ -113,7 +115,13 @@ export const BreakingNews: React.FC = () => {
         setError(null);
         setLoadingStep('news');
         const fetchedTopics = await getBreakingNewsFromSources(sources);
-        setTopics(fetchedTopics || []);
+
+        // ✅ فلترة المواضيع الفاضية (اللي ما فيها عنوان ولا ملخص)
+        const cleanedTopics = (fetchedTopics || []).filter(
+          (t: BreakingNewsTopic) => t.title || t.summary
+        );
+
+        setTopics(cleanedTopics);
       } catch (err) {
         console.error('Error fetching news:', err);
         setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع أثناء جلب الأخبار.');
@@ -161,13 +169,13 @@ export const BreakingNews: React.FC = () => {
     try {
       console.log('🟢 محاولة إضافة مصدر جديد:', newSourceUrl);
 
-  const addedSource = await post<any, { url: string }>(
-    '/monitored-sources/',
-    { url: newSourceUrl }
-    );
-      console.log('✅ السيرفر رجع بعد إضافة المصدر:', addedSource);
+      await post<any, { url: string }>(
+        '/monitored-sources/',
+        { url: newSourceUrl }
+      );
+      console.log('✅ السيرفر رجع بعد إضافة المصدر');
 
-const refreshedSources = await get<any>('/monitored-sources/');
+      const refreshedSources = await get<any>('/monitored-sources/');
       console.log('🔄 المصادر بعد التحديث:', refreshedSources);
 
       setSources(normalizeSources(refreshedSources));
