@@ -31,7 +31,7 @@ app.post("/api/claude/generate", async (req, res) => {
       return res.status(400).json({ error: "Prompt is required" });
     }
     const msg = await client.messages.create({
-      model: "claude-haiku-4-20250514", // استخدام نموذج Haiku الأسرع والأكثر توافرًا
+      model: "claude-3-5-haiku-20241022", // استخدام نموذج Haiku الأسرع والأكثر توافرًا
       max_tokens: 4096, // ✅ تم زيادة حد التوكنز لمنع انقطاع الرد
       system: system, // تمرير التعليمات النظامية من الواجهة الأمامية
       messages: [{ role: "user", content: prompt }],
