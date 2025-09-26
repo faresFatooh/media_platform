@@ -17,23 +17,38 @@ export class ApiError extends Error {
   }
 }
 
-// حاول قراءة التوكن من مفاتيح محتملة (access_token أو access)
+/**
+ * 🔹 حاول قراءة التوكن من كل الأماكن المحتملة
+ *  - localStorage: access_token أو access
+ *  - sessionStorage: access_token أو access
+ */
 function getAuthToken(): string | null {
-  return (
-    localStorage.getItem('access_token') ||
-    localStorage.getItem('access') ||
-    sessionStorage.getItem('access_token') ||
-    sessionStorage.getItem('access') ||
-    null
-  );
+  try {
+    return (
+      localStorage.getItem('access_token') ||
+      localStorage.getItem('access') ||
+      sessionStorage.getItem('access_token') ||
+      sessionStorage.getItem('access') ||
+      null
+    );
+  } catch (e) {
+    console.warn('[API] ⚠️ getAuthToken failed', e);
+    return null;
+  }
 }
 
+/**
+ * 🔹 بناء الهيدر الخاص بالمصادقة
+ */
 function getAuthHeaders(): Record<string, string> {
   const token = getAuthToken();
   if (!token) return {};
   return { Authorization: `Bearer ${token}` };
 }
 
+/**
+ * 🔹 معالجة الرد من السيرفر
+ */
 async function handleResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type') || '';
 
@@ -44,27 +59,40 @@ async function handleResponse<T>(response: Response): Promise<T> {
       return json as T;
     }
     console.debug('[API] ✅ no content');
-    // success بدون body (مثلاً 201 أو 204)
-    return {} as T; // ✅ رجع object فاضي بدل undefined
+    return {} as T; // رجع object فاضي بدل undefined
   }
 
   // --- error handling ---
   let bodyText = '';
-  try { bodyText = await response.text(); } catch { /* ignore */ }
+  try {
+    bodyText = await response.text();
+  } catch {
+    /* ignore */
+  }
 
   let errorData: ApiErrorData = {};
   try {
-    if (contentType.includes('application/json')) errorData = JSON.parse(bodyText);
+    if (contentType.includes('application/json')) {
+      errorData = JSON.parse(bodyText);
+    }
   } catch {
     errorData = { raw: bodyText };
   }
 
   const message = errorData.detail || bodyText || `HTTP ${response.status}`;
-  console.error('[API] ❌ error response', { status: response.status, message, url: response.url, body: errorData });
+  console.error('[API] ❌ error response', {
+    status: response.status,
+    message,
+    url: response.url,
+    body: errorData,
+  });
   throw new ApiError(message, response.status, errorData);
 }
 
-// دوال HTTP مع طباعة تفصيلية لسهولة الديباغ
+/**
+ * 🔹 دوال HTTP
+ * كل وحدة منهم بتجيب التوكن من getAuthHeaders()
+ */
 export const get = <T>(endpoint: string): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { ...getAuthHeaders() };
@@ -76,14 +104,18 @@ export const post = <T, U>(endpoint: string, body: U): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
   console.debug('[API] POST', url, headers, body);
-  return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) }).then(handleResponse<T>);
+  return fetch(url, { method: 'POST', headers, body: JSON.stringify(body) }).then(
+    handleResponse<T>
+  );
 };
 
 export const put = <T, U>(endpoint: string, body: U): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
   console.debug('[API] PUT', url, headers, body);
-  return fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) }).then(handleResponse<T>);
+  return fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) }).then(
+    handleResponse<T>
+  );
 };
 
 export const del = (endpoint: string): Promise<void> => {
