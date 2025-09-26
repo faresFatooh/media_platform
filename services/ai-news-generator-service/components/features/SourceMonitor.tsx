@@ -16,7 +16,7 @@ export const SourceMonitor: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await get<NewsSource[]>('/monitored-sources/');
+      const data = await get<NewsSource[]>('/api/news-generator/monitored-sources/');
       setSources(data);
       if (data.length > 0 && !selectedSource) {
         setSelectedSource(data[0]);
@@ -45,7 +45,7 @@ export const SourceMonitor: React.FC = () => {
     setIsAdding(true);
     setError(null);
     try {
-      await post('/monitored-sources/', { url: newSourceUrl });
+      await post('/api/news-generator/monitored-sources/', { url: newSourceUrl });
       setNewSourceUrl('');
       await fetchSources(); // Refresh list
     } catch (err) {
@@ -59,7 +59,7 @@ export const SourceMonitor: React.FC = () => {
      if (window.confirm('هل أنت متأكد من أنك تريد حذف هذا المصدر؟')) {
         try {
             setError(null);
-            await del(`/monitored-sources/${sourceId}/`);
+            await del(`/api/news-generator/monitored-sources/${sourceId}/`);
             if (selectedSource?.id === sourceId) {
                 setSelectedSource(sources.length > 1 ? sources.find(s => s.id !== sourceId) || null : null);
             }

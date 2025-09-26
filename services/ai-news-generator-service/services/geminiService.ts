@@ -206,11 +206,14 @@ export const getBreakingNewsFromSources = async (
       .filter(Boolean)
       .join(", ");
 
-    const prompt = `بصفتك محرر أخبار، قم بمراجعة المواقع الإخبارية التالية: ${sourceUrls}.
-أوجد أهم 5 قصص إخبارية عاجلة ومهمة منها حالياً.
-لكل خبر:
-العنوان: [عنوان الخبر هنا]
-الملخص: [ملخص من جملتين إلى ثلاث جمل هنا]
+    // ✅ Prompt مضبوط
+    const prompt = `أنت مساعد صحفي محترف.
+اعرض أهم 5 أخبار عاجلة من المواقع التالية: ${sourceUrls}.
+مهم جداً:
+- لا تضف أي مقدمة أو شرح عام.
+- أعرض الأخبار فقط بهذا الشكل:
+العنوان: [عنوان الخبر]
+الملخص: [ملخص من جملتين إلى ثلاث جمل]
 ---`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -220,22 +223,33 @@ export const getBreakingNewsFromSources = async (
     });
 
     const text = response.response.text();
+
+    // ✅ فلترة أي مقدمات غير مرغوبة
+    let cleanedText = text
+      .replace(/^.*بصفتي محرر أخبار.*$/gmi, "")
+      .replace(/^.*As a news editor.*$/gmi, "")
+      .trim();
+
+    // ✅ استخراج الأخبار
+    const topics: Omit<BreakingNewsTopic, "sources">[] = cleanedText
+      .split("---")
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0)
+      .map((part) => {
+        const titleMatch = part.match(/(?:العنوان|Title)\s*[:：]\s*(.+)/);
+        const summaryMatch = part.match(/(?:الملخص|Summary)\s*[:：]\s*([\s\S]+)/);
+
+        return {
+          title: titleMatch ? titleMatch[1].trim() : part.split("\n")[0].trim(),
+          summary: summaryMatch
+            ? summaryMatch[1].trim()
+            : part.replace(/(?:العنوان|Title)\s*[:：].*/, "").trim(),
+        };
+      });
+
+    // ✅ توزيع المصادر (لو فيه grounding)
     const candidate = response.response.candidates?.[0] as any;
     const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
-
-    const topics: Omit<BreakingNewsTopic, "sources">[] = text
-  .split("---")
-  .map((part) => part.trim())
-  .filter((part) => part.length > 0)
-  .map((part) => {
-    const titleMatch = part.match(/(?:العنوان|Title)\s*[:：]\s*(.+)/);
-    const summaryMatch = part.match(/(?:الملخص|Summary)\s*[:：]\s*([\s\S]+)/);
-
-    return {
-      title: titleMatch ? titleMatch[1].trim() : part.split("\n")[0].trim(),
-      summary: summaryMatch ? summaryMatch[1].trim() : part.replace(/(?:العنوان|Title)\s*[:：].*/, "").trim(),
-    };
-  });
 
     const topicsWithSources: BreakingNewsTopic[] = topics.map((topic, index) => {
       const sourcesPerTopic = Math.ceil(groundingChunks.length / topics.length);
@@ -251,11 +265,11 @@ export const getBreakingNewsFromSources = async (
       };
     });
 
-    if (topicsWithSources.length === 0 && text.length > 0) {
+    if (topicsWithSources.length === 0 && cleanedText.length > 0) {
       return [
         {
           title: "مستجدات الأخبار",
-          summary: text,
+          summary: cleanedText,
           sources: groundingChunks
             .map((c: any) => c.web)
             .filter((s: any) => s) as { uri: string; title: string }[],
@@ -269,6 +283,7 @@ export const getBreakingNewsFromSources = async (
     throw new Error("فشل في جلب الأخبار العاجلة.");
   }
 };
+
 
 
 
