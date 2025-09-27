@@ -19,21 +19,15 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY;
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
-if (!GEMINI_API_KEY) {
-  console.error("VITE_GEMINI_API_KEY is not set. Gemini calls will fail.");
-}
-if (!PEXELS_API_KEY) {
-  console.error("VITE_PEXELS_API_KEY is not set. Pexels calls will fail.");
-}
-if (!UNSPLASH_ACCESS_KEY) {
-  console.error("VITE_UNSPLASH_ACCESS_KEY is not set. Unsplash calls will fail.");
-}
+if (!GEMINI_API_KEY) console.error("VITE_GEMINI_API_KEY is not set.");
+if (!PEXELS_API_KEY) console.error("VITE_PEXELS_API_KEY is not set.");
+if (!UNSPLASH_ACCESS_KEY) console.error("VITE_UNSPLASH_ACCESS_KEY is not set.");
 
 // ✅ إنشاء كائن Gemini
 const ai = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // ----------------------------
-// 📝 تعريف Schema بدون SchemaType
+// 📝 تعريف Schema
 // ----------------------------
 const slideSchema = {
   type: "object",
@@ -69,7 +63,7 @@ const slideSchema = {
 export async function generateSlidesFromText(text: string): Promise<Slide[]> {
   try {
     const model = ai.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash", // نموذج Gemini الصحيح
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -108,7 +102,7 @@ export async function generateSlidesFromTextChunks(chunks: string[]): Promise<Sl
 // ----------------------------
 export async function generateImage(prompt: string): Promise<string | null> {
   try {
-    const model = ai.getGenerativeModel({ model: "imagen-3.0" });
+    const model = ai.getGenerativeModel({ model: "gemini-image-1.0" }); // النموذج الصحيح لتوليد الصور
     const result = await model.generateContent(prompt);
 
     const base64 = result.response?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
