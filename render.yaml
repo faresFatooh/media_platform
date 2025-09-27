@@ -69,12 +69,19 @@ services:
     dockerfilePath: ./services/infographic-converter/Dockerfile
     dockerContext: ./services/infographic-converter
     envVars:
-      - key: VITE_MAIN_BACKEND_URL
-        value: https://backend.ghazimortaja.com
-        build: true
-      - key: VITE_GEMINI_API_KEY
-        sync: false
-        build: true
-      - key: VITE_CLAUDE_PROXY_URL
-        value: https://claude-proxy-zjkv.onrender.com
-        build: true
+  - key: VITE_MAIN_BACKEND_URL
+    value: https://backend.ghazimortaja.com
+    build: true
+  - key: VITE_GEMINI_API_KEY
+    sync: false
+    build: true
+  - key: VITE_PEXELS_API_KEY
+    sync: false
+    build: true
+  - key: VITE_UNSPLASH_ACCESS_KEY
+    sync: false
+    build: true
+  - key: VITE_CLAUDE_PROXY_URL
+    value: https://claude-proxy-zjkv.onrender.com
+    build: true
+
