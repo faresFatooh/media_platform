@@ -61,7 +61,7 @@ services:
       - key: CLAUDE_API_KEY
         sync: false
 
-  # 5. خدمة infographic-converter
+          # 5. خدمة مولد الأخبار الجديدة
   - type: web
     name: infographic-converter
     plan: starter
@@ -73,12 +73,6 @@ services:
         value: https://backend.ghazimortaja.com
         build: true
       - key: VITE_GEMINI_API_KEY
-        sync: false
-        build: true
-      - key: VITE_PEXELS_API_KEY
-        sync: false
-        build: true
-      - key: VITE_UNSPLASH_ACCESS_KEY
         sync: false
         build: true
       - key: VITE_CLAUDE_PROXY_URL
