@@ -16,8 +16,6 @@ const calculateInitialFontSizes = (
     const numContentItems = slide.content.length;
     const totalContentLength = slide.content.reduce((acc, item) => {
         // Treat "المصدر" lines as if they are shorter to compensate for smaller font size
-                // Treat "المصدر" lines as if they are shorter to compensate for smaller font size
-
         const weight = item.text.includes('المصدر') ? 0.8 : 1.0;
         return acc + (item.text.length * weight);
     }, 0);
