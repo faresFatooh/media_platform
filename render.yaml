@@ -1,5 +1,4 @@
 services:
-  # 1. الخادم الخلفي
   - type: web
     name: backend
     plan: starter
@@ -10,16 +9,13 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: news-db-fresh 
+          name: markaz-media-db
           property: connectionString
       - key: GEMINI_API_KEY
         sync: false
-      - key: CLAUDE_API_KEY
-        sync: false
-      - key: RENDER_FRONTEND_URL
-        value: https://ghazimortaja.com
+      - key: RENDER_FRONTEND_URL 
+        value: https://frontend-rgr7.onrender.com
 
-  # 2. الواجهة الأمامية الرئيسية
   - type: web
     name: frontend
     plan: starter
@@ -28,40 +24,80 @@ services:
     dockerContext: ./frontend
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://backend.ghazimortaja.com
-      - key: VITE_CLAUDE_PROXY_URL
-        value: https://claude-proxy-zjkv.onrender.com
+        value: https://backend-y4ir.onrender.com
 
-  # 3. خدمة مولد الأخبار الجديدة
   - type: web
-    name: ai-news-generator-service
+    name: video-sync-service
     plan: starter
     env: docker
-    dockerfilePath: ./services/ai-news-generator-service/Dockerfile
-    dockerContext: ./services/ai-news-generator-service
+    dockerfilePath: ./services/video-synchronizer/Dockerfile
+    dockerContext: ./services/video-synchronizer
     envVars:
-      - key: VITE_MAIN_BACKEND_URL
-        value: https://backend.ghazimortaja.com
-        build: true
-      - key: VITE_GEMINI_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
-        build: true
-      - key: VITE_CLAUDE_PROXY_URL
-        value: https://claude-proxy-zjkv.onrender.com
-        build: true
 
-  # 4. خدمة بروكسي Claude
   - type: web
-    name: claude-proxy
+    name: news-refine-service
     plan: starter
     env: docker
-    dockerfilePath: ./claude-proxy/Dockerfile
-    dockerContext: ./claude-proxy
+    dockerfilePath: ./services/news-refine/Dockerfile
+    dockerContext: ./services/news-refine
     envVars:
-      - key: CLAUDE_API_KEY
+      - key: GEMINI_API_KEY
+        sync: false
+  
+  - type: web
+    name: avatar-service
+    plan: starter
+    env: docker
+    dockerfilePath: ./services/dynamic-avatar/Dockerfile
+    dockerContext: ./services/dynamic-avatar
+    envVars:
+      - key: GEMINI_API_KEY
         sync: false
 
-  # 5. خدمة infographic-converter
+  - type: web
+    name: chatbot-service
+    plan: starter
+    env: docker
+    dockerfilePath: ./services/news-chatbot/Dockerfile
+    dockerContext: ./services/news-chatbot
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: asharq-service
+    plan: starter
+    env: docker
+    dockerfilePath: ./services/asharq-news/Dockerfile
+    dockerContext: ./services/asharq-news
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: podcast-service
+    plan: starter
+    env: docker
+    dockerfilePath: ./services/podcast-helper/Dockerfile
+    dockerContext: ./services/podcast-helper
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+        
+  - type: web
+    name: style-editor-service
+    plan: starter
+    env: docker
+    dockerfilePath: ./services/style-editor/Dockerfile
+    dockerContext: ./services/style-editor
+    envVars:
+      - key: MAIN_BACKEND_URL
+        value: https://backend-y4ir.onrender.com
+      - key: GEMINI_API_KEY
+        sync: false
+
   - type: web
     name: infographic-converter
     plan: starter
@@ -70,17 +106,24 @@ services:
     dockerContext: ./services/infographic-converter
     envVars:
       - key: VITE_MAIN_BACKEND_URL
-        value: https://backend.ghazimortaja.com
-        build: true
+        value: https://backend-y4ir.onrender.com
       - key: VITE_GEMINI_API_KEY
         sync: false
-        build: true
       - key: VITE_PEXELS_API_KEY
         sync: false
-        build: true
       - key: VITE_UNSPLASH_ACCESS_KEY
         sync: false
-        build: true
       - key: VITE_CLAUDE_PROXY_URL
         value: https://claude-proxy-zjkv.onrender.com
-        build: true
+
+  - type: web
+    name: discovery_script_service
+    plan: starter
+    env: docker
+    dockerfilePath: ./services/discovery_script_service/Dockerfile
+    dockerContext: ./services/discovery_script_service
+    envVars:
+      - key: MAIN_BACKEND_URL
+        value: https://backend-y4ir.onrender.com
+      - key: GEMINI_API_KEY
+        sync: false
