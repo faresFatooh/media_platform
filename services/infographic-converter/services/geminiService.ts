@@ -101,17 +101,30 @@ export async function generateSlidesFromTextChunks(chunks: string[]): Promise<Sl
 // 🎨 توليد صورة باستخدام Gemini
 // ----------------------------
 export async function generateImage(prompt: string): Promise<string | null> {
-  try {
-    const model = ai.getGenerativeModel({ model: "gemini-image-1.0" }); // النموذج الصحيح لتوليد الصور
-    const result = await model.generateContent(prompt);
+  try {
+    // ⚠️ التعديل هنا: استخدام نموذج Imagen المخصص لتوليد الصور
+    const model = ai.getGenerativeModel({ model: "imagen-3.0-generate-002" });
+    
+    // يُفضل استخدام طريقة generateImages بدلاً من generateContent لتوليد الصور
+    const result = await model.generateImages({
+      model: 'imagen-3.0-generate-002', // تأكيد النموذج مرة أخرى
+      prompt: prompt,
+      config: {
+        numberOfImages: 1,
+        outputMimeType: "image/png",
+        aspectRatio: "1:1" // يمكنك تغيير نسبة العرض إلى الارتفاع حسب الحاجة
+      }
+    });
 
-    const base64 = result.response?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (base64) return `data:image/png;base64,${base64}`;
-    return null;
-  } catch (error) {
-    console.error("❌ Error in generateImage:", error);
-    return null;
-  }
+    // استخلاص البيانات من استجابة generateImages
+    const base64 = result.generatedImages?.[0]?.image.imageBytes;
+    
+    if (base64) return `data:image/png;base64,${base64}`;
+    return null;
+  } catch (error) {
+    console.error("❌ Error in generateImage:", error);
+    return null;
+  }
 }
 
 // ----------------------------
