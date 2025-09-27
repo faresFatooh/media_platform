@@ -102,16 +102,10 @@ export async function generateSlidesFromText(text: string): Promise<Slide[]> {
       },
     });
 
-    const result = await model.generateContent([
-      {
-        role: "user",
-        parts: [
-          {
-            text: `حلل النص التالي وقسمه إلى مجموعة شرائح (slides) بحيث كل شريحة لها عنوان، محتوى على شكل نقاط، وتمثيل بصري:\n\n${text}`,
-          },
-        ],
-      },
-    ]);
+    // ✅ هنا التغيير: ما عاد في role/parts
+    const result = await model.generateContent(
+      `حلل النص التالي وقسمه إلى مجموعة شرائح (slides) بحيث كل شريحة لها عنوان، محتوى على شكل نقاط، وتمثيل بصري:\n\n${text}`
+    );
 
     const json = result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
     return JSON.parse(json || "[]") as Slide[];
@@ -120,6 +114,7 @@ export async function generateSlidesFromText(text: string): Promise<Slide[]> {
     return [];
   }
 }
+
 
 // ----------------------------
 // 🧠 توليد الشرائح من أجزاء نص
