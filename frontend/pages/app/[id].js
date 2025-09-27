@@ -13,8 +13,8 @@ export default function AppDetails() {
 
   const services = {
     '1': { url: 'https://ai-news-generator-service.onrender.com', name:'مولد-المقالات-بالذكاء-الاصطناعي' },
-    '2': { url: 'https://ai-news-app-lpgh.onrender.com/', name:'مولد-الأخبار-بالذكاء-الاصطناعي' },
-    '3': { url: 'https://ai-news-app-lpgh.onrender.com/', name:'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
+    '2': { url: 'https://ai-news-app-lpgh.onrender.com', name:'مولد-الأخبار-بالذكاء-الاصطناعي' },
+    '3': { url: 'https://infographic-converter.onrender.com', name:'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
 
 
   };
