@@ -241,6 +241,7 @@ const App: React.FC = () => {
   };
 
   // ✅ نشر/تعديل الشريحة المختارة
+// ✅ نشر/تعديل الشريحة المختارة
 const handlePublishToFacebook = async () => {
   if (slides.length === 0) {
     alert("لا يوجد إنفوغرافيك جاهز للنشر.");
@@ -252,24 +253,29 @@ const handlePublishToFacebook = async () => {
 
   try {
     const selectedSlide = slides[selectedSlideIndex];
-    // ❌ احذف caption (النص رح يكون داخل الصورة نفسها)
-    // const caption = `${selectedSlide.title}\n\n${selectedSlide.content.map(c => `• ${c.text}`).join("\n")}`;
-    const imageUrl = selectedSlide.visual?.query ? await searchStockImage(selectedSlide.visual.query) : null;
+    // نجيب صورة مناسبة للشريحة
+    const imageUrl = selectedSlide.visual?.query
+      ? await searchStockImage(selectedSlide.visual.query)
+      : null;
+
+    if (!imageUrl) {
+      setPublishMsg("❌ لم يتم العثور على صورة للنشر.");
+      setIsPublishing(false);
+      return;
+    }
 
     if (publishMode === 'new') {
       // 🚀 امسح آخر ID قبل النشر الجديد
       setLastPostId(null);
 
-      // ✅ مرر caption فاضي
-      const res = await createFacebookPost({ imageUrl: imageUrl || undefined });
-      setLastPostId(res?.post_id || null);
+      const res = await createFacebookPost({ imageUrl });
+      setLastPostId(res?.id || null);
       setPublishMsg("✅ تم نشر شريحة جديدة بنجاح على فيسبوك!");
     } else if (publishMode === 'update') {
       if (!lastPostId) {
         setPublishMsg("❌ لا يوجد منشور سابق لتعديله.");
       } else {
-        // ✅ تعديل فقط الكابشن (فاضي برضو)
-        await updateFacebookPost(lastPostId, "");
+        await updateFacebookPost(lastPostId, "✏️ تحديث الإنفوغرافيك");
         setPublishMsg("✏️ تم تعديل المنشور السابق بنجاح!");
       }
     }
@@ -280,6 +286,7 @@ const handlePublishToFacebook = async () => {
     setIsPublishing(false);
   }
 };
+
 
 
   return (

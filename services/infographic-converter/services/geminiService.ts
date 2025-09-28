@@ -187,46 +187,60 @@ export async function searchStockImage(query: string): Promise<string | null> {
 // ----------------------------
 // 🆕 إنشاء منشور جديد بصورة فقط
 // ----------------------------
-export async function createFacebookPost(
-  options: { imageUrl?: string; imageBase64?: string }
-) {
+export async function createFacebookPost(options: { imageUrl?: string; imageBase64?: string }) {
   try {
-    const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/feed`;
+    // أولاً: نرفع الصورة على photos
+    const photoUrl = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
 
-    // 🖼️ نشر صورة من رابط
+    let photoId: string | null = null;
+
     if (options.imageUrl) {
-      const res = await axios.post(url, null, {
+      const res = await axios.post(photoUrl, null, {
         params: {
           url: options.imageUrl,
-          caption: "📊 إنفوغرافيك جديد", // 👈 الكابشن ثابت/مبسّط
+          published: false, // 👈 ما ينعرض الصورة لحالها
           access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
         },
       });
-      return res.data;
+      photoId = res.data.id;
     }
 
-    // 🖼️ نشر صورة Base64
     if (options.imageBase64) {
       const blob = await fetch(options.imageBase64).then(r => r.blob());
       const file = new File([blob], "infographic.png", { type: "image/png" });
 
       const formData = new FormData();
-      formData.append("caption", "📊 إنفوغرافيك جديد"); // 👈 الكابشن ثابت/مبسّط
       formData.append("access_token", FACEBOOK_PAGE_ACCESS_TOKEN);
+      formData.append("published", "false");
       formData.append("source", file);
 
-      const res = await axios.post(url, formData, {
+      const res = await axios.post(photoUrl, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      return res.data;
+
+      photoId = res.data.id;
     }
 
-    throw new Error("❌ لازم تحدد imageUrl أو imageBase64 للنشر الجديد.");
+    if (!photoId) throw new Error("❌ فشل رفع الصورة");
+
+    // ثانياً: نعمل منشور جديد على feed بالصورة
+    const feedUrl = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/feed`;
+    const feedRes = await axios.post(feedUrl, null, {
+      params: {
+        message: "", // نخليه فاضي، لأنه النص داخل الصورة
+        object_attachment: photoId, // 👈 نربط الصورة بالمنشور
+        access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
+      },
+    });
+
+    return feedRes.data;
   } catch (err: any) {
     console.error("❌ Facebook create post error:", err.response?.data || err);
     return null;
   }
 }
+
+
 
 
 // ----------------------------
