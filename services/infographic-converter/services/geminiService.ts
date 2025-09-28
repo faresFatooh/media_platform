@@ -17,6 +17,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from "axios";
 import type { Slide } from "../types";
 
+
 // ----------------------------
 // 🔑 مفاتيح الـ APIs
 // ----------------------------
@@ -184,44 +185,51 @@ export async function searchStockImage(query: string): Promise<string | null> {
 }
 
 // ----------------------------
-// 📤 نشر صورة على فيسبوك
+// 📤 نشر أو تعديل على فيسبوك
 // ----------------------------
-export async function postToFacebook(caption: string, imageUrl?: string, imageBase64?: string) {
-  try {
-    const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
-    console.log("PAGE_ID:", FACEBOOK_PAGE_ID);
-console.log("ACCESS_TOKEN:", FACEBOOK_PAGE_ACCESS_TOKEN?.slice(0,10) + "...");
 
+
+// ✅ نشر جديد
+export async function postToFacebookNew(message: string, imageUrl?: string) {
+  try {
+    const url = imageUrl
+      ? `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`
+      : `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/feed`;
+
+    const params: any = {
+      access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
+      caption: message,
+    };
 
     if (imageUrl) {
-      const res = await axios.post(url, null, {
-        params: {
-          url: imageUrl,
-          caption,
-          access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
-        },
-      });
-      return res.data;
+      params.url = imageUrl;
+    } else {
+      params.message = message;
     }
 
-    if (imageBase64) {
-      const blob = await fetch(imageBase64).then(r => r.blob());
-      const file = new File([blob], "infographic.png", { type: "image/png" });
-
-      const formData = new FormData();
-      formData.append("caption", caption);
-      formData.append("access_token", FACEBOOK_PAGE_ACCESS_TOKEN);
-      formData.append("source", file);
-
-      const res = await axios.post(url, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return res.data;
-    }
-
-    throw new Error("❌ لازم تحدد إما imageUrl أو imageBase64");
+    const res = await axios.post(url, null, { params });
+    console.log("✅ Published new post:", res.data);
+    return res.data;
   } catch (err: any) {
-    console.error("❌ Facebook publish error:", err.response?.data || err);
-    return null;
+    console.error("❌ Error publishing new post:", err.response?.data || err.message);
+    throw err;
+  }
+}
+
+// ✅ تعديل منشور قديم
+export async function updateFacebookPost(postId: string, newMessage: string) {
+  try {
+    const url = `https://graph.facebook.com/v23.0/${postId}`;
+    const params = {
+      access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
+      message: newMessage,
+    };
+
+    const res = await axios.post(url, null, { params });
+    console.log("✏️ Post updated:", res.data);
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ Error updating post:", err.response?.data || err.message);
+    throw err;
   }
 }
