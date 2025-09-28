@@ -1,9 +1,9 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { InputForm } from './components/InputForm';
 import { SlideViewer } from './components/SlideViewer';
 import { SocialIconGenerator } from './components/SocialIconGenerator';
-import { generateSlidesFromText, generateSlidesFromTextChunks } from './services/geminiService';
+import { generateSlidesFromText, generateSlidesFromTextChunks, searchStockImage } from './services/geminiService';
+import { postToFacebook } from './services/geminiService';
 import type { Slide } from './types';
 
 export type Orientation = 'horizontal' | 'vertical' | 'square';
@@ -15,12 +15,10 @@ const calculateInitialFontSizes = (
     const titleLength = slide.title.length;
     const numContentItems = slide.content.length;
     const totalContentLength = slide.content.reduce((acc, item) => {
-        // Treat "المصدر" lines as if they are shorter to compensate for smaller font size
         const weight = item.text.includes('المصدر') ? 0.8 : 1.0;
         return acc + (item.text.length * weight);
     }, 0);
 
-    // This multiplier adjusts font sizes based on the available horizontal space.
     let orientationMultiplier: number;
     switch (orientation) {
         case 'vertical':
@@ -35,29 +33,24 @@ const calculateInitialFontSizes = (
             break;
     }
 
-    // Title font size: Now more aggressive and considers content item count.
     const baseTitleSize = 5.5;
-    const titleLengthFactor = 0.05; // Increased from 0.045
-    const titleContentFactor = 0.1; // New factor for content item count
+    const titleLengthFactor = 0.05;
+    const titleContentFactor = 0.1;
     let titleFontSize = baseTitleSize - (titleLength * titleLengthFactor) - (numContentItems * titleContentFactor);
 
-    // Content font size: Calibrated to target a standard size around 20px (1.25rem).
     const densityScore = (numContentItems * 20) + totalContentLength;
     const baseContentSize = 1.8;
     const densityFactor = 0.0018;
     let contentFontSize = baseContentSize - densityScore * densityFactor;
     
-    // Apply the orientation multiplier to the calculated sizes.
     titleFontSize *= orientationMultiplier;
     contentFontSize *= orientationMultiplier;
     
-    // Clamp values with a lower minimum to allow for smaller fonts on dense slides.
     titleFontSize = Math.max(1.2, Math.min(5.0 * orientationMultiplier, titleFontSize));
     contentFontSize = Math.max(0.7, Math.min(1.8 * orientationMultiplier, contentFontSize));
     
     return { titleFontSize, contentFontSize };
 };
-
 
 const App: React.FC = () => {
     const [mainTitle, setMainTitle] = useState<string>('');
@@ -73,12 +66,17 @@ const App: React.FC = () => {
     const [orientation, setOrientation] = useState<Orientation>('square');
     const [backgroundMusicUrl, setBackgroundMusicUrl] = useState<string | null>(null);
     const [musicFileName, setMusicFileName] = useState<string | null>(null);
-    const [logoSize, setLogoSize] = useState<number>(48); // default to 48px, which is h-12
+    const [logoSize, setLogoSize] = useState<number>(48);
     const [socialIconSize, setSocialIconSize] = useState<number>(36);
     const [socialIconPosition, setSocialIconPosition] = useState<{ x: number; y: number }>({ x: 50, y: 95 });
     const [inputMode, setInputMode] = useState<'fullText' | 'manual'>('fullText');
     const [textChunks, setTextChunks] = useState<string[]>(['']);
     const [activeTool, setActiveTool] = useState<'infographic' | 'socialIcon'>('infographic');
+
+    // ✅ جديد: اختيار الشريحة للنشر
+    const [selectedSlideIndex, setSelectedSlideIndex] = useState<number>(0);
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [publishMsg, setPublishMsg] = useState<string | null>(null);
 
     useEffect(() => {
         if (slides.length > 0) {
@@ -95,7 +93,6 @@ const App: React.FC = () => {
         }
     }, [orientation]);
 
-    // Effect for cleaning up the object URL on component unmount
     useEffect(() => {
         return () => {
             if (backgroundMusicUrl) {
@@ -103,7 +100,6 @@ const App: React.FC = () => {
             }
         };
     }, [backgroundMusicUrl]);
-
 
     const handleGenerate = useCallback(async () => {
         if (!mainTitle.trim()) {
@@ -130,7 +126,7 @@ const App: React.FC = () => {
                     return;
                 }
                 generatedSlidesRaw = await generateSlidesFromText(mainTitle, rawText, numberOfSlides);
-            } else { // manual mode
+            } else {
                 const validChunks = textChunks.filter(chunk => chunk.trim() !== '');
                 if (validChunks.length === 0) {
                     setError("يرجى إدخال محتوى لشريحة واحدة على الأقل.");
@@ -140,7 +136,6 @@ const App: React.FC = () => {
                 generatedSlidesRaw = await generateSlidesFromTextChunks(mainTitle, validChunks);
             }
             
-            // FIX: Explicitly type `generatedSlides` as `Slide[]` to fix a type inference issue.
             const generatedSlides: Slide[] = generatedSlidesRaw.map((slide, index) => {
                 const { titleFontSize, contentFontSize } = calculateInitialFontSizes(slide, orientation);
                 return {
@@ -149,19 +144,14 @@ const App: React.FC = () => {
                     content: slide.content.map(item => ({...item, isBold: false})),
                     titleFontSize,
                     contentFontSize,
-                    fontFamily: 'Cairo', // Default font
-                    imageRefreshKey: 0, // For triggering image refetch
-                    backgroundTransform: { // Default background transform
-                        scale: 1,
-                        position: { x: 50, y: 50 },
-                    },
-                    textTransform: { // Default text position
-                        position: { x: 50, y: 50 },
-                    },
-                    textStyle: 'default', // Default text style
-                    isTitleBold: true, // Title is bold by default
-                    titleColor: '#FF4136', // Default red title
-                    textColor: '#FFFFFF',  // Default white text
+                    fontFamily: 'Cairo',
+                    imageRefreshKey: 0,
+                    backgroundTransform: { scale: 1, position: { x: 50, y: 50 } },
+                    textTransform: { position: { x: 50, y: 50 } },
+                    textStyle: 'default',
+                    isTitleBold: true,
+                    titleColor: '#FF4136',
+                    textColor: '#FFFFFF',
                 }
             });
             setSlides(generatedSlides);
@@ -185,10 +175,7 @@ const App: React.FC = () => {
         const newSlideTemplate: Omit<Slide, 'id' | 'titleFontSize' | 'contentFontSize'> = {
             title: 'عنوان جديد',
             content: [{ text: 'أدخل النص هنا', icon: 'idea', isBold: false }],
-            visual: {
-                method: 'search',
-                query: 'minimalist abstract background'
-            },
+            visual: { method: 'search', query: 'minimalist abstract background' },
             fontFamily: 'Cairo',
             imageRefreshKey: Date.now(),
             backgroundTransform: { scale: 1, position: { x: 50, y: 50 } },
@@ -221,19 +208,11 @@ const App: React.FC = () => {
         }
     }, []);
 
-    const handleLogoUpload = (url: string) => {
-        setLogoUrl(url);
-    };
-
-    const handleSocialIconUpload = (url: string) => {
-        setSocialIconUrl(url);
-    };
+    const handleLogoUpload = (url: string) => setLogoUrl(url);
+    const handleSocialIconUpload = (url: string) => setSocialIconUrl(url);
 
     const handleMusicUpload = (file: File | null) => {
-        // Revoke previous URL to avoid memory leaks
-        if (backgroundMusicUrl) {
-            URL.revokeObjectURL(backgroundMusicUrl);
-        }
+        if (backgroundMusicUrl) URL.revokeObjectURL(backgroundMusicUrl);
         if (file) {
             const url = URL.createObjectURL(file);
             setBackgroundMusicUrl(url);
@@ -248,19 +227,39 @@ const App: React.FC = () => {
         if (theme === 'asharq') {
             setThemeColor('#f08080');
             setSlides(currentSlides =>
-                currentSlides.map(slide => ({
-                    ...slide,
-                    fontFamily: 'Neue Haas Grotesk Bloomberg',
-                }))
+                currentSlides.map(slide => ({ ...slide, fontFamily: 'Neue Haas Grotesk Bloomberg' }))
             );
-        } else { // najah
+        } else {
             setThemeColor('#007BFF');
             setSlides(currentSlides =>
-                currentSlides.map(slide => ({
-                    ...slide,
-                    fontFamily: 'Cairo',
-                }))
+                currentSlides.map(slide => ({ ...slide, fontFamily: 'Cairo' }))
             );
+        }
+    };
+
+    // ✅ جديد: نشر الشريحة المختارة
+    const handlePublishToFacebook = async () => {
+        if (slides.length === 0) {
+            alert("لا يوجد إنفوغرافيك جاهز للنشر.");
+            return;
+        }
+
+        setIsPublishing(true);
+        setPublishMsg(null);
+
+        try {
+            const selectedSlide = slides[selectedSlideIndex];
+            const caption = `${selectedSlide.title}\n\n${selectedSlide.content.map(c => `• ${c.text}`).join("\n")}`;
+            const imageUrl = selectedSlide.visual?.query ? await searchStockImage(selectedSlide.visual.query) : null;
+
+            await postToFacebook(caption, imageUrl || undefined);
+
+            setPublishMsg("✅ تم نشر الشريحة المختارة بنجاح على فيسبوك!");
+        } catch (err) {
+            console.error("Facebook publish error:", err);
+            setPublishMsg("❌ فشل نشر الإنفوغرافيك. تحقق من الإعدادات.");
+        } finally {
+            setIsPublishing(false);
         }
     };
 
@@ -329,31 +328,61 @@ const App: React.FC = () => {
                         )}
 
                         {slides.length > 0 && !isLoading && (
-                            <SlideViewer 
-                                slides={slides} 
-                                onSlideUpdate={handleSlideUpdate} 
-                                logoUrl={logoUrl} 
-                                onLogoUpload={handleLogoUpload}
-                                backgroundOpacity={backgroundOpacity}
-                                onBackgroundOpacityChange={setBackgroundOpacity}
-                                themeColor={themeColor}
-                                onThemeChange={handleThemeChange}
-                                orientation={orientation}
-                                onOrientationChange={setOrientation}
-                                onAddSlide={handleAddSlide}
-                                onDeleteSlide={handleDeleteSlide}
-                                onMusicUpload={handleMusicUpload}
-                                backgroundMusicUrl={backgroundMusicUrl}
-                                musicFileName={musicFileName}
-                                logoSize={logoSize}
-                                onLogoSizeChange={setLogoSize}
-                                socialIconUrl={socialIconUrl}
-                                onSocialIconUpload={handleSocialIconUpload}
-                                socialIconSize={socialIconSize}
-                                onSocialIconSizeChange={setSocialIconSize}
-                                socialIconPosition={socialIconPosition}
-                                onSocialIconPositionChange={setSocialIconPosition}
-                            />
+                            <>
+                                <SlideViewer 
+                                    slides={slides} 
+                                    onSlideUpdate={handleSlideUpdate} 
+                                    logoUrl={logoUrl} 
+                                    onLogoUpload={handleLogoUpload}
+                                    backgroundOpacity={backgroundOpacity}
+                                    onBackgroundOpacityChange={setBackgroundOpacity}
+                                    themeColor={themeColor}
+                                    onThemeChange={handleThemeChange}
+                                    orientation={orientation}
+                                    onOrientationChange={setOrientation}
+                                    onAddSlide={handleAddSlide}
+                                    onDeleteSlide={handleDeleteSlide}
+                                    onMusicUpload={handleMusicUpload}
+                                    backgroundMusicUrl={backgroundMusicUrl}
+                                    musicFileName={musicFileName}
+                                    logoSize={logoSize}
+                                    onLogoSizeChange={setLogoSize}
+                                    socialIconUrl={socialIconUrl}
+                                    onSocialIconUpload={handleSocialIconUpload}
+                                    socialIconSize={socialIconSize}
+                                    onSocialIconSizeChange={setSocialIconSize}
+                                    socialIconPosition={socialIconPosition}
+                                    onSocialIconPositionChange={setSocialIconPosition}
+                                />
+
+                                {/* ✅ اختيار الشريحة للنشر */}
+                                <div className="mt-8 text-center">
+                                    <label className="block mb-2 font-medium">اختر الشريحة للنشر:</label>
+                                    <select
+                                        value={selectedSlideIndex}
+                                        onChange={(e) => setSelectedSlideIndex(Number(e.target.value))}
+                                        className="px-4 py-2 border rounded-lg"
+                                    >
+                                        {slides.map((s, i) => (
+                                            <option key={s.id} value={i}>
+                                                {i + 1} - {s.title}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    <button
+                                        onClick={handlePublishToFacebook}
+                                        disabled={isPublishing}
+                                        className="ml-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50"
+                                    >
+                                        {isPublishing ? "جاري النشر..." : "نشر على فيسبوك"}
+                                    </button>
+
+                                    {publishMsg && (
+                                        <p className="mt-4 text-center text-lg font-semibold">{publishMsg}</p>
+                                    )}
+                                </div>
+                            </>
                         )}
                     </>
                 ) : (

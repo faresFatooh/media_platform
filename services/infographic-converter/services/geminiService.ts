@@ -1,8 +1,12 @@
+// src/services/infographic.ts
+
 declare global {
   interface ImportMetaEnv {
     readonly VITE_GEMINI_API_KEY: string;
     readonly VITE_PEXELS_API_KEY: string;
     readonly VITE_UNSPLASH_ACCESS_KEY: string;
+    readonly VITE_FACEBOOK_PAGE_ID: string;
+    readonly VITE_FACEBOOK_PAGE_ACCESS_TOKEN: string;
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv;
@@ -10,6 +14,7 @@ declare global {
 }
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import axios from "axios";
 import type { Slide } from "../types";
 
 // ----------------------------
@@ -18,10 +23,14 @@ import type { Slide } from "../types";
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY;
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
+const FACEBOOK_PAGE_ID = import.meta.env.VITE_FACEBOOK_PAGE_ID;
+const FACEBOOK_PAGE_ACCESS_TOKEN = import.meta.env.VITE_FACEBOOK_PAGE_ACCESS_TOKEN;
 
-if (!GEMINI_API_KEY) console.error("VITE_GEMINI_API_KEY is not set.");
-if (!PEXELS_API_KEY) console.error("VITE_PEXELS_API_KEY is not set.");
-if (!UNSPLASH_ACCESS_KEY) console.error("VITE_UNSPLASH_ACCESS_KEY is not set.");
+if (!GEMINI_API_KEY) console.error("❌ VITE_GEMINI_API_KEY is not set.");
+if (!PEXELS_API_KEY) console.error("❌ VITE_PEXELS_API_KEY is not set.");
+if (!UNSPLASH_ACCESS_KEY) console.error("❌ VITE_UNSPLASH_ACCESS_KEY is not set.");
+if (!FACEBOOK_PAGE_ID) console.error("❌ VITE_FACEBOOK_PAGE_ID is not set.");
+if (!FACEBOOK_PAGE_ACCESS_TOKEN) console.error("❌ VITE_FACEBOOK_PAGE_ACCESS_TOKEN is not set.");
 
 // ✅ إنشاء كائن Gemini
 const ai = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -60,10 +69,14 @@ const slideSchema = {
 // ----------------------------
 // 🧠 توليد الشرائح من نص كامل
 // ----------------------------
-export async function generateSlidesFromText(text: string): Promise<Slide[]> {
+export async function generateSlidesFromText(
+  title: string,
+  text: string,
+  numberOfSlides: number
+): Promise<Slide[]> {
   try {
     const model = ai.getGenerativeModel({
-      model: "gemini-2.5-flash", // نموذج Gemini الصحيح
+      model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -74,7 +87,13 @@ export async function generateSlidesFromText(text: string): Promise<Slide[]> {
     });
 
     const result = await model.generateContent(
-      `حلل النص التالي وقسمه إلى مجموعة شرائح بحيث كل شريحة لها عنوان، محتوى على شكل نقاط، وتمثيل بصري:\n\n${text}`
+      `العنوان الرئيسي: ${title}\n\n
+      قم بتحليل النص التالي وقسمه إلى ${numberOfSlides} شرائح كحد أقصى. 
+      كل شريحة يجب أن تحتوي على:
+      - عنوان قصير
+      - نقاط محتوى (bullet points)
+      - تمثيل بصري (search أو generate) مع query مناسب\n\n
+      النص:\n${text}`
     );
 
     const json = result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -88,10 +107,13 @@ export async function generateSlidesFromText(text: string): Promise<Slide[]> {
 // ----------------------------
 // 🧠 توليد الشرائح من أجزاء نص
 // ----------------------------
-export async function generateSlidesFromTextChunks(chunks: string[]): Promise<Slide[]> {
+export async function generateSlidesFromTextChunks(
+  title: string,
+  chunks: string[]
+): Promise<Slide[]> {
   const slides: Slide[] = [];
   for (const chunk of chunks) {
-    const chunkSlides = await generateSlidesFromText(chunk);
+    const chunkSlides = await generateSlidesFromText(title, chunk, chunks.length);
     slides.push(...chunkSlides);
   }
   return slides;
@@ -101,30 +123,17 @@ export async function generateSlidesFromTextChunks(chunks: string[]): Promise<Sl
 // 🎨 توليد صورة باستخدام Gemini
 // ----------------------------
 export async function generateImage(prompt: string): Promise<string | null> {
-  try {
-    // ⚠️ التعديل هنا: استخدام نموذج Imagen المخصص لتوليد الصور
-    const model = ai.getGenerativeModel({ model: "imagen-3.0-generate-002" });
-    
-    // يُفضل استخدام طريقة generateImages بدلاً من generateContent لتوليد الصور
-    const result = await model.generateImages({
-      model: 'imagen-3.0-generate-002', // تأكيد النموذج مرة أخرى
-      prompt: prompt,
-      config: {
-        numberOfImages: 1,
-        outputMimeType: "image/png",
-        aspectRatio: "1:1" // يمكنك تغيير نسبة العرض إلى الارتفاع حسب الحاجة
-      }
-    });
+  try {
+    const model = ai.getGenerativeModel({ model: "imagen-3.0-generate-002" });
+    const result = await model.generateContent(prompt);
 
-    // استخلاص البيانات من استجابة generateImages
-    const base64 = result.generatedImages?.[0]?.image.imageBytes;
-    
-    if (base64) return `data:image/png;base64,${base64}`;
-    return null;
-  } catch (error) {
-    console.error("❌ Error in generateImage:", error);
-    return null;
-  }
+    const base64 = result.response?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (base64) return `data:image/png;base64,${base64}`;
+    return null;
+  } catch (error) {
+    console.error("❌ Error in generateImage:", error);
+    return null;
+  }
 }
 
 // ----------------------------
@@ -172,4 +181,44 @@ export async function searchStockImage(query: string): Promise<string | null> {
   if (unsplashImage) return unsplashImage;
 
   return null;
+}
+
+// ----------------------------
+// 📤 نشر صورة على فيسبوك
+// ----------------------------
+export async function postToFacebook(caption: string, imageUrl?: string, imageBase64?: string) {
+  try {
+    const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
+
+    if (imageUrl) {
+      const res = await axios.post(url, null, {
+        params: {
+          url: imageUrl,
+          caption,
+          access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
+        },
+      });
+      return res.data;
+    }
+
+    if (imageBase64) {
+      const blob = await fetch(imageBase64).then(r => r.blob());
+      const file = new File([blob], "infographic.png", { type: "image/png" });
+
+      const formData = new FormData();
+      formData.append("caption", caption);
+      formData.append("access_token", FACEBOOK_PAGE_ACCESS_TOKEN);
+      formData.append("source", file);
+
+      const res = await axios.post(url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return res.data;
+    }
+
+    throw new Error("❌ لازم تحدد إما imageUrl أو imageBase64");
+  } catch (err: any) {
+    console.error("❌ Facebook publish error:", err.response?.data || err);
+    return null;
+  }
 }
