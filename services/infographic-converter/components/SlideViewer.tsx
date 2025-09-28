@@ -235,7 +235,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
                 if (!element) continue;
 
                 const canvas = await html2canvas(element, {
-                    scale: exportWidth / element.offsetWidth,
+                    scale: Math.max(2, exportWidth / element.offsetWidth), // 👈 أقل شي 2x
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: null,
