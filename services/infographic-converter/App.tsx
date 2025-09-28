@@ -2,13 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { InputForm } from './components/InputForm';
 import { SlideViewer } from './components/SlideViewer';
 import { SocialIconGenerator } from './components/SocialIconGenerator';
-import {
-  generateSlidesFromText,
-  generateSlidesFromTextChunks,
-  searchStockImage,
-  createFacebookPost,
-  updateFacebookPost
-} from './services/geminiService';
+import { generateSlidesFromText, generateSlidesFromTextChunks, searchStockImage, createFacebookPost, updateFacebookPost } from './services/geminiService';
 import type { Slide } from './types';
 
 export type Orientation = 'horizontal' | 'vertical' | 'square';
@@ -247,39 +241,46 @@ const App: React.FC = () => {
   };
 
   // ✅ نشر/تعديل الشريحة المختارة
-  const handlePublishToFacebook = async () => {
-    if (slides.length === 0) {
-      alert("لا يوجد إنفوغرافيك جاهز للنشر.");
-      return;
-    }
+const handlePublishToFacebook = async () => {
+  if (slides.length === 0) {
+    alert("لا يوجد إنفوغرافيك جاهز للنشر.");
+    return;
+  }
 
-    setIsPublishing(true);
-    setPublishMsg(null);
+  setIsPublishing(true);
+  setPublishMsg(null);
 
-    try {
-      const selectedSlide = slides[selectedSlideIndex];
-      const caption = `${selectedSlide.title}\n\n${selectedSlide.content.map(c => `• ${c.text}`).join("\n")}`;
-      const imageUrl = selectedSlide.visual?.query ? await searchStockImage(selectedSlide.visual.query) : null;
+  try {
+    const selectedSlide = slides[selectedSlideIndex];
+    // ❌ احذف caption (النص رح يكون داخل الصورة نفسها)
+    // const caption = `${selectedSlide.title}\n\n${selectedSlide.content.map(c => `• ${c.text}`).join("\n")}`;
+    const imageUrl = selectedSlide.visual?.query ? await searchStockImage(selectedSlide.visual.query) : null;
 
-      if (publishMode === 'new') {
-        const res = await createFacebookPost(caption, { imageUrl: imageUrl || undefined });
-        setLastPostId(res?.post_id || null);
-        setPublishMsg("✅ تم نشر شريحة جديدة بنجاح على فيسبوك!");
-      } else if (publishMode === 'update') {
-        if (!lastPostId) {
-          setPublishMsg("❌ لا يوجد منشور سابق لتعديله.");
-        } else {
-          await updateFacebookPost(lastPostId, caption);
-          setPublishMsg("✏️ تم تعديل المنشور السابق بنجاح!");
-        }
+    if (publishMode === 'new') {
+      // 🚀 امسح آخر ID قبل النشر الجديد
+      setLastPostId(null);
+
+      // ✅ مرر caption فاضي
+      const res = await createFacebookPost({ imageUrl: imageUrl || undefined });
+      setLastPostId(res?.post_id || null);
+      setPublishMsg("✅ تم نشر شريحة جديدة بنجاح على فيسبوك!");
+    } else if (publishMode === 'update') {
+      if (!lastPostId) {
+        setPublishMsg("❌ لا يوجد منشور سابق لتعديله.");
+      } else {
+        // ✅ تعديل فقط الكابشن (فاضي برضو)
+        await updateFacebookPost(lastPostId, "");
+        setPublishMsg("✏️ تم تعديل المنشور السابق بنجاح!");
       }
-    } catch (err) {
-      console.error("Facebook publish error:", err);
-      setPublishMsg("❌ فشل النشر/التعديل. تحقق من الإعدادات.");
-    } finally {
-      setIsPublishing(false);
     }
-  };
+  } catch (err) {
+    console.error("Facebook publish error:", err);
+    setPublishMsg("❌ فشل النشر/التعديل. تحقق من الإعدادات.");
+  } finally {
+    setIsPublishing(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">

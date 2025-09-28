@@ -183,33 +183,35 @@ export async function searchStockImage(query: string): Promise<string | null> {
   return null;
 }
 
+
 // ----------------------------
-// 🆕 إنشاء منشور جديد
+// 🆕 إنشاء منشور جديد بصورة فقط
 // ----------------------------
 export async function createFacebookPost(
-  caption: string,
   options: { imageUrl?: string; imageBase64?: string }
 ) {
   try {
     const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
 
+    // 🖼️ نشر صورة من رابط
     if (options.imageUrl) {
       const res = await axios.post(url, null, {
         params: {
           url: options.imageUrl,
-          caption,
+          caption: "📊 إنفوغرافيك جديد", // 👈 الكابشن ثابت/مبسّط
           access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
         },
       });
       return res.data;
     }
 
+    // 🖼️ نشر صورة Base64
     if (options.imageBase64) {
       const blob = await fetch(options.imageBase64).then(r => r.blob());
       const file = new File([blob], "infographic.png", { type: "image/png" });
 
       const formData = new FormData();
-      formData.append("caption", caption);
+      formData.append("caption", "📊 إنفوغرافيك جديد"); // 👈 الكابشن ثابت/مبسّط
       formData.append("access_token", FACEBOOK_PAGE_ACCESS_TOKEN);
       formData.append("source", file);
 
@@ -225,6 +227,7 @@ export async function createFacebookPost(
     return null;
   }
 }
+
 
 // ----------------------------
 // ✏️ تعديل منشور موجود
