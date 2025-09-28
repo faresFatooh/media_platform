@@ -55,3 +55,8 @@ services:
         sync: false
       - key: VITE_CLAUDE_PROXY_URL
         value: https://claude-proxy-zjkv.onrender.com
+      - key: VITE_FACEBOOK_PAGE_ID
+        sync: false
+      - key: VITE_FACEBOOK_PAGE_ACCESS_TOKEN
+        sync: false
+
