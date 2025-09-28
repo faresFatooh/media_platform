@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { GenerationResult, GroundingChunk } from "../types";
 
-// مفتاح Gemini من متغيرات البيئة في Render (VITE_GEMINI_API_KEY)
+// مفتاح Gemini من متغيرات البيئة (Render)
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 if (!API_KEY) {
@@ -16,18 +16,22 @@ export const generateContent = async (
   useGoogleSearch: boolean = false
 ): Promise<GenerationResult> => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // نحدد الموديل
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
+    // إعدادات التوليد
     const generationConfig = {
       temperature: 0.7,
       topP: 0.95,
       topK: 64,
     };
 
+    // استدعاء API
     const response = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig,
-      tools: useGoogleSearch ? [{ googleSearch: {} }] : undefined,
+      // في حالة تفعيل البحث من جوجل
+      tools: useGoogleSearch ? [{ googleSearchRetrieval: {} }] : undefined,
     });
 
     const text = response.response.text();
