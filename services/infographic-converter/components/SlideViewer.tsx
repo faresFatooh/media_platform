@@ -5,6 +5,7 @@ import { IconPicker } from './IconPicker';
 import { Icon } from './Icon';
 import type { Slide, TextStyle, SlideContentItem } from '../types';
 import type { Orientation } from '../App';
+import html2canvas from "html2canvas"; // تأكد إنها منصبة: npm install html2canvas
 
 interface SlideViewerProps {
     slides: Slide[];
@@ -42,7 +43,6 @@ const HCTI_API_KEY = 'f4da4c76-a682-4cee-9dad-a9bfdd853a29';
 const HCTI_API_BASE = 'https://hcti.io/v1';
 
 declare const JSZip: any;
-declare const html2canvas: any;
 
 export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate, logoUrl, onLogoUpload, backgroundOpacity, onBackgroundOpacityChange, themeColor, onThemeChange, orientation, onOrientationChange, onAddSlide, onDeleteSlide, onMusicUpload, backgroundMusicUrl, musicFileName, logoSize, onLogoSizeChange, socialIconUrl, onSocialIconUpload, socialIconSize, onSocialIconSizeChange, socialIconPosition, onSocialIconPositionChange }) => {
     const slideRefs = React.useRef<React.RefObject<HTMLDivElement>[]>([]);
@@ -63,6 +63,8 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
     const [showVideoModal, setShowVideoModal] = useState(false);
     const [transitionType, setTransitionType] = useState<TransitionType>('fade');
     const [pickerOpenFor, setPickerOpenFor] = useState<{ slideIndex: number; itemIndex: number } | null>(null);
+
+    
 
     // Kept for PDF export functionality
     const getFullHtml = (slideHtml: string, rootFontSize: number) => {
@@ -589,6 +591,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
             </button>
         </div>
     );
+
     
     return (
         <div className="mt-12">
@@ -807,3 +810,34 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
         </div>
     );
 };
+
+/**
+ * 🖼️ دالة لتحويل شريحة واحدة لصورة Base64
+ */
+export async function exportSlideAsImage(
+  index: number,
+  slideRefs: React.RefObject<HTMLDivElement>[]
+): Promise<string | null> {
+  const element = slideRefs[index]?.current;
+  if (!element) {
+    console.error("❌ لم يتم العثور على الشريحة المطلوبة.");
+    return null;
+  }
+
+  try {
+    const exportWidth = 1080; // ممكن تغيرها حسب orientation
+    const scale = exportWidth / element.offsetWidth;
+
+    const canvas = await html2canvas(element, {
+      scale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+    });
+
+    return canvas.toDataURL("image/png");
+  } catch (err) {
+    console.error("❌ فشل تحويل الشريحة لصورة:", err);
+    return null;
+  }
+}
