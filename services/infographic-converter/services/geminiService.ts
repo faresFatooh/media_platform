@@ -159,7 +159,7 @@ export async function searchPexelsImage(query: string): Promise<string | null> {
 export async function searchUnsplashImage(query: string): Promise<string | null> {
   try {
     const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1`,
+      `https://api.unsplash.com/search/feed?query=${encodeURIComponent(query)}&per_page=1`,
       { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } }
     );
     const data = await response.json();
@@ -191,7 +191,7 @@ export async function createFacebookPost(
   options: { imageUrl?: string; imageBase64?: string }
 ) {
   try {
-    const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
+    const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/feed`;
 
     // 🖼️ نشر صورة من رابط
     if (options.imageUrl) {
