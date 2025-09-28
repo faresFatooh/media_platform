@@ -12,7 +12,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "@google/generative-ai": "^0.15.0",
-    "axios": "^1.7.2"
+    "axios": "^1.7.2",
+    "html2canvas": "^1.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
