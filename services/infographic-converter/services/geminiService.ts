@@ -188,56 +188,41 @@ export async function searchStockImage(query: string): Promise<string | null> {
 // 🆕 إنشاء منشور جديد بصورة (ينزل في البوستات مباشرة)
 // ----------------------------
 // نشر صورة (Base64 أو URL)
-export async function createFacebookPost(options: { imageUrl?: string; imageBase64?: string }) {
+export async function createFacebookPost(options: { imageBase64: string; message?: string }) {
   try {
-    const photoUrl = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
-    let photoId: string | null = null;
+    const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
 
-    if (options.imageUrl) {
-      const res = await axios.post(photoUrl, null, {
-        params: {
-          url: options.imageUrl,
-          published: false,
-          access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
-        },
-      });
-      photoId = res.data.id;
+    // فك Base64 وتحويله لـ Blob
+    const byteString = atob(options.imageBase64.split(",")[1]);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([ia], { type: "image/png" });
+
+    // تجهيز البيانات
+    const formData = new FormData();
+    formData.append("access_token", FACEBOOK_PAGE_ACCESS_TOKEN);
+    formData.append("published", "true"); // 👈 مباشرة كمنشور
+    formData.append("source", blob, "infographic.png");
+    if (options.message) {
+      formData.append("message", options.message);
     }
 
-    if (options.imageBase64) {
-      const blob = await fetch(options.imageBase64).then(r => r.blob());
-      const file = new File([blob], "slide.png", { type: "image/png" });
-
-      const formData = new FormData();
-      formData.append("access_token", FACEBOOK_PAGE_ACCESS_TOKEN);
-      formData.append("published", "false");
-      formData.append("source", file);
-
-      const res = await axios.post(photoUrl, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      photoId = res.data.id;
-    }
-
-    if (!photoId) throw new Error("❌ فشل رفع الصورة");
-
-    // انشاء منشور
-    const feedUrl = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/feed`;
-    const feedRes = await axios.post(feedUrl, null, {
-      params: {
-        message: "",
-        object_attachment: photoId,
-        access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
-      },
+    // رفع الصورة + نشرها في بوست واحد
+    const res = await axios.post(url, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
-    return feedRes.data;
+    return res.data; // فيه id للمنشور الجديد
   } catch (err: any) {
     console.error("❌ Facebook create post error:", err.response?.data || err);
     return null;
   }
 }
+
+
 
 
 export async function updateFacebookPost(
