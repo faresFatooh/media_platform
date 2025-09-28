@@ -190,9 +190,9 @@ export async function searchStockImage(query: string): Promise<string | null> {
 // نشر صورة (Base64 أو URL)
 export async function createFacebookPost(options: { imageBase64: string; message?: string }) {
   try {
-    // 1️⃣ ارفع الصورة Unpublished
-    const photoUrl = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
+    const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
 
+    // فك Base64 وتحويله لـ Blob
     const byteString = atob(options.imageBase64.split(",")[1]);
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
@@ -201,29 +201,21 @@ export async function createFacebookPost(options: { imageBase64: string; message
     }
     const blob = new Blob([ia], { type: "image/png" });
 
+    // تجهيز البيانات
     const formData = new FormData();
     formData.append("access_token", FACEBOOK_PAGE_ACCESS_TOKEN);
-    formData.append("published", "false"); // 👈 ارفعه فقط
+    formData.append("published", "true"); // 👈 مباشرة كمنشور
     formData.append("source", blob, "infographic.png");
+    if (options.message) {
+      formData.append("message", options.message);
+    }
 
-    const photoRes = await axios.post(photoUrl, formData, {
+    // رفع الصورة + نشرها في بوست واحد
+    const res = await axios.post(url, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
 
-    const photoId = photoRes.data.id;
-    if (!photoId) throw new Error("❌ فشل رفع الصورة");
-
-    // 2️⃣ أنشئ بوست جديد على /feed
-    const feedUrl = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/feed`;
-    const feedRes = await axios.post(feedUrl, null, {
-      params: {
-        message: options.message || "",
-        object_attachment: photoId,
-        access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
-      },
-    });
-
-    return feedRes.data; // فيه id للبوست
+    return res.data; // فيه id للمنشور الجديد
   } catch (err: any) {
     console.error("❌ Facebook create post error:", err.response?.data || err);
     return null;
