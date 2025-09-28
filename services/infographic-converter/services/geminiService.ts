@@ -187,45 +187,58 @@ export async function searchStockImage(query: string): Promise<string | null> {
 // ----------------------------
 // 🆕 إنشاء منشور جديد بصورة (ينزل في البوستات مباشرة)
 // ----------------------------
+// نشر صورة (Base64 أو URL)
 export async function createFacebookPost(options: { imageUrl?: string; imageBase64?: string }) {
   try {
     const photoUrl = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
+    let photoId: string | null = null;
 
-    // لو عندك لينك لصورة
     if (options.imageUrl) {
       const res = await axios.post(photoUrl, null, {
         params: {
           url: options.imageUrl,
-          caption: "", // 👈 النص جوة الصورة، فنخليه فاضي
+          published: false,
           access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
         },
       });
-      return res.data; // فيه post_id + id
+      photoId = res.data.id;
     }
 
-    // لو عندك صورة Base64
     if (options.imageBase64) {
       const blob = await fetch(options.imageBase64).then(r => r.blob());
-      const file = new File([blob], "infographic.png", { type: "image/png" });
+      const file = new File([blob], "slide.png", { type: "image/png" });
 
       const formData = new FormData();
       formData.append("access_token", FACEBOOK_PAGE_ACCESS_TOKEN);
-      formData.append("caption", ""); // 👈 نفس الشي نخليه فاضي
+      formData.append("published", "false");
       formData.append("source", file);
 
       const res = await axios.post(photoUrl, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      return res.data; // فيه post_id + id
+      photoId = res.data.id;
     }
 
-    throw new Error("❌ لازم تبعت إما imageUrl أو imageBase64");
+    if (!photoId) throw new Error("❌ فشل رفع الصورة");
+
+    // انشاء منشور
+    const feedUrl = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/feed`;
+    const feedRes = await axios.post(feedUrl, null, {
+      params: {
+        message: "",
+        object_attachment: photoId,
+        access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
+      },
+    });
+
+    return feedRes.data;
   } catch (err: any) {
     console.error("❌ Facebook create post error:", err.response?.data || err);
     return null;
   }
 }
+
 
 export async function updateFacebookPost(
   postId: string,

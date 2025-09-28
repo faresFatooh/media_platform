@@ -4,9 +4,12 @@ import { SlideViewer } from './components/SlideViewer';
 import { SocialIconGenerator } from './components/SocialIconGenerator';
 import { generateSlidesFromText, generateSlidesFromTextChunks, searchStockImage, createFacebookPost, updateFacebookPost } from './services/geminiService';
 import type { Slide } from './types';
+import html2canvas from "html2canvas";
+
+
 
 export type Orientation = 'horizontal' | 'vertical' | 'square';
-
+const slideRefs = React.useRef<React.RefObject<HTMLDivElement>[]>([]);
 const calculateInitialFontSizes = (
   slide: Pick<Slide, 'title' | 'content'>,
   orientation: Orientation
@@ -239,7 +242,32 @@ const App: React.FC = () => {
       );
     }
   };
+    // ✅ دالة لإرجاع صورة الشريحة Base64 (بدون تنزيل)
+const exportSlideAsImage = async (index: number): Promise<string | null> => {
+  const element = slideRefs.current[index]?.current;
+  if (!element) return null;
 
+  try {
+    let exportWidth = 1920;
+    if (orientation === 'vertical' || orientation === 'square') {
+      exportWidth = 1080;
+    }
+
+    const scale = exportWidth / element.offsetWidth;
+
+    const canvas = await html2canvas(element, { 
+      scale: scale, 
+      useCORS: true, 
+      allowTaint: true,
+      backgroundColor: null
+    });
+
+    return canvas.toDataURL('image/png'); // ✅ إرجاع صورة Base64
+  } catch (error) {
+    console.error("خطأ أثناء تحويل الشريحة لصورة:", error);
+    return null;
+  }
+};
   // ✅ نشر/تعديل الشريحة المختارة
 // ✅ نشر/تعديل الشريحة المختارة
 const handlePublishToFacebook = async () => {
@@ -252,32 +280,21 @@ const handlePublishToFacebook = async () => {
   setPublishMsg(null);
 
   try {
-    const element = document.querySelectorAll(".slide-wrapper")[selectedSlideIndex] as HTMLElement;
-    if (!element) {
-      setPublishMsg("❌ لم يتم العثور على الشريحة المحددة.");
+    // ✅ حول الشريحة إلى صورة Base64
+    const dataUrl = await exportSlideAsImage(selectedSlideIndex);
+
+    if (!dataUrl) {
+      setPublishMsg("❌ فشل تحويل الشريحة لصورة.");
       setIsPublishing(false);
       return;
     }
 
-    // 🖼️ حول الشريحة المحددة لصورة PNG
-    const exportWidth = orientation === "vertical" || orientation === "square" ? 1080 : 1920;
-    const scale = exportWidth / element.offsetWidth;
-
-    const canvas = await html2canvas(element, {
-      scale: scale,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: null,
-    });
-
-    const dataUrl = canvas.toDataURL("image/png");
-
-    if (publishMode === "new") {
+    if (publishMode === 'new') {
       setLastPostId(null);
       const res = await createFacebookPost({ imageBase64: dataUrl });
       setLastPostId(res?.id || null);
-      setPublishMsg("✅ تم نشر الشريحة المختارة كصورة إنفوغرافيك بنجاح!");
-    } else if (publishMode === "update") {
+      setPublishMsg("✅ تم نشر الشريحة بنجاح على فيسبوك!");
+    } else if (publishMode === 'update') {
       if (!lastPostId) {
         setPublishMsg("❌ لا يوجد منشور سابق لتعديله.");
       } else {
@@ -292,6 +309,8 @@ const handlePublishToFacebook = async () => {
     setIsPublishing(false);
   }
 };
+
+
 
 
 

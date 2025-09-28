@@ -139,7 +139,8 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
              if(originalButton) originalButton.textContent = 'تصدير PNG';
         }
     };
-    
+
+
     const exportAsPdf = async () => {
         setIsExporting(true);
         try {
