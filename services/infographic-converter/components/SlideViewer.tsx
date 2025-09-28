@@ -1,3 +1,4 @@
+
 import React, { createRef, useState, useEffect } from 'react';
 import { Slide as SlideComponent } from './Slide';
 import { IconPicker } from './IconPicker';
