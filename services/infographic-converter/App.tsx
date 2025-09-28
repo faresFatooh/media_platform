@@ -2,8 +2,13 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { InputForm } from './components/InputForm';
 import { SlideViewer } from './components/SlideViewer';
 import { SocialIconGenerator } from './components/SocialIconGenerator';
-import { generateSlidesFromText, generateSlidesFromTextChunks, searchStockImage } from './services/geminiService';
-import { postToFacebookNew, updateFacebookPost } from './services/geminiService';
+import {
+  generateSlidesFromText,
+  generateSlidesFromTextChunks,
+  searchStockImage,
+  createFacebookPost,
+  updateFacebookPost
+} from './services/geminiService';
 import type { Slide } from './types';
 
 export type Orientation = 'horizontal' | 'vertical' | 'square';
@@ -257,7 +262,7 @@ const App: React.FC = () => {
       const imageUrl = selectedSlide.visual?.query ? await searchStockImage(selectedSlide.visual.query) : null;
 
       if (publishMode === 'new') {
-        const res = await postToFacebookNew(caption, imageUrl || undefined);
+        const res = await createFacebookPost(caption, { imageUrl: imageUrl || undefined });
         setLastPostId(res?.post_id || null);
         setPublishMsg("✅ تم نشر شريحة جديدة بنجاح على فيسبوك!");
       } else if (publishMode === 'update') {
