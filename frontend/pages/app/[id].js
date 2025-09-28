@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState, useRef } from 'react'; // <-- أضفنا useRef
+import { useEffect, useState, useRef } from 'react'; 
 import Link from 'next/link';
 
 export default function AppDetails() {
@@ -7,7 +7,7 @@ export default function AppDetails() {
   const { id } = router.query;
   const [app, setApp] = useState(null);
   const [error, setError] = useState('');
-  const iframeRef = useRef(null); // <-- أنشأنا مرجعًا للإطار
+  const iframeRef = useRef(null); 
 
 
 
@@ -15,6 +15,7 @@ export default function AppDetails() {
     '1': { url: 'https://ai-news-generator-service.onrender.com', name:'مولد-المقالات-بالذكاء-الاصطناعي' },
     '2': { url: 'https://ai-news-app-lpgh.onrender.com', name:'مولد-الأخبار-بالذكاء-الاصطناعي' },
     '3': { url: 'https://infographic-converter.onrender.com', name:'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
+    '4': { url: 'https://pal-content-generator.onrender.com', name:'تطبيق مولد الاخبار الفلسطينية' },
 
 
   };
