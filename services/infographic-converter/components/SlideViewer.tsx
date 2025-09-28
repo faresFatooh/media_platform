@@ -6,6 +6,8 @@ import { Icon } from './Icon';
 import type { Slide, TextStyle, SlideContentItem } from '../types';
 import type { Orientation } from '../App';
 import html2canvas from "html2canvas"; // تأكد إنها منصبة: npm install html2canvas
+import { createFacebookPost } from "../services/geminiService";
+
 
 interface SlideViewerProps {
     slides: Slide[];
@@ -576,6 +578,26 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
         newY = Math.max(0, Math.min(100, newY));
         onSocialIconPositionChange({ x: newX, y: newY });
     };
+    const handlePublishSlide = async (index: number) => {
+  const button = document.getElementById(`publish-fb-${index}`);
+  if (button) button.textContent = "جاري النشر...";
+
+  try {
+    const dataUrl = await exportSlideAsImage(index, slideRefs.current);
+    if (!dataUrl) throw new Error("فشل في تحويل الشريحة");
+
+    await createFacebookPost({ imageBase64: dataUrl });
+    if (button) button.textContent = "✅ تم النشر";
+  } catch (err) {
+    console.error("خطأ النشر:", err);
+    if (button) button.textContent = "❌ فشل النشر";
+  } finally {
+    setTimeout(() => {
+      if (button) button.textContent = "📤 نشر";
+    }, 3000);
+  }
+};
+
 
     const buttonClass = "bg-gray-200 text-gray-800 font-bold w-7 h-7 rounded-md hover:bg-gray-300 transition text-lg flex items-center justify-center leading-none";
 
@@ -706,6 +728,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
                                     <button onClick={() => handleFileUploadClick(index)} className="bg-blue-100 text-blue-800 font-bold py-2 px-3 rounded-lg hover:bg-blue-200 transition text-sm flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> رفع</button>
                                     <input type="file" ref={fileInputRefs.current[index]} onChange={(e) => handleFileChange(e, index)} accept="image/*" style={{ display: 'none' }} />
                                     <button id={`export-png-${index}`} onClick={() => exportAsPng(index)} className="bg-gray-700 text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-800 transition text-sm">تصدير PNG</button>
+                                    <button id={`publish-fb-${index}`} onClick={() => handlePublishSlide(index)}className="bg-blue-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-blue-700 transition text-sm">📤 نشر</button>
                                      <button onClick={() => onDeleteSlide(index)} className="bg-red-100 text-red-800 font-bold py-2 px-3 rounded-lg hover:bg-red-200 transition text-sm flex items-center gap-1" title="حذف الشريحة"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> حذف</button>
                                 </div>
                             </div>
