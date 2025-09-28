@@ -189,6 +189,9 @@ export async function searchStockImage(query: string): Promise<string | null> {
 export async function postToFacebook(caption: string, imageUrl?: string, imageBase64?: string) {
   try {
     const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
+    console.log("PAGE_ID:", FACEBOOK_PAGE_ID);
+console.log("ACCESS_TOKEN:", FACEBOOK_PAGE_ACCESS_TOKEN?.slice(0,10) + "...");
+
 
     if (imageUrl) {
       const res = await axios.post(url, null, {
