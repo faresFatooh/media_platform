@@ -227,13 +227,6 @@ export async function createFacebookPost(options: { imageUrl?: string; imageBase
   }
 }
 
-
-
-
-
-// ----------------------------
-// ✏️ تعديل منشور موجود
-// ----------------------------
 export async function updateFacebookPost(
   postId: string,
   caption: string

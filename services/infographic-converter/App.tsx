@@ -252,26 +252,32 @@ const handlePublishToFacebook = async () => {
   setPublishMsg(null);
 
   try {
-    const selectedSlide = slides[selectedSlideIndex];
-    // نجيب صورة مناسبة للشريحة
-    const imageUrl = selectedSlide.visual?.query
-      ? await searchStockImage(selectedSlide.visual.query)
-      : null;
-
-    if (!imageUrl) {
-      setPublishMsg("❌ لم يتم العثور على صورة للنشر.");
+    const element = document.querySelectorAll(".slide-wrapper")[selectedSlideIndex] as HTMLElement;
+    if (!element) {
+      setPublishMsg("❌ لم يتم العثور على الشريحة المحددة.");
       setIsPublishing(false);
       return;
     }
 
-    if (publishMode === 'new') {
-      // 🚀 امسح آخر ID قبل النشر الجديد
-      setLastPostId(null);
+    // 🖼️ حول الشريحة المحددة لصورة PNG
+    const exportWidth = orientation === "vertical" || orientation === "square" ? 1080 : 1920;
+    const scale = exportWidth / element.offsetWidth;
 
-      const res = await createFacebookPost({ imageUrl });
+    const canvas = await html2canvas(element, {
+      scale: scale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+    });
+
+    const dataUrl = canvas.toDataURL("image/png");
+
+    if (publishMode === "new") {
+      setLastPostId(null);
+      const res = await createFacebookPost({ imageBase64: dataUrl });
       setLastPostId(res?.id || null);
-      setPublishMsg("✅ تم نشر شريحة جديدة بنجاح على فيسبوك!");
-    } else if (publishMode === 'update') {
+      setPublishMsg("✅ تم نشر الشريحة المختارة كصورة إنفوغرافيك بنجاح!");
+    } else if (publishMode === "update") {
       if (!lastPostId) {
         setPublishMsg("❌ لا يوجد منشور سابق لتعديله.");
       } else {
