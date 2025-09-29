@@ -112,7 +112,7 @@ services:
     plan: starter
     env: docker
     dockerfilePath: ./services/ai-news-content-generator/Dockerfile
-    dockerContext: ./services/ai-news-content-generator-generator
+    dockerContext: ./services/ai-news-content-generator
     envVars:
       - key: VITE_MAIN_BACKEND_URL
         value: https://backend-y4ir.onrender.com
