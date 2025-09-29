@@ -1,6 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import type { DocumentaryScript, PromoContent, GeneratedMedia, VideoTemplate, ShortsScript } from './types';
-import { generateYouTubeIdeas, generateDocumentaryScript, generatePromoContent, generateImageForScene, generateVideoForScene, generateVideoTemplates, generateShortsScripts } from './services/geminiService';
+import { 
+  generateYouTubeIdeas, 
+  generateDocumentaryScript, 
+  generatePromoContent, 
+  generateImageForScene, 
+  generateVideoForScene, 
+  generateVideoTemplates, 
+  generateShortsScripts 
+} from './services/geminiService';
 import { validateElevenLabsApiKey } from './services/elevenLabsService';
 import Header from './components/Header';
 import Controls from './components/Controls';
@@ -50,9 +58,8 @@ const App: React.FC = () => {
     const handleApiKeyChange = (key: string) => {
         setElevenLabsApiKey(key);
         localStorage.setItem('elevenLabsApiKey', key);
-        setIsApiKeyValidated(false); // Reset validation status when key changes
+        setIsApiKeyValidated(false); 
     };
-
 
     const handleGenerateIdeas = useCallback(async () => {
         setIsLoading(prev => ({ ...prev, ideas: true }));
