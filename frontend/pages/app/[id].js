@@ -16,6 +16,7 @@ export default function AppDetails() {
     '2': { url: 'https://ai-news-app-lpgh.onrender.com', name:'مولد-الأخبار-بالذكاء-الاصطناعي' },
     '3': { url: 'https://infographic-converter.onrender.com', name:'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
     '4': { url: 'https://pal-content-generator.onrender.com', name:'تطبيق مولد الاخبار الفلسطينية' },
+    '5': { url: 'https://youtube-documentary-script-generator.onrender.com', name:'تطبيق مولد اليوتيوب ' },
 
 
   };
