@@ -22,7 +22,7 @@ if (!import.meta.env.VITE_GEMINI_API_KEY) {
 const ai = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 // =======================
-// Schemas (JSON Schema عادي)
+// Schemas
 // =======================
 const documentaryScriptSchema = {
   type: "object",
@@ -86,13 +86,7 @@ const promoContentSchema = {
       required: ["caption", "hashtags"]
     }
   },
-  required: [
-    "youtube",
-    "instagramPost",
-    "instagramStory",
-    "facebookPost",
-    "twitterPost"
-  ]
+  required: ["youtube", "instagramPost", "instagramStory", "facebookPost", "twitterPost"]
 };
 
 const videoTemplatesSchema = {
@@ -142,7 +136,12 @@ export async function generateYouTubeIdeas(): Promise<string[]> {
   const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const response = await model.generateContent({
-    contents: "أعطني 10 أفكار رائجة لوثائقيات قصيرة على يوتيوب، كقائمة نصوص فقط.",
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: "أعطني 10 أفكار رائجة لوثائقيات قصيرة على يوتيوب، كقائمة نصوص فقط." }]
+      }
+    ],
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -160,8 +159,12 @@ export async function generateVideoTemplates(): Promise<VideoTemplate[]> {
   const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const response = await model.generateContent({
-    contents:
-      "أنشئ 5 قوالب شائعة للفيديو الوثائقي على يوتيوب مع العنوان والوصف والنص المقترح.",
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: "أنشئ 5 قوالب شائعة للفيديو الوثائقي على يوتيوب مع العنوان والوصف والنص المقترح." }]
+      }
+    ],
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: videoTemplatesSchema
@@ -178,7 +181,12 @@ export async function generateDocumentaryScript(
   const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const response = await model.generateContent({
-    contents: `اكتب سيناريو وثائقي قصير عن "${topic}" بمدة تقريبية ${duration} دقائق.`,
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `اكتب سيناريو وثائقي قصير عن "${topic}" بمدة تقريبية ${duration} دقائق.` }]
+      }
+    ],
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: documentaryScriptSchema
@@ -194,9 +202,12 @@ export async function generatePromoContent(
   const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const response = await model.generateContent({
-    contents: `قم بإنشاء محتوى تسويقي لمختلف المنصات بناءً على هذا النص: ${JSON.stringify(
-      script
-    )}`,
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `قم بإنشاء محتوى تسويقي لمختلف المنصات بناءً على هذا النص: ${JSON.stringify(script)}` }]
+      }
+    ],
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: promoContentSchema
@@ -212,9 +223,12 @@ export async function generateShortsScripts(
   const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const response = await model.generateContent({
-    contents: `استخرج 3 مقاطع قصيرة (Shorts) من النص التالي: ${JSON.stringify(
-      script
-    )}`,
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `استخرج 3 مقاطع قصيرة (Shorts) من النص التالي: ${JSON.stringify(script)}` }]
+      }
+    ],
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: shortsScriptsSchema
@@ -232,11 +246,15 @@ export async function generateImageForScene(prompt: string): Promise<string> {
   const model = ai.getGenerativeModel({ model: "imagen-3.0" });
 
   const result = await model.generateContent({
-    contents: `Generate a cinematic, 4K, hyper-realistic image: ${prompt}`
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `Generate a cinematic, 4K, hyper-realistic image: ${prompt}` }]
+      }
+    ]
   });
 
-  const image = result.response.candidates?.[0]?.content?.parts?.[0]?.inlineData
-    ?.data;
+  const image = result.response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
 
   if (!image) throw new Error("Image generation failed");
   return `data:image/png;base64,${image}`;
@@ -251,7 +269,12 @@ export async function generateVideoForScene(
   const model = ai.getGenerativeModel({ model: "veo-1.5" });
 
   const result = await model.generateContent({
-    contents: `Generate a cinematic, hyper-realistic short clip: ${prompt}`
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: `Generate a cinematic, hyper-realistic short clip: ${prompt}` }]
+      }
+    ]
   });
 
   const url = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
