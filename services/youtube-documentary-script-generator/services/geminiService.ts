@@ -30,7 +30,7 @@ export async function generateYouTubeIdeas(): Promise<string[]> {
 }
 
 export async function generateVideoTemplates(): Promise<VideoTemplate[]> {
-  const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
   const response = await model.generateContent(
     `قم بإنشاء قائمة من 5 قوالب فيديو وثائقية شائعة. لكل قالب، قدم عنوانًا ووصفًا ونموذجًا للموضوع.`
   );
@@ -38,21 +38,21 @@ export async function generateVideoTemplates(): Promise<VideoTemplate[]> {
 }
 
 export async function generateDocumentaryScript(topic: string, duration: number): Promise<DocumentaryScript> {
-  const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
   const prompt = `اكتب نص فيلم وثائقي قصير عن "${topic}" بمدة تقريبية ${duration} دقائق.`;
   const response = await model.generateContent(prompt);
   return JSON.parse(response.response.text());
 }
 
 export async function generatePromoContent(script: DocumentaryScript): Promise<PromoContent> {
-  const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
   const prompt = `بناءً على النص التالي، أنشئ محتوى ترويجي لكل من يوتيوب، انستغرام، فيسبوك وتويتر:\n${JSON.stringify(script)}`;
   const response = await model.generateContent(prompt);
   return JSON.parse(response.response.text());
 }
 
 export async function generateShortsScripts(script: DocumentaryScript): Promise<ShortsScript[]> {
-  const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
   const prompt = `استخرج 3 مقاطع قصيرة (Shorts/Reels) من النص التالي:\n${JSON.stringify(script)}`;
   const response = await model.generateContent(prompt);
   return JSON.parse(response.response.text()).shorts;
