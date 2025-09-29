@@ -17,6 +17,7 @@ export default function AppDetails() {
     '3': { url: 'https://infographic-converter.onrender.com', name:'مُحَوِّل-النصوص-إلى-انفوجرافيك' },
     '4': { url: 'https://pal-content-generator.onrender.com', name:'تطبيق مولد الاخبار الفلسطينية' },
     '5': { url: 'https://youtube-documentary-script-generator.onrender.com', name:'تطبيق مولد اليوتيوب ' },
+    '6': { url: 'https://ai-news-content-generator.onrender.com', name:'مولد المحتوى الاخباري' },
 
 
   };
