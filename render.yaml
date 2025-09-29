@@ -83,3 +83,25 @@ services:
       - key: VITE_FACEBOOK_PAGE_ACCESS_TOKEN
         sync: false
 
+  # خدمة youtube-documentary-script-generator (مولّد الأخبار الفلسطينية)
+  - type: web
+    name: youtube-documentary-script-generator
+    plan: starter
+    env: docker
+    dockerfilePath: ./services/youtube-documentary-script-generator/Dockerfile
+    dockerContext: ./services/youtube-documentary-script-generator
+    envVars:
+      - key: VITE_MAIN_BACKEND_URL
+        value: https://backend-y4ir.onrender.com
+      - key: VITE_GEMINI_API_KEY
+        sync: false
+      - key: VITE_PEXELS_API_KEY
+        sync: false
+      - key: VITE_UNSPLASH_ACCESS_KEY
+        sync: false
+      - key: VITE_CLAUDE_PROXY_URL
+        value: https://claude-proxy-zjkv.onrender.com
+      - key: VITE_FACEBOOK_PAGE_ID
+        sync: false
+      - key: VITE_FACEBOOK_PAGE_ACCESS_TOKEN
+        sync: false
