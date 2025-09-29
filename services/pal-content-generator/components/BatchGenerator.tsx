@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { generateContent } from '../services/geminiService';
+import { generateContent, createFacebookPost } from '../services/geminiService';
 import { CONTENT_TEMPLATES } from '../constants';
 import { Platform, type GenerationResult, type ContentTemplate } from '../types';
 import { Spinner } from './Spinner';
 import GenerationResultDisplay from './GenerationResultDisplay';
 import { 
-    SparklesIcon, XIcon, FacebookIcon, InstagramIcon, YoutubeIcon, LinkedinIcon, 
-    TelegramIcon, NewspaperIcon, ChartBarIcon, TikTokIcon, FactCheckIcon, CalendarDaysIcon 
+  SparklesIcon, XIcon, FacebookIcon, InstagramIcon, YoutubeIcon, LinkedinIcon, 
+  TelegramIcon, NewspaperIcon, ChartBarIcon, TikTokIcon, FactCheckIcon, CalendarDaysIcon 
 } from './Icons';
-import { createFacebookPost } from '../services/geminiService'; // <-- تأكد انو عندك هاد
 
 interface BatchResult {
   templateTitle: string;
