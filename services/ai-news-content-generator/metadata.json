@@ -1,0 +1,5 @@
+{
+  "name": "AI News Content Generator",
+  "description": "An AI-powered application to generate, summarize, and adapt news content for various social media platforms, including image and infographic creation tools.",
+  "requestFramePermissions": []
+}
