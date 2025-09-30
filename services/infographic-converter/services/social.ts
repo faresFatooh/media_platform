@@ -37,7 +37,7 @@ export async function uploadImageToCloud(base64Image: string): Promise<string | 
     return null;
   }
   
-  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+  const url = `https://api.cloudinary.com/v2/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
   try {
     const response = await axios.post(url, {
