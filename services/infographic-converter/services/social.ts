@@ -1,5 +1,5 @@
 // ---------------------------------
-// هذا الجزء خاص بتعريف الأنواع لـ TypeScript
+// This part is for TypeScript type definitions
 // ---------------------------------
 declare global {
   interface ImportMetaEnv {
@@ -10,6 +10,8 @@ declare global {
     readonly VITE_FACEBOOK_PAGE_ACCESS_TOKEN: string;
     readonly VITE_INSTAGRAM_USER_ID: string;
     readonly VITE_THREADS_USER_ID: string;
+    readonly VITE_TELEGRAM_BOT_TOKEN: string; // ⚙️ Added
+    readonly VITE_TELEGRAM_CHAT_ID: string;   // ⚙️ Added
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv;
@@ -18,7 +20,7 @@ declare global {
 import axios from "axios";
 
 // ---------------------------------
-// قراءة المتغيرات من ملف البيئة
+// Reading variables from the environment file
 // ---------------------------------
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
@@ -26,18 +28,22 @@ const FACEBOOK_PAGE_ID = import.meta.env.VITE_FACEBOOK_PAGE_ID;
 const FACEBOOK_PAGE_ACCESS_TOKEN = import.meta.env.VITE_FACEBOOK_PAGE_ACCESS_TOKEN;
 const INSTAGRAM_USER_ID = import.meta.env.VITE_INSTAGRAM_USER_ID;
 const THREADS_USER_ID = import.meta.env.VITE_THREADS_USER_ID;
+const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN; // ⚙️ Added
+const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;     // ⚙️ Added
 
-// التحقق من وجود المتغيرات
+// Checking for the existence of variables
 if (!CLOUDINARY_CLOUD_NAME) console.error("❌ VITE_CLOUDINARY_CLOUD_NAME is not set.");
 if (!CLOUDINARY_UPLOAD_PRESET) console.error("❌ VITE_CLOUDINARY_UPLOAD_PRESET is not set.");
 if (!FACEBOOK_PAGE_ID) console.error("❌ VITE_FACEBOOK_PAGE_ID is not set.");
 if (!FACEBOOK_PAGE_ACCESS_TOKEN) console.error("❌ VITE_FACEBOOK_PAGE_ACCESS_TOKEN is not set.");
 if (!INSTAGRAM_USER_ID) console.error("❌ VITE_INSTAGRAM_USER_ID is not set.");
 if (!THREADS_USER_ID) console.error("❌ VITE_THREADS_USER_ID is not set.");
+if (!TELEGRAM_BOT_TOKEN) console.error("❌ VITE_TELEGRAM_BOT_TOKEN is not set."); // ⚙️ Added
+if (!TELEGRAM_CHAT_ID) console.error("❌ VITE_TELEGRAM_CHAT_ID is not set.");     // ⚙️ Added
 
 
 // -------------------------------------------------------------
-// 🆕 الدالة الجديدة لرفع الصورة إلى Cloudinary
+// 🆕 New function to upload an image to Cloudinary
 // -------------------------------------------------------------
 export async function uploadImageToCloud(base64Image: string): Promise<string | null> {
   if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
@@ -60,7 +66,7 @@ export async function uploadImageToCloud(base64Image: string): Promise<string | 
 }
 
 // -------------------------------------------------------------
-// 📌 فيسبوك
+// 📌 Facebook
 // -------------------------------------------------------------
 export async function createFacebookPost(options: { imageBase64: string; message?: string }) {
   try {
@@ -104,7 +110,7 @@ export async function updateFacebookPost(postId: string, caption: string) {
 }
 
 // -------------------------------------------------------------
-// 📌 إنستغرام
+// 📌 Instagram
 // -------------------------------------------------------------
 export async function createInstagramPost(options: { imageUrl: string; caption?: string }) {
   try {
@@ -126,7 +132,7 @@ export async function createInstagramPost(options: { imageUrl: string; caption?:
 }
 
 // -------------------------------------------------------------
-// 📌 ثريدز
+// 📌 Threads
 // -------------------------------------------------------------
 export async function createThreadsPost(options: { text: string }) {
   try {
@@ -139,6 +145,44 @@ export async function createThreadsPost(options: { text: string }) {
     return res.data;
   } catch (err: any) {
     console.error("❌ Threads create post error:", err.response?.data || err);
+    return null;
+  }
+}
+
+// -------------------------------------------------------------
+// 📌 Telegram
+// -------------------------------------------------------------
+export async function createTelegramPost(options: { imageBase64: string; caption?: string }) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.error("❌ Telegram Bot Token or Chat ID is not set.");
+    return null;
+  }
+
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
+
+    const byteString = atob(options.imageBase64.split(",")[1]);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([ia], { type: "image/png" });
+
+    const formData = new FormData();
+    formData.append("chat_id", TELEGRAM_CHAT_ID);
+    formData.append("photo", blob, "infographic.png");
+    if (options.caption) {
+      formData.append("caption", options.caption);
+    }
+
+    const res = await axios.post(url, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ Telegram create post error:", err.response?.data || err);
     return null;
   }
 }

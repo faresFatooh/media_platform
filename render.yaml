@@ -37,7 +37,7 @@ services:
       - key: CLAUDE_API_KEY
         sync: false
 
- # خدمة infographic-converter
+   # خدمة infographic-converter
   - type: web
     name: infographic-converter
     plan: starter
@@ -64,6 +64,10 @@ services:
       - key: VITE_CLOUDINARY_CLOUD_NAME
         sync: false
       - key: VITE_CLOUDINARY_UPLOAD_PRESET
+        sync: false
+      - key: VITE_TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: VITE_TELEGRAM_CHAT_ID
         sync: false
 
 
