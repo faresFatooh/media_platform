@@ -6,7 +6,7 @@ import { Icon } from './Icon';
 import type { Slide, TextStyle, SlideContentItem } from '../types';
 import type { Orientation } from '../App';
 import html2canvas from "html2canvas"; // تأكد إنها منصبة: npm install html2canvas
-import { createFacebookPost,createInstagramPost,createThreadsPost } from "../services/social";
+import { createFacebookPost,createInstagramPost,createThreadsPost,uploadImageToCloud } from "../services/social";
 
 
 interface SlideViewerProps {
