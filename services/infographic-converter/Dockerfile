@@ -17,6 +17,7 @@ ARG VITE_CLOUDINARY_CLOUD_NAME
 ARG VITE_CLOUDINARY_UPLOAD_PRESET
 ARG VITE_TELEGRAM_BOT_TOKEN
 ARG VITE_TELEGRAM_CHAT_ID
+ARG VITE_LINKEDIN_ORGANIZATION_ID     # *** تمت إضافة هذا السطر ***
 
 # نحولهم إلى ENV عشان Vite يقدر يقرأهم
 ENV VITE_MAIN_BACKEND_URL=${VITE_MAIN_BACKEND_URL}
@@ -31,6 +32,7 @@ ENV VITE_CLOUDINARY_CLOUD_NAME=${VITE_CLOUDINARY_CLOUD_NAME}
 ENV VITE_CLOUDINARY_UPLOAD_PRESET=${VITE_CLOUDINARY_UPLOAD_PRESET}
 ENV VITE_TELEGRAM_BOT_TOKEN=${VITE_TELEGRAM_BOT_TOKEN}
 ENV VITE_TELEGRAM_CHAT_ID=${VITE_TELEGRAM_CHAT_ID}
+ENV VITE_LINKEDIN_ORGANIZATION_ID=${VITE_LINKEDIN_ORGANIZATION_ID}
 
 
 # 🔽 --- جزء التحقق من المتغيرات --- 🔽
@@ -40,7 +42,8 @@ RUN echo "Cloudinary Cloud Name: $VITE_CLOUDINARY_CLOUD_NAME"
 RUN echo "Cloudinary Upload Preset: $VITE_CLOUDINARY_UPLOAD_PRESET"
 RUN echo "Facebook Page ID: $VITE_FACEBOOK_PAGE_ID"
 RUN echo "Instagram User ID: $VITE_INSTAGRAM_USER_ID"
-RUN echo "Telegram Chat ID: $VITE_TELEGRAM_CHAT_ID" # *** تمت إضافة هذا السطر ***
+RUN echo "Telegram Chat ID: $VITE_TELEGRAM_CHAT_ID"
+RUN echo "LinkedIn Organization ID: $VITE_LINKEDIN_ORGANIZATION_ID"
 RUN echo "========================================="
 # 🔼 --- نهاية جزء التحقق --- 🔼
 
@@ -70,3 +73,4 @@ EXPOSE 10000
 
 # أمر تشغيل السيرفر
 CMD ["serve", "-s", "dist", "-l", "10000"]
+
