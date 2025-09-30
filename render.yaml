@@ -69,12 +69,8 @@ services:
         sync: false
       - key: VITE_TELEGRAM_CHAT_ID
         sync: false
-      - key: VITE_LINKEDIN_ORGANIZATION_ID
-        sync: false
-      - key: VITE_LINKEDIN_CLIENT_ID
-        sync: false
-      - key: VITE_LINKEDIN_REDIRECT_URI
-        sync: false
+      - key: VITE_N8N_LINKEDIN_WEBHOOK_URL
+        sync: false 
 
 
   # خدمة pal-content-generator (مولّد الأخبار الفلسطينية)

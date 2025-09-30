@@ -12,7 +12,8 @@ declare global {
     readonly VITE_THREADS_USER_ID: string;
     readonly VITE_TELEGRAM_BOT_TOKEN: string;
     readonly VITE_TELEGRAM_CHAT_ID: string;
-    readonly VITE_LINKEDIN_ORGANIZATION_ID: string; // ⚙️ Added
+    readonly VITE_LINKEDIN_ORGANIZATION_ID: string;
+    readonly VITE_N8N_LINKEDIN_WEBHOOK_URL: string; // ⚙️ NEW: n8n Webhook URL
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv;
@@ -31,7 +32,8 @@ const INSTAGRAM_USER_ID = import.meta.env.VITE_INSTAGRAM_USER_ID;
 const THREADS_USER_ID = import.meta.env.VITE_THREADS_USER_ID;
 const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
-const LINKEDIN_ORGANIZATION_ID = import.meta.env.VITE_LINKEDIN_ORGANIZATION_ID; // ⚙️ Added
+const LINKEDIN_ORGANIZATION_ID = import.meta.env.VITE_LINKEDIN_ORGANIZATION_ID;
+const N8N_LINKEDIN_WEBHOOK_URL = import.meta.env.VITE_N8N_LINKEDIN_WEBHOOK_URL; // ⚙️ NEW
 
 // Checking for the existence of variables
 if (!CLOUDINARY_CLOUD_NAME) console.error("❌ VITE_CLOUDINARY_CLOUD_NAME is not set.");
@@ -42,9 +44,8 @@ if (!INSTAGRAM_USER_ID) console.error("❌ VITE_INSTAGRAM_USER_ID is not set.");
 if (!THREADS_USER_ID) console.error("❌ VITE_THREADS_USER_ID is not set.");
 if (!TELEGRAM_BOT_TOKEN) console.error("❌ VITE_TELEGRAM_BOT_TOKEN is not set.");
 if (!TELEGRAM_CHAT_ID) console.error("❌ VITE_TELEGRAM_CHAT_ID is not set.");
-if (!LINKEDIN_ORGANIZATION_ID) console.error("❌ VITE_LINKEDIN_ORGANIZATION_ID is not set."); // ⚙️ Added
-
-
+if (!LINKEDIN_ORGANIZATION_ID) console.error("❌ VITE_LINKEDIN_ORGANIZATION_ID is not set.");
+if (!N8N_LINKEDIN_WEBHOOK_URL) console.error("❌ VITE_N8N_LINKEDIN_WEBHOOK_URL is not set."); // ⚙️ NEW
 
 // -------------------------------------------------------------
 // 🆕 New function to upload an image to Cloudinary
@@ -190,82 +191,51 @@ export async function createTelegramPost(options: { imageBase64: string; caption
     return null;
   }
 }
+
 // -------------------------------------------------------------
-// 📌 LinkedIn
+// 📌 LinkedIn (USING N8N WEBHOOK) ⚙️ NEW
 // -------------------------------------------------------------
 
-// Helper function to convert Base64 to Blob
-function base64ToBlob(base64: string, contentType: string): Blob {
-    const byteString = atob(base64.split(",")[1]);
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    return new Blob([ia], { type: contentType });
-}
-
-export async function createLinkedInPost(options: { 
-  accessToken: string; 
-  organizationId: string;
-  imageBase64: string; 
-  caption?: string 
+/**
+ * يرسل بيانات المنشور (صورة Base64 ووصف) إلى n8n Webhook
+ * ليقوم n8n بالنشر على LinkedIn.
+ * * @param options - الخيارات المطلوبة.
+ * @param options.imageBase64 - الصورة المشفرة Base64.
+ * @param options.caption - النص/الوصف للمنشور.
+ */
+export async function sendToN8nLinkedInWorkflow(options: { 
+    imageBase64: string; 
+    caption?: string 
 }) {
-  try {
-    const { accessToken, organizationId, imageBase64, caption } = options;
+    if (!N8N_LINKEDIN_WEBHOOK_URL) {
+        console.error("❌ n8n Webhook URL for LinkedIn is not configured.");
+        return null;
+    }
 
-    // ---- STEP A: Register the image for upload ----
-    const registerUploadResponse = await axios.post(
-      'https://api.linkedin.com/rest/assets?action=registerUpload',
-      {
-        registerUploadRequest: {
-          recipes: ["urn:li:digitalmediaRecipe:feedshare-image"],
-          owner: organizationId,
-          serviceRelationships: [{
-            relationshipType: "OWNER",
-            identifier: "urn:li:userGeneratedContent"
-          }]
-        }
-      },
-      { headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
-    );
+    try {
+        const { imageBase64, caption } = options;
 
-    const uploadUrl = registerUploadResponse.data.value.uploadMechanism["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"].uploadUrl;
-    const assetUrn = registerUploadResponse.data.value.asset;
+        // البيانات التي سيرسلها التطبيق إلى n8n
+        const payload = {
+            // سنرسل البيانات اللازمة لـ n8n. يجب أن تكون n8n هي التي تتعامل مع accessToken
+            // و organizationId في هذه الحالة لتبسيط الكود هنا.
+            imageBase64: imageBase64,       
+            caption: caption || "New infographic from our tool!", 
+        };
 
-    // ---- STEP B: Upload the image binary ----
-    const blob = base64ToBlob(imageBase64, 'image/png'); 
-    
-    await axios.put(uploadUrl, blob, {
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'image/png' }
-    });
+        // إرسال طلب POST إلى n8n Webhook
+        const response = await axios.post(
+            N8N_LINKEDIN_WEBHOOK_URL,
+            payload,
+            { headers: { 'Content-Type': 'application/json' } }
+        );
 
-    // ---- STEP C: Create the post with the uploaded image ----
-    const postResponse = await axios.post(
-      'https://api.linkedin.com/rest/posts',
-      {
-        author: organizationId,
-        commentary: caption || "New infographic from our tool!",
-        visibility: "PUBLIC",
-        distribution: {
-          feedDistribution: "MAIN_FEED"
-        },
-        content: {
-          media: {
-            title: "Image",
-            id: assetUrn
-          }
-        },
-        lifecycleState: "PUBLISHED",
-        isReshareDisabledByAuthor: false
-      },
-      { headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
-    );
+        console.log("✅ Data successfully sent to n8n Webhook for LinkedIn.");
+        return response.data;
 
-    return postResponse.data;
-
-  } catch (err: any) {
-    console.error("❌ LinkedIn create post error:", err.response?.data || err);
-    return null;
-  }
+    } catch (err: any) {
+        // طباعة تفاصيل الخطأ في حال فشل الاتصال بالـ Webhook
+        console.error("❌ Error sending data to n8n LinkedIn Webhook:", err.response?.data || err.message);
+        return null;
+    }
 }
