@@ -248,9 +248,7 @@ export async function createLinkedInPost(options: {
         commentary: caption || "New infographic from our tool!",
         visibility: "PUBLIC",
         distribution: {
-          feedDistribution: "MAIN_FEED",
-          targetEntities: [],
-          thirdPartyDistributionChannels: []
+          feedDistribution: "MAIN_FEED"
         },
         content: {
           media: {
