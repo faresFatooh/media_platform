@@ -6,7 +6,7 @@ import { Icon } from './Icon';
 import type { Slide, TextStyle, SlideContentItem } from '../types';
 import type { Orientation } from '../App';
 import html2canvas from "html2canvas"; // تأكد إنها منصبة: npm install html2canvas
-import { createFacebookPost } from "../services/social";
+import { createFacebookPost,createInstagramPost,createThreadsPost } from "../services/social";
 
 
 interface SlideViewerProps {
@@ -598,6 +598,47 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
   }
 };
 
+const handlePublishInstagramSlide = async (index: number) => {
+  const button = document.getElementById(`publish-ig-${index}`);
+  if (button) button.textContent = "جاري النشر...";
+
+  try {
+    const dataUrl = await exportSlideAsImage(index, slideRefs.current);
+    if (!dataUrl) throw new Error("فشل في تحويل الشريحة");
+
+    // 🔹 لازم ترفع الصورة لـ Cloudinary/Imgur وترجعلك imageUrl
+    const imageUrl = await uploadImageToCloud(dataUrl); 
+    if (!imageUrl) throw new Error("فشل رفع الصورة");
+
+    await createInstagramPost({ imageUrl, caption: "منشور جديد ✨" });
+    if (button) button.textContent = "✅ تم النشر";
+  } catch (err) {
+    console.error("خطأ النشر على إنستغرام:", err);
+    if (button) button.textContent = "❌ فشل النشر";
+  } finally {
+    setTimeout(() => {
+      if (button) button.textContent = "📤 نشر على إنستغرام";
+    }, 3000);
+  }
+};
+const handlePublishThreadsSlide = async (index: number) => {
+  const button = document.getElementById(`publish-threads-${index}`);
+  if (button) button.textContent = "جاري النشر...";
+
+  try {
+    await createThreadsPost({ text: "بوست جديد من الشريحة 🚀" });
+    if (button) button.textContent = "✅ تم النشر";
+  } catch (err) {
+    console.error("خطأ النشر على ثريدز:", err);
+    if (button) button.textContent = "❌ فشل النشر";
+  } finally {
+    setTimeout(() => {
+      if (button) button.textContent = "📤 نشر على ثريدز";
+    }, 3000);
+  }
+};
+
+
 
     const buttonClass = "bg-gray-200 text-gray-800 font-bold w-7 h-7 rounded-md hover:bg-gray-300 transition text-lg flex items-center justify-center leading-none";
 
@@ -729,6 +770,9 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
                                     <input type="file" ref={fileInputRefs.current[index]} onChange={(e) => handleFileChange(e, index)} accept="image/*" style={{ display: 'none' }} />
                                     <button id={`export-png-${index}`} onClick={() => exportAsPng(index)} className="bg-gray-700 text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-800 transition text-sm">تصدير PNG</button>
                                     <button id={`publish-fb-${index}`} onClick={() => handlePublishSlide(index)}className="bg-blue-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-blue-700 transition text-sm">📤 نشر</button>
+                                    <button id={`publish-ig-${index}`}onClick={() => handlePublishInstagramSlide(index)}className="bg-pink-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-pink-600 transition text-sm">📸 نشر على إنستغرام</button>
+                                    <button id={`publish-threads-${index}`}onClick={() => handlePublishThreadsSlide(index)}className="bg-gray-800 text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-900 transition text-sm">🧵 نشر على ثريدز</button>
+
                                      <button onClick={() => onDeleteSlide(index)} className="bg-red-100 text-red-800 font-bold py-2 px-3 rounded-lg hover:bg-red-200 transition text-sm flex items-center gap-1" title="حذف الشريحة"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> حذف</button>
                                 </div>
                             </div>
