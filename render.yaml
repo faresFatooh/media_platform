@@ -61,6 +61,11 @@ services:
         sync: false
       - key: VITE_INSTAGRAM_USER_ID
         sync: false
+      - key: VITE_CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: VITE_CLOUDINARY_UPLOAD_PRESET
+        sync: false
+
 
   # خدمة pal-content-generator (مولّد الأخبار الفلسطينية)
   - type: web

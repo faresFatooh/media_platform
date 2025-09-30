@@ -27,8 +27,6 @@ const FACEBOOK_PAGE_ACCESS_TOKEN = import.meta.env.VITE_FACEBOOK_PAGE_ACCESS_TOK
 if (!GEMINI_API_KEY) console.error("❌ VITE_GEMINI_API_KEY is not set.");
 if (!PEXELS_API_KEY) console.error("❌ VITE_PEXELS_API_KEY is not set.");
 if (!UNSPLASH_ACCESS_KEY) console.error("❌ VITE_UNSPLASH_ACCESS_KEY is not set.");
-if (!FACEBOOK_PAGE_ID) console.error("❌ VITE_FACEBOOK_PAGE_ID is not set.");
-if (!FACEBOOK_PAGE_ACCESS_TOKEN) console.error("❌ VITE_FACEBOOK_PAGE_ACCESS_TOKEN is not set.");
 
 // ✅ إنشاء كائن Gemini
 const ai = new GoogleGenerativeAI(GEMINI_API_KEY);
