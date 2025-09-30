@@ -3,8 +3,8 @@
 // ---------------------------------
 declare global {
   interface ImportMetaEnv {
-    readonly VITE_CLOUDINARY_CLOUD_NAME: string;     // ⚙️ تمت إضافته
-    readonly VITE_CLOUDINARY_UPLOAD_PRESET: string;  // ⚙️ تمت إضافته
+    readonly VITE_CLOUDINARY_CLOUD_NAME: string;
+    readonly VITE_CLOUDINARY_UPLOAD_PRESET: string;
     readonly VITE_FACEBOOK_APP_ID: string;
     readonly VITE_FACEBOOK_PAGE_ID: string;
     readonly VITE_FACEBOOK_PAGE_ACCESS_TOKEN: string;
@@ -22,18 +22,26 @@ import axios from "axios";
 // ---------------------------------
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
 const FACEBOOK_PAGE_ID = import.meta.env.VITE_FACEBOOK_PAGE_ID;
 const FACEBOOK_PAGE_ACCESS_TOKEN = import.meta.env.VITE_FACEBOOK_PAGE_ACCESS_TOKEN;
 const INSTAGRAM_USER_ID = import.meta.env.VITE_INSTAGRAM_USER_ID;
 const THREADS_USER_ID = import.meta.env.VITE_THREADS_USER_ID;
+
+// التحقق من وجود المتغيرات
+if (!CLOUDINARY_CLOUD_NAME) console.error("❌ VITE_CLOUDINARY_CLOUD_NAME is not set.");
+if (!CLOUDINARY_UPLOAD_PRESET) console.error("❌ VITE_CLOUDINARY_UPLOAD_PRESET is not set.");
+if (!FACEBOOK_PAGE_ID) console.error("❌ VITE_FACEBOOK_PAGE_ID is not set.");
+if (!FACEBOOK_PAGE_ACCESS_TOKEN) console.error("❌ VITE_FACEBOOK_PAGE_ACCESS_TOKEN is not set.");
+if (!INSTAGRAM_USER_ID) console.error("❌ VITE_INSTAGRAM_USER_ID is not set.");
+if (!THREADS_USER_ID) console.error("❌ VITE_THREADS_USER_ID is not set.");
+
 
 // -------------------------------------------------------------
 // 🆕 الدالة الجديدة لرفع الصورة إلى Cloudinary
 // -------------------------------------------------------------
 export async function uploadImageToCloud(base64Image: string): Promise<string | null> {
   if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-    console.error("❌ Cloudinary settings are not configured in environment variables.");
+    console.error("Cloudinary settings are not configured properly.");
     return null;
   }
   
@@ -45,14 +53,14 @@ export async function uploadImageToCloud(base64Image: string): Promise<string | 
       upload_preset: CLOUDINARY_UPLOAD_PRESET,
     });
     return response.data.secure_url;
-  } catch (error) {
-    console.error("❌ Cloudinary upload failed:", error);
+  } catch (error: any) {
+    console.error("❌ Cloudinary upload failed:", error.response?.data || error);
     return null;
   }
 }
 
 // -------------------------------------------------------------
-// 📌 فيسبوك (تبقى كما هي)
+// 📌 فيسبوك
 // -------------------------------------------------------------
 export async function createFacebookPost(options: { imageBase64: string; message?: string }) {
   try {
@@ -96,7 +104,7 @@ export async function updateFacebookPost(postId: string, caption: string) {
 }
 
 // -------------------------------------------------------------
-// 📌 إنستغرام (تبقى كما هي)
+// 📌 إنستغرام
 // -------------------------------------------------------------
 export async function createInstagramPost(options: { imageUrl: string; caption?: string }) {
   try {
@@ -118,7 +126,7 @@ export async function createInstagramPost(options: { imageUrl: string; caption?:
 }
 
 // -------------------------------------------------------------
-// 📌 ثريدز (تبقى كما هي)
+// 📌 ثريدز
 // -------------------------------------------------------------
 export async function createThreadsPost(options: { text: string }) {
   try {

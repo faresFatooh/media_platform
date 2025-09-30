@@ -28,6 +28,17 @@ ENV VITE_INSTAGRAM_USER_ID=${VITE_INSTAGRAM_USER_ID}
 ENV VITE_CLOUDINARY_CLOUD_NAME=${VITE_CLOUDINARY_CLOUD_NAME}
 ENV VITE_CLOUDINARY_UPLOAD_PRESET=${VITE_CLOUDINARY_UPLOAD_PRESET}
 
+
+# 🔽 --- أضف هذا الجزء للتحقق من المتغيرات --- 🔽
+RUN echo "========================================="
+RUN echo "CHECKING ENVIRONMENT VARIABLES..."
+RUN echo "Cloudinary Cloud Name: $VITE_CLOUDINARY_CLOUD_NAME"
+RUN echo "Cloudinary Upload Preset: $VITE_CLOUDINARY_UPLOAD_PRESET"
+RUN echo "Facebook Page ID: $VITE_FACEBOOK_PAGE_ID"
+RUN echo "Instagram User ID: $VITE_INSTAGRAM_USER_ID"
+RUN echo "========================================="
+# 🔼 --- نهاية جزء التحقق --- 🔼
+
 # ننسخ ملفات الباكيج أولاً لتقليل إعادة تثبيت الحزم عند تغيّر الكود
 COPY package*.json ./
 RUN npm install
