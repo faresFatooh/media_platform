@@ -5,8 +5,6 @@ declare global {
     readonly VITE_GEMINI_API_KEY: string;
     readonly VITE_PEXELS_API_KEY: string;
     readonly VITE_UNSPLASH_ACCESS_KEY: string;
-    readonly VITE_FACEBOOK_PAGE_ID: string;
-    readonly VITE_FACEBOOK_PAGE_ACCESS_TOKEN: string;
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv;
@@ -184,65 +182,3 @@ export async function searchStockImage(query: string): Promise<string | null> {
 }
 
 
-// ----------------------------
-// 🆕 إنشاء منشور جديد بصورة (ينزل في البوستات مباشرة)
-// ----------------------------
-// نشر صورة (Base64 أو URL)
-export async function createFacebookPost(options: { imageBase64: string; message?: string }) {
-  try {
-    const url = `https://graph.facebook.com/v23.0/${FACEBOOK_PAGE_ID}/photos`;
-
-    // فك Base64 وتحويله لـ Blob
-    const byteString = atob(options.imageBase64.split(",")[1]);
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    const blob = new Blob([ia], { type: "image/png" });
-
-    // تجهيز البيانات
-    const formData = new FormData();
-    formData.append("access_token", FACEBOOK_PAGE_ACCESS_TOKEN);
-    formData.append("published", "true"); // 👈 مباشرة كمنشور
-    formData.append("source", blob, "infographic.png");
-    if (options.message) {
-      formData.append("message", options.message);
-    }
-
-    // رفع الصورة + نشرها في بوست واحد
-    const res = await axios.post(url, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    return res.data; // فيه id للمنشور الجديد
-  } catch (err: any) {
-    console.error("❌ Facebook create post error:", err.response?.data || err);
-    return null;
-  }
-}
-
-
-
-
-export async function updateFacebookPost(
-  postId: string,
-  caption: string
-) {
-  try {
-    const res = await axios.post(
-      `https://graph.facebook.com/v23.0/${postId}`,
-      null,
-      {
-        params: {
-          message: caption,
-          access_token: FACEBOOK_PAGE_ACCESS_TOKEN,
-        },
-      }
-    );
-    return res.data;
-  } catch (err: any) {
-    console.error("❌ Facebook update post error:", err.response?.data || err);
-    return null;
-  }
-}

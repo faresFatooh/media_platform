@@ -4,7 +4,7 @@ import { SlideViewer, exportSlideAsImage } from './components/SlideViewer';
 import { SocialIconGenerator } from './components/SocialIconGenerator';
 import { generateSlidesFromText, generateSlidesFromTextChunks } from './services/geminiService';
 import type { Slide } from './types';
-import { createFacebookPost, updateFacebookPost } from "./services/geminiService";
+import { createFacebookPost, updateFacebookPost } from "./services/social";
 
 export type Orientation = 'horizontal' | 'vertical' | 'square';
 
