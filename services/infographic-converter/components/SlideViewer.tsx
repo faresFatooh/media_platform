@@ -6,7 +6,8 @@ import { Icon } from './Icon';
 import type { Slide, TextStyle, SlideContentItem } from '../types';
 import type { Orientation } from '../App';
 import html2canvas from "html2canvas"; // تأكد إنها منصبة: npm install html2canvas
-import { createFacebookPost,createInstagramPost,createThreadsPost,uploadImageToCloud,createTelegramPost,sendToN8nLinkedInWorkflow } from "../services/social";
+import { sendToPublishingWorkflow } from '../services/social'; 
+
 
 
 interface SlideViewerProps {
@@ -578,133 +579,58 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slides, onSlideUpdate,
         newY = Math.max(0, Math.min(100, newY));
         onSocialIconPositionChange({ x: newX, y: newY });
     };
-    const handlePublishSlide = async (index: number) => {
-  const button = document.getElementById(`publish-fb-${index}`);
-  if (button) button.textContent = "جاري النشر...";
+// -------------------------------------------------------------
+// 🔁 تعديل دوال التعامل مع الأزرار (Event Handlers)
+// -------------------------------------------------------------
 
-  try {
-    const dataUrl = await exportSlideAsImage(index, slideRefs.current);
-    if (!dataUrl) throw new Error("فشل في تحويل الشريحة");
+// دالة موحدة لتحديث واجهة الزر
+const updateButtonState = (buttonId: string, state: 'loading' | 'success' | 'error' | 'idle', platformName: string) => {
+    const button = document.getElementById(buttonId);
+    if (!button) return;
 
-    await createFacebookPost({ imageBase64: dataUrl });
-    if (button) button.textContent = "✅ تم النشر";
-  } catch (err) {
-    console.error("خطأ النشر:", err);
-    if (button) button.textContent = "❌ فشل النشر";
-  } finally {
-    setTimeout(() => {
-      if (button) button.textContent = "📤 نشر";
-    }, 3000);
-  }
-};
+    const messages = {
+        loading: "جاري الإرسال لـ n8n...",
+        success: "✅ تم إرسال الأمر",
+        error: "❌ فشل الإرسال",
+        idle: `📤 نشر على ${platformName}`,
+    };
+    button.textContent = messages[state];
 
-const handlePublishInstagramSlide = async (index: number) => {
-  const button = document.getElementById(`publish-ig-${index}`);
-  if (button) button.textContent = "جاري النشر...";
-
-  try {
-    const dataUrl = await exportSlideAsImage(index, slideRefs.current);
-    if (!dataUrl) throw new Error("فشل في تحويل الشريحة");
-
-    // 🔹 لازم ترفع الصورة لـ Cloudinary/Imgur وترجعلك imageUrl
-    const imageUrl = await uploadImageToCloud(dataUrl); 
-    if (!imageUrl) throw new Error("فشل رفع الصورة");
-
-    await createInstagramPost({ imageUrl, caption: "منشور جديد ✨" });
-    if (button) button.textContent = "✅ تم النشر";
-  } catch (err) {
-    console.error("خطأ النشر على إنستغرام:", err);
-    if (button) button.textContent = "❌ فشل النشر";
-  } finally {
-    setTimeout(() => {
-      if (button) button.textContent = "📤 نشر على إنستغرام";
-    }, 3000);
-  }
-};
-const handlePublishThreadsSlide = async (index: number) => {
-  const button = document.getElementById(`publish-threads-${index}`);
-  if (button) button.textContent = "جاري النشر...";
-
-  try {
-    await createThreadsPost({ text: "بوست جديد من الشريحة 🚀" });
-    if (button) button.textContent = "✅ تم النشر";
-  } catch (err) {
-    console.error("خطأ النشر على ثريدز:", err);
-    if (button) button.textContent = "❌ فشل النشر";
-  } finally {
-    setTimeout(() => {
-      if (button) button.textContent = "📤 نشر على ثريدز";
-    }, 3000);
-  }
-};
-
-const handlePublishLinkedInSlide = async (index: number) => {
-    const button = document.getElementById(`publish-li-${index}`);
-    if (button) button.textContent = "جاري النشر عبر n8n..."; // تغيير النص ليعكس سير العمل
-
-    try {
-        // لم نعد نحتاج لجلب accessToken أو organizationId
-
-        // Export the slide as a Base64 image
-        const dataUrl = await exportSlideAsImage(index, slideRefs.current);
-        if (!dataUrl) {
-            throw new Error("Failed to export slide as image");
-        }
-
-        // 🆕 استدعاء الدالة الجديدة التي ترسل البيانات إلى n8n Webhook
-        const result = await sendToN8nLinkedInWorkflow({
-            imageBase64: dataUrl,
-            caption: "Check out this new infographic created with our tool! #infographic #design" 
-        });
-        
-        if (!result) {
-            throw new Error("n8n Webhook call failed or returned null.");
-        }
-
-        if (button) button.textContent = "✅ تم إرسال الأمر لـ n8n";
-    } catch (err) {
-        console.error("Error publishing to LinkedIn via n8n:", err);
-        if (button) button.textContent = "❌ فشل الإرسال لـ n8n";
-    } finally {
-        // نغير مدة التأخير قليلاً لأن النشر الفعلي سيحدث في n8n وقد يستغرق وقتاً أطول
+    if (state === 'success' || state === 'error') {
         setTimeout(() => {
-            if (button) button.textContent = "📤 نشر على لينكدإن";
-        }, 5000); 
+            button.textContent = messages.idle;
+        }, 3000);
     }
 };
 
+const handlePublish = async (index: number, platform: 'facebook' | 'instagram' | 'linkedin' | 'threads' | 'telegram') => {
+        const platformMap = {
+            facebook: { id: `publish-fb-${index}`, name: 'فيسبوك' },
+            instagram: { id: `publish-ig-${index}`, name: 'إنستغرام' },
+            linkedin: { id: `publish-li-${index}`, name: 'لينكدإن' },
+            threads: { id: `publish-threads-${index}`, name: 'ثريدز' },
+            telegram: { id: `publish-tg-${index}`, name: 'تلغرام' },
+        };
+        
+        const buttonInfo = platformMap[platform];
+        updateButtonState(buttonInfo.id, 'loading', buttonInfo.name);
 
-const handlePublishTelegramSlide = async (index: number) => {
-  // 1. Get the button to update its text during the process
-  const button = document.getElementById(`publish-tg-${index}`);
-  if (button) button.textContent = "جاري النشر...";
+        try {
+            const dataUrl = await exportSlideAsImage(index, slideRefs.current);
+            if (!dataUrl) throw new Error("Failed to export slide as image");
 
-  try {
-    // 2. Export the specific slide as a Base64 image
-    const dataUrl = await exportSlideAsImage(index, slideRefs.current);
-    if (!dataUrl) {
-      throw new Error("Failed to export slide as image");
-    }
+            const result = await sendToPublishingWorkflow(platform, dataUrl, `منشور جديد من أداتنا على ${buttonInfo.name}!`);
+            if (!result) throw new Error("n8n workflow failed or returned null.");
 
-    // 3. Call the API function to post to Telegram
-    await createTelegramPost({
-      imageBase64: dataUrl,
-      caption: "منشور جديد عبر أداتنا ✨" 
-    });
-    
-    // 4. Update button text on success
-    if (button) button.textContent = "✅ تم النشر";
-  } catch (err) {
-    // 5. Update button text on failure and log the error
-    console.error("Error publishing to Telegram:", err);
-    if (button) button.textContent = "❌ فشل النشر";
-  } finally {
-    // 6. Reset the button text after 3 seconds
-    setTimeout(() => {
-      if (button) button.textContent = "📤 نشر على تلغرام";
-    }, 3000);
-  }
-};
+            updateButtonState(buttonInfo.id, 'success', buttonInfo.name);
+        } catch (err) {
+            console.error(`Error publishing to ${platform} via n8n:`, err);
+            updateButtonState(buttonInfo.id, 'error', buttonInfo.name);
+        }
+    };
+
+
+
 
 
 
@@ -837,11 +763,12 @@ const handlePublishTelegramSlide = async (index: number) => {
                                     <button onClick={() => handleFileUploadClick(index)} className="bg-blue-100 text-blue-800 font-bold py-2 px-3 rounded-lg hover:bg-blue-200 transition text-sm flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> رفع</button>
                                     <input type="file" ref={fileInputRefs.current[index]} onChange={(e) => handleFileChange(e, index)} accept="image/*" style={{ display: 'none' }} />
                                     <button id={`export-png-${index}`} onClick={() => exportAsPng(index)} className="bg-gray-700 text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-800 transition text-sm">تصدير PNG</button>
-                                    <button id={`publish-fb-${index}`} onClick={() => handlePublishSlide(index)}className="bg-blue-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-blue-700 transition text-sm">📤 نشر</button>
-                                    <button id={`publish-ig-${index}`}onClick={() => handlePublishInstagramSlide(index)}className="bg-pink-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-pink-600 transition text-sm">📸 نشر على إنستغرام</button>
-                                    <button id={`publish-threads-${index}`}onClick={() => handlePublishThreadsSlide(index)}className="bg-gray-800 text-white font-bold py-2 px-3 rounded-lg hover:bg-gray-900 transition text-sm">🧵 نشر على ثريدز</button>
-                                    <button id={`publish-tg-${index}`}onClick={() => handlePublishTelegramSlide(index)} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition-colors w-full">  📤 نشر على تلغرام</button>
-                                    <button id={`publish-li-${index}`}onClick={() => handlePublishLinkedInSlide(index)}  className="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg transition-colors w-full"> 📤 نشر على لينكدإن</button>                                     <button onClick={() => onDeleteSlide(index)} className="bg-red-100 text-red-800 font-bold py-2 px-3 rounded-lg hover:bg-red-200 transition text-sm flex items-center gap-1" title="حذف الشريحة"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> حذف</button>
+                                    <button id={`publish-fb-${index}`} onClick={() => handlePublish(index, 'facebook')}>📤 نشر على فيسبوك</button>
+                                    <button id={`publish-ig-${index}`} onClick={() => handlePublish(index, 'instagram')}>📸 نشر على إنستغرام</button>
+                                    <button id={`publish-threads-${index}`} onClick={() => handlePublish(index, 'threads')}>🧵 نشر على ثريدز</button>
+                                    <button id={`publish-tg-${index}`} onClick={() => handlePublish(index, 'telegram')}>📤 نشر على تلغرام</button>
+                                    <button id={`publish-li-${index}`} onClick={() => handlePublish(index, 'linkedin')}>📤 نشر على لينكدإن</button>
+                                    <button onClick={() => onDeleteSlide(index)} className="bg-red-100 text-red-800 font-bold py-2 px-3 rounded-lg hover:bg-red-200 transition text-sm flex items-center gap-1" title="حذف الشريحة"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> حذف</button>
                                 </div>
                             </div>
                             <div className="border-t border-gray-200 pt-3 flex flex-col gap-3">
@@ -945,6 +872,8 @@ const handlePublishTelegramSlide = async (index: number) => {
         </div>
     );
 };
+
+
 
 /**
  * 🖼️ دالة لتحويل شريحة واحدة لصورة Base64
