@@ -4,7 +4,6 @@ import { SlideViewer, exportSlideAsImage } from './components/SlideViewer';
 import { SocialIconGenerator } from './components/SocialIconGenerator';
 import { generateSlidesFromText, generateSlidesFromTextChunks } from './services/geminiService';
 import type { Slide } from './types';
-import { createFacebookPost, updateFacebookPost } from "./services/social";
 
 export type Orientation = 'horizontal' | 'vertical' | 'square';
 
@@ -243,45 +242,7 @@ const App: React.FC = () => {
     }
   };
 
-  // ✅ نشر على الفيسبوك
-  const handlePublishToFacebook = async () => {
-    if (slides.length === 0) {
-      alert("لا يوجد إنفوغرافيك جاهز للنشر.");
-      return;
-    }
-
-    setIsPublishing(true);
-    setPublishMsg(null);
-
-    try {
-      const dataUrl = await exportSlideAsImage(selectedSlideIndex, slideRefs.current);
-
-      if (!dataUrl) {
-        setPublishMsg("❌ فشل تحويل الشريحة لصورة.");
-        setIsPublishing(false);
-        return;
-      }
-
-      if (publishMode === 'new') {
-        setLastPostId(null);
-        const res = await createFacebookPost({ imageBase64: dataUrl });
-        setLastPostId(res?.id || null);
-        setPublishMsg("✅ تم نشر الشريحة بنجاح على فيسبوك!");
-      } else if (publishMode === 'update') {
-        if (!lastPostId) {
-          setPublishMsg("❌ لا يوجد منشور سابق لتعديله.");
-        } else {
-          await updateFacebookPost(lastPostId, "✏️ تحديث الإنفوغرافيك");
-          setPublishMsg("✏️ تم تعديل المنشور السابق بنجاح!");
-        }
-      }
-    } catch (err) {
-      console.error("Facebook publish error:", err);
-      setPublishMsg("❌ فشل النشر/التعديل. تحقق من الإعدادات.");
-    } finally {
-      setIsPublishing(false);
-    }
-  };
+ 
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
