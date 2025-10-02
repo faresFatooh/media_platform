@@ -55,22 +55,8 @@ services:
         sync: false
       - key: VITE_CLAUDE_PROXY_URL
         value: https://claude-proxy-zjkv.onrender.com
-      - key: VITE_FACEBOOK_PAGE_ID
+      - key: VITE_N8N_PUBLISH_WEBHOOK_URL
         sync: false
-      - key: VITE_FACEBOOK_PAGE_ACCESS_TOKEN
-        sync: false
-      - key: VITE_INSTAGRAM_USER_ID
-        sync: false
-      - key: VITE_CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: VITE_CLOUDINARY_UPLOAD_PRESET
-        sync: false
-      - key: VITE_TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: VITE_TELEGRAM_CHAT_ID
-        sync: false
-      - key: VITE_N8N_LINKEDIN_WEBHOOK_URL
-        sync: false 
 
 
   # خدمة pal-content-generator (مولّد الأخبار الفلسطينية)

@@ -2,7 +2,6 @@ import axios from "axios";
 
 declare global {
   interface ImportMetaEnv {
-    readonly VITE_LINKEDIN_ORGANIZATION_ID: string;
     readonly VITE_N8N_PUBLISH_WEBHOOK_URL: string; 
   }
 
