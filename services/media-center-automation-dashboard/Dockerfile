@@ -1,34 +1,40 @@
 # ---- Build Stage ----
-FROM node:18 AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
 
-# نستقبل env vars من Render أثناء الـ build
 ARG VITE_MAIN_BACKEND_URL
 ARG VITE_GEMINI_API_KEY
 ARG VITE_CLAUDE_PROXY_URL
+ARG VITE_PEXELS_API_KEY
+ARG VITE_UNSPLASH_ACCESS_KEY
+ARG VITE_FACEBOOK_PAGE_ID
+ARG VITE_FACEBOOK_PAGE_ACCESS_TOKEN
 
-# نحولهم إلى ENV عشان vite يشوفهم
 ENV VITE_MAIN_BACKEND_URL=${VITE_MAIN_BACKEND_URL}
 ENV VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
 ENV VITE_CLAUDE_PROXY_URL=${VITE_CLAUDE_PROXY_URL}
+ENV VITE_PEXELS_API_KEY=${VITE_PEXELS_API_KEY}
+ENV VITE_UNSPLASH_ACCESS_KEY=${VITE_UNSPLASH_ACCESS_KEY}
+ENV VITE_FACEBOOK_PAGE_ID=${VITE_FACEBOOK_PAGE_ID}
+ENV VITE_FACEBOOK_PAGE_ACCESS_TOKEN=${VITE_FACEBOOK_PAGE_ACCESS_TOKEN}
 
 COPY package*.json ./
 RUN npm install
-
 COPY . .
-
 RUN npm run build
 
-
 # ---- Production Stage ----
-FROM node:18 AS runner
+FROM node:20 AS runner
 
 WORKDIR /app
 
 RUN npm install -g serve
 
 COPY --from=builder /app/dist ./dist
+
+# ✅ خطوة Debug: طباعة الملفات اللي جوّا dist
+RUN echo "📂 محتويات dist:" && ls -R ./dist
 
 EXPOSE 10000
 
