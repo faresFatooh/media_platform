@@ -13,7 +13,6 @@ declare global {
   }
 }
 
-// ✅ استخدام مفتاح API من Vite (Render يوفره عبر env)
 const ai = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 const DEFAULT_SOURCES = [

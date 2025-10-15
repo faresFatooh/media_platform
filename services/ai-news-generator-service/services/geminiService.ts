@@ -31,7 +31,6 @@ if (!CLAUDE_PROXY_URL) {
   console.error("VITE_CLAUDE_PROXY_URL is not set. Claude calls will fail.");
 }
 
-// ✅ إنشاء كائن Gemini
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // ----------------------------
@@ -43,12 +42,10 @@ function safeJsonParse(text: string): any {
       throw new Error("رد Claude/Gemini فارغ أو ليس نصًا.");
   }
   try {
-    // حاول تحليله مباشرة أولاً، حيث يجب أن يعيد الوكيل الجديد نص JSON نظيفًا
     return JSON.parse(text);
   } catch (e) {
     console.warn("Direct JSON.parse failed, cleaning and retrying:", e);
     
-    // منطق تنظيف احتياطي
     let cleaned = text.replace(/```json|```/g, "").trim();
     const firstBrace = cleaned.indexOf("{");
     const lastBrace = cleaned.lastIndexOf("}");

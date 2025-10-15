@@ -1,0 +1,62 @@
+import { Workflow, Channel } from './types';
+
+export const INPUT_WORKFLOWS: Workflow[] = [
+  { id: 'manual-text', name: 'إدخال نص يدوي', description: 'أضف خبرًا أو فكرة كنص خام.', icon: 'fa-solid fa-file-pen', type: 'input' },
+  { id: 'manual-idea', name: 'إدخال فكرة يدويا', description: 'اكتب فكرة وسيقوم النظام بتوسيعها.', icon: 'fa-solid fa-lightbulb', type: 'input' },
+  { id: 'scrape-arabic', name: 'سحب من مواقع عربية', description: 'جلب الأخبار من مواقع عربية مخصصة.', icon: 'fa-solid fa-globe-asia', type: 'input' },
+  { id: 'scrape-foreign', name: 'سحب من مواقع أجنبية', description: 'جلب الأخبار من مواقع أجنبية.', icon: 'fa-solid fa-globe-americas', type: 'input' },
+  { id: 'scrape-hebrew', name: 'سحب من مصادر عبرية', description: 'جلب الأخبار من مواقع عبرية.', icon: 'fa-solid fa-star-of-david', type: 'input' },
+  { id: 'scrape-telegram', name: 'رسالة نصية من تلجرام', description: 'إرسال محتوى عبر رسالة نصية.', icon: 'fa-brands fa-telegram', type: 'input' },
+  { id: 'scrape-asharq', name: 'سحب من الشرق الأوسط', description: 'سحب مخصص من موقع الشرق الأوسط.', icon: 'fa-solid fa-newspaper', type: 'input' },
+  { id: 'scrape-youtube', name: 'سحب من يوتيوب', description: 'جلب محتوى من قناة يوتيوب تلقائيًا.', icon: 'fa-brands fa-youtube', type: 'input' },
+  { id: 'google-trends', name: 'سحب من جوجل ترند', description: 'استيراد مواضيع رائجة تلقائيًا.', icon: 'fa-solid fa-arrow-trend-up', type: 'input' },
+  { id: 'editorial-policy', name: 'إدخال سياسة تحرير', description: 'إدخال وتحديث سياسات التحرير.', icon: 'fa-solid fa-gavel', type: 'input' },
+  { id: 'training-models', name: 'إدخال نماذج للتدريب', description: 'إدخال نماذج سابقة لتدريب النظام.', icon: 'fa-solid fa-brain', type: 'input' },
+  { id: 'scrape-agencies', name: 'سحب من وكالات', description: 'جلب الأخبار من وكالات (رويترز, AP).', icon: 'fa-solid fa-satellite-dish', type: 'input' },
+  { id: 'upload-video', name: 'رفع ملف فيديو', description: 'أرسل ملف فيديو خام للمعالجة.', icon: 'fa-solid fa-video', type: 'input' },
+  { id: 'upload-audio', name: 'رفع ملف صوت', description: 'أرسل ملف صوت خام للمعالجة.', icon: 'fa-solid fa-volume-high', type: 'input' },
+  { id: 'submit-link', name: 'إرسال رابط موقع', description: 'إرسال رابط موقع إلكتروني مخصص.', icon: 'fa-solid fa-link', type: 'input' },
+  { id: 'scrape-social', name: 'سحب من سوشال ميديا', description: 'جلب محتوى من صفحات فيسبوك, تلجرام.', icon: 'fa-solid fa-share-nodes', type: 'input' },
+  { id: 'upload-file', name: 'رفع ملف (PDF, Doc)', description: 'إرسال صورة, PDF, أو ملف Word.', icon: 'fa-solid fa-file-upload', type: 'input' },
+  { id: 'google-drive', name: 'استقبال من Google Drive', description: 'استقبال محتوى من Drive / Dropbox.', icon: 'fa-brands fa-google-drive', type: 'input' },
+  { id: 'api-ingestion', name: 'استقبال عبر API', description: 'استقبال محتوى من أنظمة خارجية.', icon: 'fa-solid fa-code-merge', type: 'input' },
+  { id: 'rss-alerts', name: 'تنبيهات الأخبار العاجلة (RSS)', description: 'استقبال تنبيهات عبر RSS.', icon: 'fa-solid fa-rss', type: 'input' },
+  { id: 'scrape-podcast', name: 'سحب من بودكاست', description: 'سحب المحتوى من منصات بودكاست.', icon: 'fa-solid fa-podcast', type: 'input' },
+  { id: 'field-reporter-upload', name: 'رفع من المراسلين', description: 'استقبال صور أو فيديوهات من فرق الميدان.', icon: 'fa-solid fa-camera-retro', type: 'input' },
+  { id: 'email-ingestion', name: 'استقبال من البريد الإلكتروني', description: 'معالجة الأخبار الواردة عبر البريد.', icon: 'fa-solid fa-envelope', type: 'input' },
+  { id: 'voice-command', name: 'أوامر صوتية تحريرية', description: 'استقبال أوامر تحريرية صوتية.', icon: 'fa-solid fa-headset', type: 'input' },
+  { id: 'google-sheets', name: 'التكامل مع Google Sheets', description: 'استخدام Google Sheets كمصدر بيانات.', icon: 'fa-solid fa-file-excel', type: 'input' },
+  { id: 'keyword-monitoring', name: 'مراقبة كلمات مفتاحية', description: 'مراقبة كلمات مفتاحية محددة.', icon: 'fa-solid fa-tags', type: 'input' },
+  { id: 'internal-archive', name: 'استقبال من الأرشيف', description: 'استقبال محتوى من نظام أرشيف داخلي.', icon: 'fa-solid fa-database', type: 'input' },
+  { id: 'whatsapp-voice', name: 'رسالة صوتية (واتساب)', description: 'إرسال رسالة صوتية عبر واتساب للمعالجة', icon: 'fa-brands fa-whatsapp', type: 'input'},
+];
+
+export const PROCESS_WORKFLOWS: Workflow[] = [
+  { id: 'generate-tweet', name: 'توليد تغريدة لـ X', description: 'إنشاء تغريدة قصيرة ومؤثرة (أقل من 280 حرف) مع هاشتاغات مناسبة.', icon: 'fab fa-twitter', type: 'process' },
+  { id: 'generate-facebook-post', name: 'توليد منشور فيسبوك', description: 'كتابة منشور مفصل لمنصة فيسبوك مع دعوة واضحة للتفاعل.', icon: 'fab fa-facebook', type: 'process' },
+  { id: 'generate-instagram-caption', name: 'توليد كابشن انستغرام', description: 'صياغة كابشن جذاب بصريًا مع إيموجيز وهاشتاغات لصور أو فيديوهات.', icon: 'fab fa-instagram', type: 'process' },
+  { id: 'generate-telegram-message', name: 'صياغة رسالة تلجرام', description: 'إعداد رسالة إخبارية سريعة ومباشرة مناسبة لقنوات تلجرام.', icon: 'fab fa-telegram', type: 'process' },
+  { id: 'generate-whatsapp-update', name: 'إعداد رسالة واتساب', description: 'كتابة تحديث موجز ومباشر مناسب لقنوات واتساب الإخبارية.', icon: 'fab fa-whatsapp', type: 'process' },
+  { id: 'text-to-video', name: 'تحويل النص إلى فيديو', description: 'إنتاج فيديو تلقائي من النص مع تعليق صوتي وخلفيات متحركة.', icon: 'fa-solid fa-film', type: 'process' },
+  { id: 'text-to-podcast', name: 'تحويل إلى بودكاست', description: 'تحويل الخبر إلى موجز صوتي آلي جاهز للنشر كبودكاست.', icon: 'fa-solid fa-podcast', type: 'process' },
+  { id: 'generate-srt', name: 'إنشاء ملف ترجمة (SRT)', description: 'توليد ملف ترجمة نصية للفيديو بشكل تلقائي لمختلف اللغات.', icon: 'fa-solid fa-closed-captioning', type: 'process' },
+  { id: 'generate-images', name: 'توليد صور AI', description: 'تصميم صور فريدة باستخدام الذكاء الاصطناعي تكون مرتبطة بالخبر.', icon: 'fa-solid fa-image', type: 'process' },
+  { id: 'translate-english', name: 'ترجمة للإنجليزية', description: 'ترجمة الخبر إلى اللغة الإنجليزية مع الحفاظ على الأسلوب الصحفي.', icon: 'fa-solid fa-language', type: 'process' },
+  { id: 'generate-avatar-news', name: 'توليد نشرة بالأفاتار', description: 'إنشاء فيديو إخباري كامل باستخدام مذيع رقمي (أفاتار).', icon: 'fa-solid fa-user-astronaut', type: 'process' },
+  { id: 'analyze-performance', name: 'تحليل الأداء', description: 'إنشاء تقرير توقعات لأداء المحتوى قبل نشره على المنصات.', icon: 'fa-solid fa-chart-line', type: 'process' },
+];
+
+
+export const CHANNELS: Channel[] = [
+    { id: 'youtube', name: 'يوتيوب', icon: 'fab fa-youtube', color: 'text-red-600' },
+    { id: 'facebook', name: 'فيسبوك', icon: 'fab fa-facebook', color: 'text-blue-600' },
+    { id: 'x', name: 'X (تويتر)', icon: 'fab fa-twitter', color: 'text-sky-500' },
+    { id: 'instagram', name: 'انستغرام', icon: 'fab fa-instagram', color: 'text-pink-500' },
+    { id: 'telegram', name: 'تلجرام', icon: 'fab fa-telegram', color: 'text-sky-400' },
+    { id: 'whatsapp', name: 'واتساب', icon: 'fab fa-whatsapp', color: 'text-green-500' },
+    { id: 'website', name: 'الموقع الإلكتروني', icon: 'fas fa-globe', color: 'text-green-600' },
+    { id: 'radio', name: 'إذاعة', icon: 'fas fa-broadcast-tower', color: 'text-orange-500' },
+    { id: 'tv', name: 'تلفزيون', icon: 'fas fa-tv', color: 'text-indigo-600' },
+    { id: 'podcast', name: 'بودكاست', icon: 'fas fa-podcast', color: 'text-purple-600' },
+    { id: 'cms', name: 'نظام إدارة المحتوى', icon: 'fas fa-cogs', color: 'text-gray-600' },
+];
