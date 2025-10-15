@@ -1,4 +1,3 @@
-
 export enum ContentStatus {
   DRAFT = 'مسودة',
   PROCESSING = 'قيد المعالجة',
@@ -13,6 +12,7 @@ export interface Output {
   type: string;
   content: string;
   icon: string;
+  channel?: Channel; // إضافة اختيارية لدعم ربط المخرج بقناة معينة
 }
 
 export interface ContentItem {
@@ -29,17 +29,17 @@ export interface ContentItem {
 }
 
 export interface Workflow {
-    id: string;
-    name: string;
-    description: string;
-    icon: string;
-    type: 'input' | 'process';
-    payload?: any;
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  type: 'input' | 'process';
+  payload?: any;
 }
 
 export interface Channel {
-    id: string;
-    name: string;
-    icon: string;
-    color: string;
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
 }

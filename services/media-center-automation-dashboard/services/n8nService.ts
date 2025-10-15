@@ -1,69 +1,58 @@
+import axios from 'axios';  // أضف axios للـ API calls
 import { ContentItem, ContentStatus, Workflow, Output } from '../types';
-import { GoogleGenAI } from "@google/genai";
 
-// This is a MOCK service. In a real application, you would make API calls to your n8n instance.
-// We'll simulate Gemini API calls here for demonstration.
-// NOTE: A real API key is required for this to work. It's assumed to be in process.env.API_KEY
-// In this sandboxed environment, we'll use a placeholder and mock the response.
-const USE_MOCK_API = !process.env.API_KEY;
-
-let ai: GoogleGenAI | null = null;
-if (!USE_MOCK_API) {
-  ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-}
+const USE_MOCK_API = true;  // غير لـ false لو n8n جاهز، عشان يستخدم الـ real API
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://your-n8n-instance/webhook/process-news';
 
 const simulateDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const mockGeminiAPICall = async (prompt: string): Promise<string> => {
-    await simulateDelay(1500);
-    if (prompt.includes("أعد صياغة الخبر التالي")) {
-        return `**عنوان جذاب مُعاد صياغته**\nبأسلوب صحفي احترافي، تمت إعادة صياغة الخبر ليصبح أكثر جاذبية للقارئ. تم التركيز على النقاط الرئيسية وإبراز أهميتها في السياق الحالي. ${prompt.substring(25, 150)}...`;
-    }
-    if (prompt.includes("تغريدة قصيرة لمنصة X")) {
-        return `خبر عاجل: مجلس الأمن يجتمع غدًا لبحث التوترات الأخيرة في المنطقة. دعوات لضبط النفس وتجنب التصعيد. #مجلس_الأمن #أخبار_عاجلة`;
-    }
-    if (prompt.includes("منشور مفصل لفيسبوك")) {
-        return `في تطور هام، دعا مجلس الأمن الدولي إلى عقد جلسة طارئة يوم الثلاثاء لمناقشة التصعيد الأخير في المنطقة. يأتي هذا التحرك وسط قلق دولي متزايد من تدهور الأوضاع.\nما هي توقعاتكم لنتائج هذا الاجتماع؟ شاركونا آراءكم. \n#سياسة #اخبار_العالم #مجلس_الأمن`;
-    }
-     if (prompt.includes("كابشن جذاب لانستغرام")) {
-        return `🌎 الأنظار تتجه نحو مجلس الأمن غدًا! اجتماع طارئ لبحث التوترات المتصاعدة في المنطقة. \n.\n.\n#أخبار #العالم #سياسة #تطورات #peace`;
-    }
-    if (prompt.includes("رسالة إخبارية سريعة لتلجرام")) {
-        return `🚨 **عاجل** 🚨\nمجلس الأمن يعقد جلسة طارئة غدًا الثلاثاء لمناقشة التوترات الأخيرة في المنطقة.`;
-    }
-    if (prompt.includes("تحديث موجز لواتساب")) {
-        return `*تحديث إخباري:* مجلس الأمن سيجتمع بشكل طارئ غدًا لمناقشة الأوضاع المتوترة في المنطقة.`;
-    }
-    if (prompt.includes("حول النص التالي إلى نص فيديو")) {
-        return `(مشهد افتتاحي موسيقى حماسية) \nالخبر الذي هز العالم اليوم... (صوت معلق) إليكم التفاصيل الكاملة في هذا التقرير المصور... (مشاهد أرشيفية) ${prompt.substring(50, 150)}...`;
-    }
-    if (prompt.includes("Translate the following news article")) {
-        return `**Attractive Translated Title**\nIn a professional journalistic style, the news has been translated for an international audience, focusing on key points and highlighting their significance. ${prompt.substring(50, 150)}...`;
-    }
-    if (prompt.includes("Analyze the potential performance")) {
-        return `**تقرير الأداء المتوقع:**\n- **التفاعل:** مرتفع (8/10)\n- **CTR متوقع:** 4.5%\n- **ملاحظات:** المحتوى يتناول موضوعًا رائجًا، يُنصح بالنشر في أوقات الذروة.`;
-    }
-    if (prompt.includes("Create a news script for a digital avatar")) {
-        return `(يبدأ الأفاتار بالحديث) مرحباً بكم في موجز الأنباء. نبدأ بخبرنا الرئيسي حيث... (يستعرض الأفاتار تفاصيل الخبر) ... وكان هذا أبرز ما لدينا.`;
-    }
-    return "تمت معالجة النص بنجاح باستخدام الذكاء الاصطناعي.";
+  await simulateDelay(1500);
+  if (prompt.includes("أعد صياغة الخبر التالي")) {
+      return `**عنوان جذاب مُعاد صياغته**\nبأسلوب صحفي احترافي، تمت إعادة صياغة الخبر ليصبح أكثر جاذبية للقارئ. تم التركيز على النقاط الرئيسية وإبراز أهميتها في السياق الحالي. ${prompt.substring(25, 150)}...`;
+  }
+  if (prompt.includes("تغريدة قصيرة لمنصة X")) {
+      return `خبر عاجل: مجلس الأمن يجتمع غدًا لبحث التوترات الأخيرة في المنطقة. دعوات لضبط النفس وتجنب التصعيد. #مجلس_الأمن #أخبار_عاجلة`;
+  }
+  if (prompt.includes("منشور مفصل لفيسبوك")) {
+      return `في تطور هام، دعا مجلس الأمن الدولي إلى عقد جلسة طارئة يوم الثلاثاء لمناقشة التصعيد الأخير في المنطقة. يأتي هذا التحرك وسط قلق دولي متزايد من تدهور الأوضاع.\nما هي توقعاتكم لنتائج هذا الاجتماع؟ شاركونا آراءكم. \n#سياسة #اخبار_العالم #مجلس_الأمن`;
+  }
+   if (prompt.includes("كابشن جذاب لانستغرام")) {
+      return `🌎 الأنظار تتجه نحو مجلس الأمن غدًا! اجتماع طارئ لبحث التوترات المتصاعدة في المنطقة. \n.\n.\n#أخبار #العالم #سياسة #تطورات #peace`;
+  }
+  if (prompt.includes("رسالة إخبارية سريعة لتلجرام")) {
+      return `🚨 **عاجل** 🚨\nمجلس الأمن يعقد جلسة طارئة غدًا الثلاثاء لمناقشة التوترات الأخيرة في المنطقة.`;
+  }
+  if (prompt.includes("تحديث موجز لواتساب")) {
+      return `*تحديث إخباري:* مجلس الأمن سيجتمع بشكل طارئ غدًا لمناقشة الأوضاع المتوترة في المنطقة.`;
+  }
+  if (prompt.includes("حول النص التالي إلى نص فيديو")) {
+      return `(مشهد افتتاحي موسيقى حماسية) \nالخبر الذي هز العالم اليوم... (صوت معلق) إليكم التفاصيل الكاملة في هذا التقرير المصور... (مشاهد أرشيفية) ${prompt.substring(50, 150)}...`;
+  }
+  if (prompt.includes("Translate the following news article")) {
+      return `**Attractive Translated Title**\nIn a professional journalistic style, the news has been translated for an international audience, focusing on key points and highlighting their significance. ${prompt.substring(50, 150)}...`;
+  }
+  if (prompt.includes("Analyze the potential performance")) {
+      return `**تقرير الأداء المتوقع:**\n- **التفاعل:** مرتفع (8/10)\n- **CTR متوقع:** 4.5%\n- **ملاحظات:** المحتوى يتناول موضوعًا رائجًا، يُنصح بالنشر في أوقات الذروة.`;
+  }
+  if (prompt.includes("Create a news script for a digital avatar")) {
+      return `(يبدأ الأفاتار بالحديث) مرحباً بكم في موجز الأنباء. نبدأ بخبرنا الرئيسي حيث... (يستعرض الأفاتار تفاصيل الخبر) ... وكان هذا أبرز ما لدينا.`;
+  }
+  return "تمت معالجة النص بنجاح باستخدام الذكاء الاصطناعي.";
 };
 
-
-const callGeminiAPI = async (prompt: string): Promise<string> => {
-    if (USE_MOCK_API || !ai) {
-        return mockGeminiAPICall(prompt);
-    }
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-        return response.text;
-    } catch (error) {
-        console.error("Gemini API call failed, falling back to mock.", error);
-        return mockGeminiAPICall(prompt);
-    }
+const callN8nWorkflow = async (prompt: string, policy: string): Promise<string> => {
+  try {
+    const response = await axios.post(N8N_WEBHOOK_URL, {
+      text: prompt,  // الخبر الخام أو الـ prompt
+      policy: policy,  // السياسة التحريرية مثل "policy_najah_media"
+    });
+    // افترض إن n8n يرجع JSON مع 'output' يحتوي على الخبر المعاد صياغته
+    return response.data.output || 'خطأ في معالجة الخبر';
+  } catch (error) {
+    console.error("n8n API call failed, falling back to mock.", error);
+    return mockGeminiAPICall(prompt);
+  }
 };
 
 export const triggerInputWorkflow = async (workflow: Workflow): Promise<Omit<ContentItem, 'id' | 'createdAt'>> => {
@@ -72,7 +61,7 @@ export const triggerInputWorkflow = async (workflow: Workflow): Promise<Omit<Con
   const rawContent = workflow.payload?.text || `محتوى خام من ${workflow.name} بتاريخ ${new Date().toLocaleString()}`;
   
   const editingPrompt = `أعد صياغة الخبر التالي بأسلوب صحفي احترافي وموجز، مع إضافة عنوان جذاب ومناسب للنشر. الخبر الأصلي: "${rawContent}"`;
-  const editedContent = await callGeminiAPI(editingPrompt);
+  const editedContent = await callN8nWorkflow(editingPrompt, workflow.name);  // ربط مع n8n
 
   const title = editedContent.split('\n')[0].replace(/\*\*/g, '').trim() || 'خبر جديد قيد المعالجة';
   const mainContent = editedContent.substring(editedContent.indexOf('\n') + 1).trim();
@@ -137,7 +126,7 @@ export const triggerProcessWorkflow = async (workflow: Workflow, item: ContentIt
             break;
     }
 
-    const generatedContent = await callGeminiAPI(prompt);
+    const generatedContent = await callN8nWorkflow(prompt, workflow.name);
 
     return {
         id: `${Date.now()}-${workflow.id}`,
