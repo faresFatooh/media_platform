@@ -1,8 +1,9 @@
-import axios from 'axios';  // أضف axios للـ API calls
+import axios from 'axios'; // أضف axios للـ API calls
 import { ContentItem, ContentStatus, Workflow, Output } from '../types';
 
-const USE_MOCK_API = true;  // غير لـ false لو n8n جاهز، عشان يستخدم الـ real API
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://your-n8n-instance/webhook/process-news';
+const USE_MOCK_API = true; // غير لـ false لو n8n جاهز، عشان يستخدم الـ real API
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://najahcolab.app.n8n.cloud/webhook/telegram';
+const N8N_API_KEY = process.env.N8N_API_KEY; // خذ المفتاح من المتغيرات البيئية
 
 const simulateDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -17,7 +18,7 @@ const mockGeminiAPICall = async (prompt: string): Promise<string> => {
   if (prompt.includes("منشور مفصل لفيسبوك")) {
       return `في تطور هام، دعا مجلس الأمن الدولي إلى عقد جلسة طارئة يوم الثلاثاء لمناقشة التصعيد الأخير في المنطقة. يأتي هذا التحرك وسط قلق دولي متزايد من تدهور الأوضاع.\nما هي توقعاتكم لنتائج هذا الاجتماع؟ شاركونا آراءكم. \n#سياسة #اخبار_العالم #مجلس_الأمن`;
   }
-   if (prompt.includes("كابشن جذاب لانستغرام")) {
+  if (prompt.includes("كابشن جذاب لانستغرام")) {
       return `🌎 الأنظار تتجه نحو مجلس الأمن غدًا! اجتماع طارئ لبحث التوترات المتصاعدة في المنطقة. \n.\n.\n#أخبار #العالم #سياسة #تطورات #peace`;
   }
   if (prompt.includes("رسالة إخبارية سريعة لتلجرام")) {
@@ -43,9 +44,17 @@ const mockGeminiAPICall = async (prompt: string): Promise<string> => {
 
 const callN8nWorkflow = async (prompt: string, policy: string): Promise<string> => {
   try {
+    if (!N8N_API_KEY) {
+      throw new Error('N8N_API_KEY is not set in environment variables.');
+    }
+
     const response = await axios.post(N8N_WEBHOOK_URL, {
-      text: prompt,  // الخبر الخام أو الـ prompt
-      policy: policy,  // السياسة التحريرية مثل "policy_najah_media"
+      text: prompt, // الخبر الخام أو الـ prompt
+      policy: policy, // السياسة التحريرية مثل "policy_najah_media"
+    }, {
+      headers: {
+        'X-API-Key': N8N_API_KEY, // أضف المفتاح في الهيدر
+      },
     });
     // افترض إن n8n يرجع JSON مع 'output' يحتوي على الخبر المعاد صياغته
     return response.data.output || 'خطأ في معالجة الخبر';
@@ -61,7 +70,7 @@ export const triggerInputWorkflow = async (workflow: Workflow): Promise<Omit<Con
   const rawContent = workflow.payload?.text || `محتوى خام من ${workflow.name} بتاريخ ${new Date().toLocaleString()}`;
   
   const editingPrompt = `أعد صياغة الخبر التالي بأسلوب صحفي احترافي وموجز، مع إضافة عنوان جذاب ومناسب للنشر. الخبر الأصلي: "${rawContent}"`;
-  const editedContent = await callN8nWorkflow(editingPrompt, workflow.name);  // ربط مع n8n
+  const editedContent = await callN8nWorkflow(editingPrompt, workflow.name); // ربط مع n8n
 
   const title = editedContent.split('\n')[0].replace(/\*\*/g, '').trim() || 'خبر جديد قيد المعالجة';
   const mainContent = editedContent.substring(editedContent.indexOf('\n') + 1).trim();
@@ -84,54 +93,54 @@ export const triggerInputWorkflow = async (workflow: Workflow): Promise<Omit<Con
 };
 
 export const triggerProcessWorkflow = async (workflow: Workflow, item: ContentItem): Promise<Output | null> => {
-    await simulateDelay(1500);
+  await simulateDelay(1500);
 
-    let prompt = '';
-    let outputType = workflow.name;
-    let outputIcon = workflow.icon;
+  let prompt = '';
+  let outputType = workflow.name;
+  let outputIcon = workflow.icon;
 
-    switch (workflow.id) {
-        case 'generate-tweet':
-            prompt = `بناءً على الخبر التالي، اقترح تغريدة قصيرة لمنصة X (تويتر) لا تتجاوز 280 حرفًا مع هاشتاغات مناسبة. الخبر: "${item.mainOutput.content}"`;
-            break;
-        case 'generate-facebook-post':
-            prompt = `بناءً على الخبر التالي، اقترح منشور مفصل لفيسبوك يشجع على التفاعل. الخبر: "${item.mainOutput.content}"`;
-            break;
-        case 'generate-instagram-caption':
-            prompt = `بناءً على الخبر التالي، اقترح كابشن جذاب لانستغرام مع إيموجيز وهاشتاغات. الخبر: "${item.mainOutput.content}"`;
-            break;
-        case 'generate-telegram-message':
-            prompt = `بناءً على الخبر التالي، اقترح رسالة إخبارية سريعة لتلجرام. الخبر: "${item.mainOutput.content}"`;
-            break;
-        case 'generate-whatsapp-update':
-            prompt = `بناءً على الخبر التالي، اقترح تحديث موجز لواتساب. الخبر: "${item.mainOutput.content}"`;
-            break;
-        case 'text-to-video':
-            prompt = `حول النص التالي إلى نص فيديو قصير (سكريبت) لا يتجاوز دقيقة واحدة، مع وصف للمشاهد المقترحة. النص: "${item.mainOutput.content}"`;
-            break;
-        case 'text-to-podcast':
-            prompt = `حول الخبر التالي إلى موجز صوتي (بودكاست) قصير. النص: "${item.mainOutput.content}"`;
-            break;
-        case 'translate-english':
-            prompt = `Translate the following news article to professional English. Article: "${item.mainOutput.content}"`;
-            break;
-        case 'analyze-performance':
-            prompt = `Analyze the potential performance of this content: "${item.mainOutput.content}". Provide a brief report on expected engagement, CTR, and views.`;
-            break;
-        case 'generate-avatar-news':
-            prompt = `Create a news script for a digital avatar to read, based on this text: "${item.mainOutput.content}"`;
-            break;
-        default:
-            prompt = `Process the following content for the task '${workflow.name}': "${item.mainOutput.content}"`;
-            break;
-    }
+  switch (workflow.id) {
+    case 'generate-tweet':
+      prompt = `بناءً على الخبر التالي، اقترح تغريدة قصيرة لمنصة X (تويتر) لا تتجاوز 280 حرفًا مع هاشتاغات مناسبة. الخبر: "${item.mainOutput.content}"`;
+      break;
+    case 'generate-facebook-post':
+      prompt = `بناءً على الخبر التالي، اقترح منشور مفصل لفيسبوك يشجع على التفاعل. الخبر: "${item.mainOutput.content}"`;
+      break;
+    case 'generate-instagram-caption':
+      prompt = `بناءً على الخبر التالي، اقترح كابشن جذاب لانستغرام مع إيموجيز وهاشتاغات. الخبر: "${item.mainOutput.content}"`;
+      break;
+    case 'generate-telegram-message':
+      prompt = `بناءً على الخبر التالي، اقترح رسالة إخبارية سريعة لتلجرام. الخبر: "${item.mainOutput.content}"`;
+      break;
+    case 'generate-whatsapp-update':
+      prompt = `بناءً على الخبر التالي، اقترح تحديث موجز لواتساب. الخبر: "${item.mainOutput.content}"`;
+      break;
+    case 'text-to-video':
+      prompt = `حول النص التالي إلى نص فيديو قصير (سكريبت) لا يتجاوز دقيقة واحدة، مع وصف للمشاهد المقترحة. النص: "${item.mainOutput.content}"`;
+      break;
+    case 'text-to-podcast':
+      prompt = `حول الخبر التالي إلى موجز صوتي (بودكاست) قصير. النص: "${item.mainOutput.content}"`;
+      break;
+    case 'translate-english':
+      prompt = `Translate the following news article to professional English. Article: "${item.mainOutput.content}"`;
+      break;
+    case 'analyze-performance':
+      prompt = `Analyze the potential performance of this content: "${item.mainOutput.content}". Provide a brief report on expected engagement, CTR, and views.`;
+      break;
+    case 'generate-avatar-news':
+      prompt = `Create a news script for a digital avatar to read, based on this text: "${item.mainOutput.content}"`;
+      break;
+    default:
+      prompt = `Process the following content for the task '${workflow.name}': "${item.mainOutput.content}"`;
+      break;
+  }
 
-    const generatedContent = await callN8nWorkflow(prompt, workflow.name);
+  const generatedContent = await callN8nWorkflow(prompt, workflow.name);
 
-    return {
-        id: `${Date.now()}-${workflow.id}`,
-        type: outputType,
-        icon: outputIcon,
-        content: generatedContent,
-    };
+  return {
+    id: `${Date.now()}-${workflow.id}`,
+    type: outputType,
+    icon: outputIcon,
+    content: generatedContent,
+  };
 };
