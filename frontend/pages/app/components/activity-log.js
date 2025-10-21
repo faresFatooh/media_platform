@@ -11,23 +11,19 @@ export default function ActivityLog() {
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+    if (!token) return router.push('/login');
 
     fetch(`${API_BASE}/api/users/me/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => {
         setUser(data);
         if (!data.is_admin) router.push('/dashboard');
-      })
-      .catch(() => router.push('/dashboard'));
+      });
 
     fetch(`${API_BASE}/api/activity/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => setActivities(data))
-      .catch(err => console.error(err));
+      .catch(console.error);
   }, [router]);
 
   return (
@@ -46,7 +42,7 @@ export default function ActivityLog() {
           </thead>
           <tbody>
             {activities.map(a => (
-              <tr key={a.id} className="border-t">
+              <tr key={a.id} className="border-t hover:bg-gray-50">
                 <td className="py-2 px-4">{a.user}</td>
                 <td className="py-2 px-4">{a.action}</td>
                 <td className="py-2 px-4">{a.app}</td>
