@@ -57,8 +57,11 @@ export default function Dashboard() {
                 <p>{app.description}</p>
               </div>
               <Link href={`/app/${app.id}`}>
-                <button className="mt-4 bg-blue-500 text-white py-2 rounded w-full">Launch App</button>
-              </Link>
+              <div className="mt-4 bg-blue-500 text-white py-2 rounded text-center cursor-pointer">
+                Launch App
+              </div>
+            </Link>
+
             </div>
           ))}
         </div>
