@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import Sidebar from '../components/sidebar';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
@@ -8,6 +9,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [apps, setApps] = useState([]);
   const [error, setError] = useState('');
+  const [user, setUser] = useState({ is_admin: false });
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -16,64 +18,46 @@ export default function Dashboard() {
       return;
     }
 
-    const fetchApplications = async () => {
-      if (!API_BASE) {
-        setError('API URL is not configured. Please check environment variables.');
-        return;
-      }
-      try {
-        const response = await fetch(`${API_BASE}/api/applications/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+    fetch(`${API_BASE}/api/users/me/`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => setUser(data))
+      .catch(err => console.error(err));
 
-        if (!response.ok) {
-          throw new Error('Could not fetch applications. Please log in again.');
-        }
-
-        const data = await response.json();
-
-        if (Array.isArray(data)) {
-            setApps(data);
-        } else {
-            console.error("Data received is not an array:", data);
-            setError('Received invalid data format from server.');
-        }
-
-      } catch (err) {
-        setError(err.message);
-      }
-    };
-
-    fetchApplications();
+    fetch(`${API_BASE}/api/applications/`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setApps(data);
+      })
+      .catch(err => setError(err.message));
   }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
     router.push('/login');
   };
 
   return (
-    <div style={{ fontFamiغly: 'sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 2rem', backgroundColor: '#1a1a1a', color: 'white' }}>
-        <h1>Main Dashboard</h1>
-        <button onClick={handleLogout} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>Logout</button>
-      </header>
+    <div className="flex min-h-screen bg-gray-100">
+      <Sidebar user={user} />
+      <main className="flex-1 p-6">
+        <header className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+        </header>
 
-      <main style={{ padding: '2rem' }}>
-        <h2>Available Applications</h2>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-          {Array.isArray(apps) && apps.map((app) => (
-            <div key={app.id} style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {apps.map(app => (
+            <div key={app.id} className="bg-white rounded shadow p-4 flex flex-col justify-between">
               <div>
-                <h3 style={{ marginTop: 0 }}>{app.name}</h3>
+                <h3 className="font-semibold">{app.name}</h3>
                 <p>{app.description}</p>
               </div>
               <Link href={`/app/${app.id}`}>
-                <button style={{ width: '100%', padding: '0.75rem', cursor: 'pointer', marginTop: '1rem' }}>Launch App</button>
+                <button className="mt-4 bg-blue-500 text-white py-2 rounded w-full">Launch App</button>
               </Link>
             </div>
           ))}
@@ -82,4 +66,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
