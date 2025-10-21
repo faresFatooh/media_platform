@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Sidebar from '../components/sidebar';
+import Sidebar from './sidebar';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
