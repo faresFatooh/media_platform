@@ -4,23 +4,17 @@ import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
-// Dummy data
+// Dummy data (يمكن استبدالها لاحقًا بالبيانات من API)
 const dummyActivities = [
   { id: 1, user: 'Ali', action: 'Generated Article', time: '2 mins ago' },
   { id: 2, user: 'Sara', action: 'Published News', time: '10 mins ago' },
   { id: 3, user: 'Admin', action: 'Edited Infographic', time: '1 hour ago' },
 ];
 
-const dummyTasks = [
-  { id: 1, user: 'Ali', task: 'Write news on Gaza', status: 'In Progress' },
-  { id: 2, user: 'Sara', task: 'Generate Infographic', status: 'Pending' },
-  { id: 3, user: 'Ali', task: 'Publish Article', status: 'Completed' },
-  { id: 4, user: 'Sara', task: 'Edit Video', status: 'In Progress' },
-];
-
 export default function Dashboard() {
   const router = useRouter();
   const [apps, setApps] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [error, setError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -36,28 +30,41 @@ export default function Dashboard() {
       return;
     }
 
-    const role = localStorage.getItem('user_role') || 'user';
-    setIsAdmin(role === 'admin');
-
-    const fetchApplications = async () => {
-      if (!API_BASE) {
-        setError('API URL is not configured.');
-        return;
-      }
+    const fetchUserData = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/applications/`, {
+        const userResponse = await fetch(`${API_BASE}/api/me/`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!userResponse.ok) throw new Error('Failed to fetch user info');
+
+        const userData = await userResponse.json();
+        setIsAdmin(userData.role === 'admin');
+        localStorage.setItem('user_role', userData.role);
+
+        // Fetch apps
+        const appsResponse = await fetch(`${API_BASE}/api/applications/`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!response.ok) throw new Error('Could not fetch applications. Please log in again.');
-        const data = await response.json();
-        if (Array.isArray(data)) setApps(data);
-        else setError('Invalid data format from server.');
+        if (!appsResponse.ok) throw new Error('Could not fetch applications.');
+        const appsData = await appsResponse.json();
+        setApps(Array.isArray(appsData) ? appsData : []);
+
+        // Fetch tasks (يمكن استبدال endpoint لاحقًا)
+        const tasksResponse = await fetch(`${API_BASE}/api/tasks/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (tasksResponse.ok) {
+          const tasksData = await tasksResponse.json();
+          setTasks(Array.isArray(tasksData) ? tasksData : []);
+        }
+
       } catch (err) {
         setError(err.message);
       }
     };
 
-    fetchApplications();
+    fetchUserData();
   }, [router]);
 
   const handleLogout = () => {
@@ -68,19 +75,19 @@ export default function Dashboard() {
   };
 
   const handleTaskStatusChange = (taskId, newStatus) => {
-    const updatedTasks = dummyTasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t);
-    console.log('Updated Tasks:', updatedTasks);
-    alert(`Task ${taskId} status updated to ${newStatus}`);
+    const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t);
+    setTasks(updatedTasks);
+    // هنا يمكن عمل POST أو PATCH للباكند لتحديث المهمة فعليًا
   };
 
-  const filteredTasks = dummyTasks.filter(task => {
+  const filteredTasks = tasks.filter(task => {
     const matchesUser = taskFilterUser === 'All' || task.user === taskFilterUser;
     const matchesStatus = taskFilterStatus === 'All' || task.status === taskFilterStatus;
     const matchesSearch = task.task.toLowerCase().includes(taskSearch.toLowerCase());
     return matchesUser && matchesStatus && matchesSearch;
   });
 
-  const allUsers = Array.from(new Set(dummyTasks.map(t => t.user)));
+  const allUsers = Array.from(new Set(tasks.map(t => t.user)));
 
   return (
     <div style={{ display: 'flex', fontFamily: 'Inter, sans-serif', minHeight: '100vh', backgroundColor: '#f4f6f8' }}>
@@ -145,7 +152,7 @@ export default function Dashboard() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
           gap: '1.5rem'
         }}>
-          {Array.isArray(apps) && apps.map((app) => (
+          {apps.map((app) => (
             <div key={app.id} style={{
               backgroundColor: 'white',
               borderRadius: '12px',
@@ -193,7 +200,7 @@ export default function Dashboard() {
         </div>
 
         {/* Admin Section */}
-        {isAdmin && (
+        {isAdmin && tasks.length > 0 && (
           <section style={{ marginTop: '3rem' }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem', color: '#111827' }}>Employee Activity & Tasks</h2>
 
