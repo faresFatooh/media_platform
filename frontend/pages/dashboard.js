@@ -110,7 +110,7 @@ export default function Dashboard() {
                  onMouseOver={e => e.currentTarget.style.backgroundColor = '#374151'}
                  onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                 Profile
-              </divب>
+              </div>
             </Link>
           </nav>
         </div>
