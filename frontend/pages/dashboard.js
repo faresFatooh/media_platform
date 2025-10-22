@@ -1,56 +1,85 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import AppCard from './app/components/AppCard';
-import Sidebar from './app/components/sidebar';
+import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Dashboard() {
   const router = useRouter();
   const [apps, setApps] = useState([]);
-  const [user, setUser] = useState({ is_admin: false });
   const [error, setError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    if (!token) return router.push('/login');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
 
-    fetch(`${API_BASE}/api/users/me/`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(data => setUser(data))
-      .catch(() => router.push('/login'));
+    const fetchApplications = async () => {
+      if (!API_BASE) {
+        setError('API URL is not configured. Please check environment variables.');
+        return;
+      }
+      try {
+        const response = await fetch(`${API_BASE}/api/applications/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-    fetch(`${API_BASE}/api/applications/`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(data => Array.isArray(data) && setApps(data))
-      .catch(err => setError(err.message));
+        if (!response.ok) {
+          throw new Error('Could not fetch applications. Please log in again.');
+        }
+
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+            setApps(data);
+        } else {
+            console.error("Data received is not an array:", data);
+            setError('Received invalid data format from server.');
+        }
+
+      } catch (err) {
+        setError(err.message);
+      }
+    };
+
+    fetchApplications();
   }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     router.push('/login');
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar user={user} />
-      <main className="flex-1 p-6">
-        <header className="flex justify-between items-center bg-gray-800 text-white p-4 rounded-b-lg shadow">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition-colors duration-200"
-          >
-            Logout
-          </button>
-        </header>
+    <div style={{ fontFamiغly: 'sans-serif' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 2rem', backgroundColor: '#1a1a1a', color: 'white' }}>
+        <h1>Main Dashboard</h1>
+        <button onClick={handleLogout} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>Logout</button>
+      </header>
 
-        {error && <p className="text-red-500 mt-4">{error}</p>}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {apps.map(app => <AppCard key={app.id} app={app} />)}
+      <main style={{ padding: '2rem' }}>
+        <h2>Available Applications</h2>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+          {Array.isArray(apps) && apps.map((app) => (
+            <div key={app.id} style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ marginTop: 0 }}>{app.name}</h3>
+                <p>{app.description}</p>
+              </div>
+              <Link href={`/app/${app.id}`}>
+                <button style={{ width: '100%', padding: '0.75rem', cursor: 'pointer', marginTop: '1rem' }}>Launch App</button>
+              </Link>
+            </div>
+          ))}
         </div>
       </main>
     </div>
   );
 }
+
