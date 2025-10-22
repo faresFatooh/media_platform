@@ -4,8 +4,13 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
+# ---==[ إضافة ]==---
+# استيراد الـ View الأساسية من SimpleJWT
+from rest_framework_simplejwt.views import TokenObtainPairView
+# استيراد السيريلايزر العادي والسيريلايزر المخصص
+from .serializers import UserSerializer, MyTokenObtainPairSerializer 
+# ---==[ نهاية الإضافة ]==---
 
-from .serializers import UserSerializer
 
 # تسجيل مستخدم جديد
 class RegisterAPI(APIView):
@@ -38,3 +43,10 @@ class CurrentUserAPI(APIView):
             **serializer.data,
             "role": role
         }, status=status.HTTP_200_OK)
+
+
+# ---==[ إضافة ]==---
+# View مخصصة لتسجيل الدخول تستخدم السيريلايزر المخصص
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+# ---==[ نهاية الإضافة ]==---
