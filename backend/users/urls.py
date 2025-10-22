@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import RegisterAPI, CurrentUserAPI
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .views import MyTokenObtainPairView # استورد الكلاس الجديد
+from .auth_views import MyTokenObtainPairView # استورد الكلاس الجديد
 
 urlpatterns = [
     path('register/', RegisterAPI.as_view()),  # تسجيل مستخدم جديد
