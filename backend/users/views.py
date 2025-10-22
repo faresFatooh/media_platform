@@ -14,10 +14,9 @@ class RegisterAPI(APIView):
         if serializer.is_valid():
             user = serializer.save()
             role = "admin" if user.is_staff or user.is_superuser else "user"
-            
-            # إصدار Token تلقائياً بعد التسجيل (اختياري)
+
             refresh = RefreshToken.for_user(user)
-            
+
             return Response({
                 "message": "User created successfully!",
                 "role": role,

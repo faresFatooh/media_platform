@@ -26,7 +26,7 @@ export default function Register() {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/users/register/`, {
+      const response = await fetch(`${API_BASE}/api/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -73,7 +73,7 @@ export default function Register() {
         {role === 'admin' && <input type="password" placeholder="Admin Secret Key" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} />}
         <button type="submit">Register</button>
       </form>
-      {message && <p style={{ color: message.startsWith('✅') ? 'green' : 'red' }}>{message}</p>}
+      {message && <p style={{ color: message.startsWith('✅') ? 'green' : 'red', whiteSpace: 'pre-wrap' }}>{message}</p>}
     </div>
   );
 }
