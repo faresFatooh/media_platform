@@ -12,6 +12,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
+    console.log("[Login] Submitting:", { username, password });
 
     try {
       const response = await fetch(`${API_BASE}/api/token/`, {
@@ -28,21 +29,25 @@ export default function Login() {
         throw new Error(`Server response is not valid JSON:\n${text}`);
       }
 
+      console.log("[Login] Server response:", data);
+
       if (response.ok) {
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
 
-        // ✅ استخدام is_superuser لتحديد الدور
-        // هذا يعني أنك لا تعتمد على حقل role من السيرفر
-        const role = data.is_superuser ? 'admin' : 'user';
+        // ✅ استخدم الدور المرسل من السيرفر
+        const role = data.role || 'user';
         localStorage.setItem('user_role', role);
+        console.log("[Login] User role saved to localStorage:", role);
 
         setMessage('✅ Login successful! Redirecting...');
         router.push('/dashboard');
       } else {
+        console.log("[Login] Login failed:", data.detail || 'Invalid credentials');
         setMessage(`❌ ${data.detail || 'Invalid credentials'}`);
       }
     } catch (err) {
+      console.log("[Login] Error:", err);
       setMessage(`❌ Error: ${err.message}`);
     }
   };
