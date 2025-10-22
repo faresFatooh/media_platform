@@ -13,38 +13,19 @@ export default function Login() {
     e.preventDefault();
     setMessage('');
 
-    // ---==[ إضافة: طباعة البيانات التي سترسل ]==---
-    const requestData = { username, password };
-    console.log('Sending to server:', requestData);
-    // ---==[ نهاية الإضافة ]==---
-
     try {
       const response = await fetch(`${API_BASE}/api/token/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData), // استخدمنا المتغير هنا
+        body: JSON.stringify({ username, password }),
       });
 
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(`Server response is not valid JSON:\n${text}`);
-      }
-
-      // ---==[ إضافة: طباعة الاستجابة الكاملة من السيرفر ]==---
-      console.log('Received from server:', data);
-      // ---==[ نهاية الإضافة ]==---
+      const data = await response.json();
 
       if (response.ok) {
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
         localStorage.setItem('user_role', data.role);
-
-        // ---==[ إضافة: تأكيد الدور الذي تم حفظه ]==---
-        console.log('User role saved to localStorage:', data.role);
-        // ---==[ نهاية الإضافة ]==---
 
         setMessage('✅ Login successful! Redirecting...');
         router.push('/dashboard');
@@ -86,63 +67,27 @@ export default function Login() {
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Username"
             required
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              border: '1px solid #d1d5db',
-              fontSize: '1rem',
-              outline: 'none',
-              transition: 'border-color 0.3s'
-            }}
-            onFocus={e => e.currentTarget.style.borderColor = '#3b82f6'}
-            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
+            style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem' }}
           />
-
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             required
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              border: '1px solid #d1d5db',
-              fontSize: '1rem',
-              outline: 'none',
-              transition: 'border-color 0.3s'
-            }}
-            onFocus={e => e.currentTarget.style.borderColor = '#3b82f6'}
-            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
+            style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem' }}
           />
 
           <button
             type="submit"
-            style={{
-              padding: '0.75rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              fontWeight: '600',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              transition: 'background-color 0.3s'
-            }}
-            onMouseOver={e => e.currentTarget.style.backgroundColor = '#2563eb'}
-            onMouseOut={e => e.currentTarget.style.backgroundColor = '#3b82f6'}
+            style={{ padding: '0.75rem', borderRadius: '8px', border: 'none', backgroundColor: '#3b82f6', color: 'white', fontWeight: '600', fontSize: '1rem', cursor: 'pointer' }}
           >
             Login
           </button>
         </form>
 
         {message && (
-          <p style={{
-            textAlign: 'center',
-            color: message.startsWith('❌') ? '#ef4444' : '#10b981',
-            fontWeight: '500',
-            whiteSpace: 'pre-wrap'
-          }}>
+          <p style={{ textAlign: 'center', color: message.startsWith('❌') ? '#ef4444' : '#10b981', fontWeight: '500' }}>
             {message}
           </p>
         )}
