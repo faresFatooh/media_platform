@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -35,11 +35,12 @@ export default function Login() {
         const userResponse = await fetch(`${API_BASE}/api/me/`, {
           headers: { 'Authorization': `Bearer ${data.access}` }
         });
+
         const userData = await userResponse.json();
         localStorage.setItem('user_role', userData.role || 'user');
 
         setMessage('Login successful! Redirecting...');
-        router.push('/dashboard'); 
+        router.push('/dashboard');
       } else {
         setMessage(`Error: ${data.detail || 'Invalid credentials'}`);
       }

@@ -1,7 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers, validators
 
-# Serializer للتسجيل
 class RegisterSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(
         choices=[('user', 'User'), ('admin', 'Admin')],
@@ -18,10 +17,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 "required": True,
                 "allow_blank": False,
                 "validators": [
-                    validators.UniqueValidator(
-                        User.objects.all(),
-                        "A user with that Email already exists."
-                    )
+                    validators.UniqueValidator(User.objects.all(), "A user with that Email already exists.")
                 ],
             },
         }
@@ -32,8 +28,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data, is_staff=is_staff)
         return user
 
-
-# Serializer لعرض بيانات المستخدم الحالي
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
 

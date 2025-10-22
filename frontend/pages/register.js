@@ -20,9 +20,8 @@ export default function Register() {
     e.preventDefault();
     setMessage('');
 
-    // تحقق من كلمة السر للادمن قبل التسجيل
     if (role === 'admin' && adminSecret !== SECRET_KEY) {
-      setMessage('Error: Invalid admin secret key.');
+      setMessage('❌ Invalid admin secret key.');
       return;
     }
 
@@ -36,18 +35,21 @@ export default function Register() {
           password,
           first_name: firstName,
           last_name: lastName,
-          role // إرسال الدور إلى الباكند
+          role
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
+        localStorage.setItem('user_role', data.role);
+
         setMessage(`✅ ${data.message}`);
-        // إعادة توجيه تلقائي بعد 2 ثانية
-        setTimeout(() => router.push('/login'), 2000);
+        setTimeout(() => router.push('/dashboard'), 2000);
       } else {
-        const errorText = Object.entries(data).map(([key, value]) => `${key}: ${value}`).join(', ');
+        const errorText = Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(', ');
         setMessage(`❌ ${errorText}`);
       }
     } catch (err) {
@@ -56,50 +58,22 @@ export default function Register() {
   };
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '450px', margin: '50px auto', backgroundColor: '#f4f6f8', padding: '2rem', borderRadius: '12px', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#111827' }}>Register New User</h1>
+    <div style={{ fontFamily: 'Inter, sans-serif', maxWidth: '450px', margin: '50px auto', padding: '2rem', borderRadius: '12px', backgroundColor: '#f4f6f8' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Register New User</h1>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" required
-          style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required
-          style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required
-          style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
-        <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First Name" required
-          style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
-        <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last Name" required
-          style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
-
-        {/* اختيار الدور */}
-        <select value={role} onChange={(e) => setRole(e.target.value)}
-          style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+        <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
+        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+        <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} required />
+        <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} required />
+        <select value={role} onChange={e => setRole(e.target.value)}>
           <option value="user">User</option>
           <option value="admin">Admin</option>
         </select>
-
-        {/* خانة سرية للادمن */}
-        {role === 'admin' && (
-          <input type="password" value={adminSecret} onChange={(e) => setAdminSecret(e.target.value)} placeholder="Admin Secret Key"
-            style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
-        )}
-
-        <button type="submit" style={{
-          padding: '0.75rem',
-          borderRadius: '8px',
-          border: 'none',
-          backgroundColor: '#3b82f6',
-          color: 'white',
-          fontWeight: '600',
-          cursor: 'pointer',
-          transition: 'background-color 0.3s'
-        }}
-        onMouseOver={e => e.currentTarget.style.backgroundColor = '#2563eb'}
-        onMouseOut={e => e.currentTarget.style.backgroundColor = '#3b82f6'}
-        >
-          Register
-        </button>
+        {role === 'admin' && <input type="password" placeholder="Admin Secret Key" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} />}
+        <button type="submit">Register</button>
       </form>
-      {message && <p style={{ marginTop: '1rem', color: message.startsWith('✅') ? 'green' : 'red' }}>{message}</p>}
+      {message && <p style={{ color: message.startsWith('✅') ? 'green' : 'red' }}>{message}</p>}
     </div>
   );
 }
