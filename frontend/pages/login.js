@@ -35,19 +35,17 @@ export default function Login() {
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
 
-        // ✅ استخدم الدور المرسل من السيرفر
-        const role = data.role || 'user';
+        // تحديد الدور بناءً على is_superuser و is_staff
+        const role = (data.is_superuser && data.is_staff) ? 'admin' : 'user';
         localStorage.setItem('user_role', role);
         console.log("[Login] User role saved to localStorage:", role);
 
         setMessage('✅ Login successful! Redirecting...');
         router.push('/dashboard');
       } else {
-        console.log("[Login] Login failed:", data.detail || 'Invalid credentials');
         setMessage(`❌ ${data.detail || 'Invalid credentials'}`);
       }
     } catch (err) {
-      console.log("[Login] Error:", err);
       setMessage(`❌ Error: ${err.message}`);
     }
   };
@@ -84,7 +82,6 @@ export default function Login() {
             required
             style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem' }}
           />
-
           <input
             type="password"
             value={password}
@@ -93,7 +90,6 @@ export default function Login() {
             required
             style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem' }}
           />
-
           <button
             type="submit"
             style={{
