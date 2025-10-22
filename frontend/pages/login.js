@@ -39,6 +39,8 @@ export default function Login() {
         const role = (data.is_superuser && data.is_staff) ? 'admin' : 'user';
         localStorage.setItem('user_role', role);
         console.log("[Login] User role saved to localStorage:", role);
+        console.log("[Login] data.is_superuser:", rodata.is_superuserle);
+        console.log("[Login] data.is_staff:", data.is_staff);
 
         setMessage('✅ Login successful! Redirecting...');
         router.push('/dashboard');
