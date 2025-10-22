@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers, validators
 
-class RegisterSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(
         choices=[('user', 'User'), ('admin', 'Admin')],
         default='user',
