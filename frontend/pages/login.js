@@ -13,11 +13,16 @@ export default function Login() {
     e.preventDefault();
     setMessage('');
 
+    // ---==[ إضافة: طباعة البيانات التي سترسل ]==---
+    const requestData = { username, password };
+    console.log('Sending to server:', requestData);
+    // ---==[ نهاية الإضافة ]==---
+
     try {
       const response = await fetch(`${API_BASE}/api/token/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(requestData), // استخدمنا المتغير هنا
       });
 
       const text = await response.text();
@@ -28,10 +33,18 @@ export default function Login() {
         throw new Error(`Server response is not valid JSON:\n${text}`);
       }
 
+      // ---==[ إضافة: طباعة الاستجابة الكاملة من السيرفر ]==---
+      console.log('Received from server:', data);
+      // ---==[ نهاية الإضافة ]==---
+
       if (response.ok) {
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
         localStorage.setItem('user_role', data.role);
+
+        // ---==[ إضافة: تأكيد الدور الذي تم حفظه ]==---
+        console.log('User role saved to localStorage:', data.role);
+        // ---==[ نهاية الإضافة ]==---
 
         setMessage('✅ Login successful! Redirecting...');
         router.push('/dashboard');
