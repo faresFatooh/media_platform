@@ -18,33 +18,130 @@ export default function Login() {
         return;
     }
 
-    const response = await fetch(`${API_BASE}/api/token/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const response = await fetch(`${API_BASE}/api/token/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok) {
-      localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-      setMessage('Login successful! Redirecting...');
-      router.push('/dashboard'); 
-    } else {
-      setMessage(`Error: ${data.detail || 'Invalid credentials'}`);
+      if (response.ok) {
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
+
+        // جلب بيانات المستخدم لتحديد الدور
+        const userResponse = await fetch(`${API_BASE}/api/me/`, {
+          headers: { 'Authorization': `Bearer ${data.access}` }
+        });
+        const userData = await userResponse.json();
+        localStorage.setItem('user_role', userData.role || 'user');
+
+        setMessage('Login successful! Redirecting...');
+        router.push('/dashboard'); 
+      } else {
+        setMessage(`Error: ${data.detail || 'Invalid credentials'}`);
+      }
+    } catch (err) {
+      setMessage(`Error: ${err.message}`);
     }
   };
 
   return (
-    <div style={{ fontFamily: 'sans-serif', maxWidth: '400px', margin: '50px auto' }}>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" required />
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
-        <button type="submit">Login</button>
-      </form>
-      {message && <p>{message}</p>}
+    <div style={{
+      fontFamily: 'Inter, sans-serif',
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #3b82f6, #6366f1)'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        padding: '3rem 2rem',
+        width: '100%',
+        maxWidth: '400px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.5rem'
+      }}>
+        <h1 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: '700', color: '#1f2937' }}>Welcome Back</h1>
+        <p style={{ textAlign: 'center', color: '#6b7280' }}>Login to your account</p>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username"
+            required
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid #d1d5db',
+              fontSize: '1rem',
+              outline: 'none',
+              transition: 'border-color 0.3s'
+            }}
+            onFocus={e => e.currentTarget.style.borderColor = '#3b82f6'}
+            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
+          />
+
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid #d1d5db',
+              fontSize: '1rem',
+              outline: 'none',
+              transition: 'border-color 0.3s'
+            }}
+            onFocus={e => e.currentTarget.style.borderColor = '#3b82f6'}
+            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
+          />
+
+          <button
+            type="submit"
+            style={{
+              padding: '0.75rem',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              fontWeight: '600',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              transition: 'background-color 0.3s'
+            }}
+            onMouseOver={e => e.currentTarget.style.backgroundColor = '#2563eb'}
+            onMouseOut={e => e.currentTarget.style.backgroundColor = '#3b82f6'}
+          >
+            Login
+          </button>
+        </form>
+
+        {message && (
+          <p style={{
+            textAlign: 'center',
+            color: message.startsWith('Error') ? '#ef4444' : '#10b981',
+            fontWeight: '500'
+          }}>
+            {message}
+          </p>
+        )}
+
+        <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.9rem' }}>
+          Don't have an account? <a href="/register" style={{ color: '#3b82f6', fontWeight: '500' }}>Sign Up</a>
+        </p>
+      </div>
     </div>
   );
 }

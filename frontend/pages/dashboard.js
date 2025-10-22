@@ -99,18 +99,18 @@ export default function Dashboard() {
           <h1 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>Media Platform</h1>
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <Link href="/dashboard">
-              <dev style={{ color: 'white', fontWeight: '500', padding: '0.5rem', borderRadius: '6px', transition: '0.2s' }}
+              <div style={{ color: 'white', fontWeight: '500', padding: '0.5rem', borderRadius: '6px', transition: '0.2s' }}
                  onMouseOver={e => e.currentTarget.style.backgroundColor = '#374151'}
                  onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                 Dashboard
-              </dev>
+              </div>
             </Link>
             <Link href="/dashboard/profile">
-              <dev style={{ color: 'white', fontWeight: '500', padding: '0.5rem', borderRadius: '6px', transition: '0.2s' }}
+              <div style={{ color: 'white', fontWeight: '500', padding: '0.5rem', borderRadius: '6px', transition: '0.2s' }}
                  onMouseOver={e => e.currentTarget.style.backgroundColor = '#374151'}
                  onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                 Profile
-              </dev>
+              </divب>
             </Link>
           </nav>
         </div>

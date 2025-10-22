@@ -1,11 +1,17 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers, validators
 
-# ✅ Serializer للتسجيل
+# Serializer للتسجيل
 class RegisterSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(
+        choices=[('user', 'User'), ('admin', 'Admin')],
+        default='user',
+        write_only=True
+    )
+
     class Meta:
         model = User
-        fields = ('username', 'password', 'email', 'first_name', 'last_name')
+        fields = ('username', 'password', 'email', 'first_name', 'last_name', 'role')
         extra_kwargs = {
             "password": {"write_only": True},
             "email": {
@@ -21,11 +27,19 @@ class RegisterSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+        role = validated_data.pop('role', 'user')
+        is_staff = True if role == 'admin' else False
+        user = User.objects.create_user(**validated_data, is_staff=is_staff)
+        return user
 
 
-# ✅ Serializer لعرض بيانات المستخدم الحالي
+# Serializer لعرض بيانات المستخدم الحالي
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ("id", "username", "email", "first_name", "last_name")
+        fields = ("id", "username", "email", "first_name", "last_name", "role")
+
+    def get_role(self, obj):
+        return 'admin' if obj.is_staff else 'user'
