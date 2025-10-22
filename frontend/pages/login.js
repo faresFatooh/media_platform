@@ -14,8 +14,8 @@ export default function Login() {
     setMessage('');
 
     if (!API_BASE) {
-        setMessage('Error: API URL is not configured.');
-        return;
+      setMessage('Error: API URL is not configured.');
+      return;
     }
 
     try {
@@ -25,7 +25,15 @@ export default function Login() {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        // إذا الرد ليس JSON، نعرض نص الرد كامل
+        throw new Error(`Server response is not valid JSON:\n${text}`);
+      }
 
       if (response.ok) {
         localStorage.setItem('access_token', data.access);
@@ -36,7 +44,14 @@ export default function Login() {
           headers: { 'Authorization': `Bearer ${data.access}` }
         });
 
-        const userData = await userResponse.json();
+        const userText = await userResponse.text();
+        let userData;
+        try {
+          userData = JSON.parse(userText);
+        } catch (err) {
+          throw new Error(`Failed to fetch user info. Server returned:\n${userText}`);
+        }
+
         localStorage.setItem('user_role', userData.role || 'user');
 
         setMessage('Login successful! Redirecting...');
@@ -133,7 +148,8 @@ export default function Login() {
           <p style={{
             textAlign: 'center',
             color: message.startsWith('Error') ? '#ef4444' : '#10b981',
-            fontWeight: '500'
+            fontWeight: '500',
+            whiteSpace: 'pre-wrap'
           }}>
             {message}
           </p>
