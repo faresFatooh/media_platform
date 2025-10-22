@@ -20,12 +20,22 @@ export default function Login() {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Server response is not valid JSON:\n${text}`);
+      }
 
       if (response.ok) {
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
-        localStorage.setItem('user_role', data.role);
+
+        // ✅ استخدام is_superuser لتحديد الدور
+        // هذا يعني أنك لا تعتمد على حقل role من السيرفر
+        const role = data.is_superuser ? 'admin' : 'user';
+        localStorage.setItem('user_role', role);
 
         setMessage('✅ Login successful! Redirecting...');
         router.push('/dashboard');
@@ -69,6 +79,7 @@ export default function Login() {
             required
             style={{ padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem' }}
           />
+
           <input
             type="password"
             value={password}
@@ -80,7 +91,16 @@ export default function Login() {
 
           <button
             type="submit"
-            style={{ padding: '0.75rem', borderRadius: '8px', border: 'none', backgroundColor: '#3b82f6', color: 'white', fontWeight: '600', fontSize: '1rem', cursor: 'pointer' }}
+            style={{
+              padding: '0.75rem',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              fontWeight: '600',
+              fontSize: '1rem',
+              cursor: 'pointer',
+            }}
           >
             Login
           </button>

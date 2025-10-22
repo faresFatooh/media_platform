@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        data['role'] = "admin" if self.user.is_superuser else "user"
         data['username'] = self.user.username
         data['email'] = self.user.email
+        data['is_superuser'] = self.user.is_superuser  # <-- هنا
         return data
