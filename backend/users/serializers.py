@@ -25,15 +25,6 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         role = validated_data.pop('role', 'user')
         is_staff = True if role == 'admin' else False
-        user = User.objects.create_user(**validated_data, is_staff=is_staff)
+        is_superuser = True if role == 'admin' else False  # اختياري لو تريد صلاحيات كاملة
+        user = User.objects.create_user(**validated_data, is_staff=is_staff, is_superuser=is_superuser)
         return user
-
-class UserSerializer(serializers.ModelSerializer):
-    role = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ("id", "username", "email", "first_name", "last_name", "role")
-
-    def get_role(self, obj):
-        return 'admin' if obj.is_staff else 'user'
